@@ -30,9 +30,9 @@ export default function RootLayout({
       <body
         className={`${josefinSans.variable} ${geistMono.variable} antialiased min-h-screen text-purple-950`}
       >
-        {/* Global navigation */}
-        <Navbar />
-        {children}
+          {/* Global navigation */}
+          <Navbar />
+          {children}
       </body>
     </html>
   );
