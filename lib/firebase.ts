@@ -57,6 +57,7 @@ export async function signUpWithEmail(params: {
   const cred = await createUserWithEmailAndPassword(auth, email, password);
   if (cred.user && username) {
     await updateProfile(cred.user, { displayName: username });
+    await cred.user.reload();
   }
   return cred;
 }
