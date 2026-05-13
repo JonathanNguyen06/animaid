@@ -1,23 +1,14 @@
-"use client";
+type Props = {
+    query: string
+    setQuery: (value: string) => void
+    onSubmit: (e: React.FormEvent) => void
+}
 
-import { useRouter } from "next/navigation";
-import { useState } from "react";
-
-export default function AnimeSearchBar() {
-    const router = useRouter();
-    const [query, setQuery] = useState("");
-
-    function handleSubmit(e: React.FormEvent) {
-        e.preventDefault();
-        const q = query.trim();
-        if (!q) return;
-
-        router.push(`/search?q=${encodeURIComponent(q)}`);
-    }
+export default function SearchBar({ query, setQuery, onSubmit }: Props) {
 
     return (
         <form
-            onSubmit={handleSubmit}
+            onSubmit={onSubmit}
             className="group relative mx-auto flex w-full items-center rounded-2xl border border-purple-200 bg-white p-2 shadow-sm focus-within:border-purple-300 focus-within:ring-2 focus-within:ring-purple-200/60"
         >
             <input

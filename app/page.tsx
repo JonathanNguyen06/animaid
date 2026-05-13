@@ -1,6 +1,8 @@
 import React from "react";
 import AuthGate from "@/app/components/AuthGate";
 import Searchbar from "@/app/components/Searchbar";
+import EpisodeSlider from "@/app/components/EpisodeSlider";
+import SearchControls from "@/app/components/SearchControls";
 
 export default function Home() {
   return (
@@ -13,30 +15,9 @@ export default function Home() {
         <p className="mx-auto my-6 max-w-2xl text-base text-purple-900/70 sm:text-lg">
           Search with a prompt or your interests, and we’ll recommend titles that match your vibe.
         </p>
-
-        {/* Centralized search bar */}
-            <Searchbar />
-          {/* Optional quick interest chips */}
-          <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-            {[
-              "Slice of Life",
-              "Shounen",
-              "Romance",
-              "Sports",
-              "Psychological",
-              "Isekai",
-            ].map((tag) => (
-              <button
-                key={tag}
-                type="button"
-                className="rounded-full border border-purple-200 bg-white px-3 py-1.5 text-xs font-medium text-purple-900/80 hover:border-purple-300 hover:text-purple-900 cursor-pointer"
-              >
-                {tag}
-              </button>
-            ))}
-          </div>
+            <SearchControls />
       </section>
-    </main>
+        </main>
       </AuthGate>
   );
 }
