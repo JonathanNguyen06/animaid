@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import AnimeCard from "@/app/components/AnimeCard";
 import Searchbar from "../components/Searchbar";
+import SearchControls from "@/app/components/SearchControls";
 
 type Anime = {
     mal_id: number;
@@ -17,6 +18,8 @@ type Anime = {
 export default function SearchPage() {
     const searchParams = useSearchParams();
     const q = (searchParams.get("q") ?? "").trim();
+    const minEpisodes = Number(searchParams.get("minEpisodes") ?? 1)
+    const maxEpisodes = Number(searchParams.get("maxEpisodes") ?? 30)
 
     const [results, setResults] = useState<Anime[]>([]);
     const [loading, setLoading] = useState(false);
@@ -41,7 +44,7 @@ export default function SearchPage() {
                 setError(null);
 
                 const res = await fetch(
-                    `/api/jikan/search?q=${encodeURIComponent(q)}&limit=24`
+                    `/api/jikan/search?q=${encodeURIComponent(q)}&limit=24&minEpisodes=${minEpisodes}&maxEpisodes=${maxEpisodes}`
                 );
                 const json = await res.json();
 
@@ -59,11 +62,11 @@ export default function SearchPage() {
         };
 
         run();
-    }, [q]);
+    }, [q, minEpisodes, maxEpisodes]);
 
     return (
         <main className="max-w-6xl mx-auto px-4 py-8">
-            <Searchbar />
+            <SearchControls />
             <h1 className="text-2xl mt-4 font-bold">
                 {q ? `Results for “${q}”` : "Search"}
             </h1>

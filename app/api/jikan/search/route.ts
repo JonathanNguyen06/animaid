@@ -3,6 +3,8 @@ import { NextResponse } from "next/server";
 export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const q = (searchParams.get("q") ?? "").trim();
+    const minEpisodes = Number(searchParams.get("minEpisodes") ?? 1)
+    const maxEpisodes = Number(searchParams.get("maxEpisodes") ?? 30)
     const limit = Number(searchParams.get("limit") ?? "12");
 
     // Basic validation
@@ -34,15 +36,27 @@ export async function GET(req: Request) {
         }
 
         const json = await res.json();
+        const filtered = (json.data ?? []).filter((anime: any) => {
+            const episodes = anime.episodes;
+
+            if (typeof episodes !== "number") return true;
+
+            if (maxEpisodes === 30) {
+                return episodes >= minEpisodes;
+            }
+
+            return episodes >= minEpisodes && episodes <= maxEpisodes;
+        });
 
         // Return only what you need (cleaner + smaller)
-        const simplified = (json.data ?? []).map((a: any) => ({
+        const simplified = filtered.map((a:any) => ({
             mal_id: a.mal_id,
             title: a.title,
             score: a.score,
             images: a.images,
             type: a.type,
             year: a.year,
+            episodes: a.episodes,
         }));
 
         return NextResponse.json({ data: simplified });
