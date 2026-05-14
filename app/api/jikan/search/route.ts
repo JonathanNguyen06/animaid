@@ -6,6 +6,7 @@ export async function GET(req: Request) {
     const minEpisodes = Number(searchParams.get("minEpisodes") ?? 1)
     const maxEpisodes = Number(searchParams.get("maxEpisodes") ?? 30)
     const limit = Number(searchParams.get("limit") ?? "12");
+    const type = (searchParams.get("type") ?? "any").toLowerCase();
 
     // Basic validation
     if (!q) {
@@ -36,10 +37,16 @@ export async function GET(req: Request) {
         }
 
         const json = await res.json();
+
         const filtered = (json.data ?? []).filter((anime: any) => {
             const episodes = anime.episodes;
+            const animeType = (anime.type ?? "").toLowerCase();
 
-            if (typeof episodes !== "number") return true;
+            const matchesType = type === "any" || animeType === type;
+
+            if (!matchesType) return false;
+
+            if (typeof episodes !== "number") return false;
 
             if (maxEpisodes === 30) {
                 return episodes >= minEpisodes;

@@ -20,6 +20,7 @@ export default function SearchPage() {
     const q = (searchParams.get("q") ?? "").trim();
     const minEpisodes = Number(searchParams.get("minEpisodes") ?? 1)
     const maxEpisodes = Number(searchParams.get("maxEpisodes") ?? 30)
+    const type = (searchParams.get("type") ?? "any")
 
     const [results, setResults] = useState<Anime[]>([]);
     const [loading, setLoading] = useState(false);
@@ -44,7 +45,7 @@ export default function SearchPage() {
                 setError(null);
 
                 const res = await fetch(
-                    `/api/jikan/search?q=${encodeURIComponent(q)}&limit=24&minEpisodes=${minEpisodes}&maxEpisodes=${maxEpisodes}`
+                    `/api/jikan/search?q=${encodeURIComponent(q)}&limit=24&minEpisodes=${minEpisodes}&maxEpisodes=${maxEpisodes}&type=${type}`
                 );
                 const json = await res.json();
 
@@ -62,7 +63,7 @@ export default function SearchPage() {
         };
 
         run();
-    }, [q, minEpisodes, maxEpisodes]);
+    }, [q, minEpisodes, maxEpisodes, type]);
 
     return (
         <main className="max-w-6xl mx-auto px-4 py-8">
