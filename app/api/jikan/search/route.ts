@@ -7,6 +7,9 @@ export async function GET(req: Request) {
     const maxEpisodes = Number(searchParams.get("maxEpisodes") ?? 30)
     const limit = Number(searchParams.get("limit") ?? "12");
     const type = (searchParams.get("type") ?? "any").toLowerCase();
+    const genreIds = (searchParams.get("genres") ?? "")
+        .split(",")
+        .filter(Boolean);
 
     // Basic validation
     if (!q) {
@@ -22,6 +25,14 @@ export async function GET(req: Request) {
     const url = new URL("https://api.jikan.moe/v4/anime");
     url.searchParams.set("q", q);
     url.searchParams.set("limit", String(safeLimit));
+
+    if (type !== "any") {
+        url.searchParams.set("type", type);
+    }
+
+    if (genreIds.length > 0) {
+        url.searchParams.set("genres", genreIds.join(","));
+    }
 
     try {
         const res = await fetch(url.toString(), {
@@ -64,6 +75,7 @@ export async function GET(req: Request) {
             type: a.type,
             year: a.year,
             episodes: a.episodes,
+            genres: a.genres,
         }));
 
         return NextResponse.json({ data: simplified });

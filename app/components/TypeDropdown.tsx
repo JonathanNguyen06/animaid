@@ -6,7 +6,7 @@ type Props = {
     setValue: (value: string) => void
 }
 
-const GenreDropdown = ({ value, setValue}: Props ) => {
+const TypeDropdown = ({ value, setValue}: Props ) => {
     const handleChange = (event: SelectChangeEvent) => {
         setValue(event.target.value as string)
     }
@@ -30,4 +30,4 @@ const GenreDropdown = ({ value, setValue}: Props ) => {
         </FormControl>
     )
 }
-export default GenreDropdown
+export default TypeDropdown
