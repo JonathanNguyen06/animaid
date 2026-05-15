@@ -18,7 +18,7 @@ const EpisodeSlider = ({value, setValue}: Props) => {
     };
 
     return (
-        <div className="w-1/3 text-purple-900/70">
+        <div className="w-1/3">
             Episodes
             <Slider
                 value={value}
