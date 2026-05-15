@@ -16,7 +16,7 @@ export default function SearchBar({ query, setQuery, onSubmit }: Props) {
                 name="q"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="e.g. cozy slice of life with found family, or: sports, isekai, mystery"
+                placeholder="e.g. Naruto, Attack on Titan"
                 className="w-full rounded-xl px-4 py-3 text-purple-950 placeholder-purple-900/40 outline-none"
                 aria-label="Search anime or manga by prompt or interests"
                 autoComplete="off"

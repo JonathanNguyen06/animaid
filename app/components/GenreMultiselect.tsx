@@ -19,7 +19,6 @@ const GenreMultiselect = ({genreOptions, value, setValue}: Props) => {
     return (
         <Autocomplete
             multiple
-            id="checkboxes-tags-demo"
             value={value}
             options={genreOptions}
             onChange={(event, newValue) => {setValue(newValue)}}
@@ -39,7 +38,7 @@ const GenreMultiselect = ({genreOptions, value, setValue}: Props) => {
                     </li>
                 );
             }}
-            style={{ width: 500 }}
+            className={"w-full"}
             renderInput={(params) => (
                 <TextField {...params} label="Genre" />
             )}
