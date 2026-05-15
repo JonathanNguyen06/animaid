@@ -12,7 +12,7 @@ const TypeDropdown = ({ value, setValue}: Props ) => {
     }
 
     return (
-        <FormControl className={"w-1/3"}>
+        <FormControl>
             <InputLabel>Type</InputLabel>
             <Select
                 label="Type"

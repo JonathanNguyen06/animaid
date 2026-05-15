@@ -18,7 +18,7 @@ const EpisodeSlider = ({value, setValue}: Props) => {
     };
 
     return (
-        <div className="w-1/3">
+        <div>
             Episodes
             <Slider
                 value={value}
