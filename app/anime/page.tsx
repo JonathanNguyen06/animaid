@@ -1,9 +1,10 @@
-"use client";
+'use client'
 
-import { useEffect, useRef, useState } from "react";
-import { useSearchParams } from "next/navigation";
-import Image from "next/image";
+import React, {useEffect, useState} from 'react'
+import {useSearchParams} from "next/navigation";
 import SearchControls from "@/app/components/SearchControls";
+import Image from "next/image";
+import WishlistButton from "@/app/components/WishlistButton";
 
 type Genre = {
     mal_id: number;
@@ -25,79 +26,55 @@ type Anime = {
     genres?: Genre[];
 };
 
-export default function RandomPage() {
+const Page = () => {
     const searchParams = useSearchParams();
 
-    const minEpisodes = Number(searchParams.get("minEpisodes") ?? 1);
-    const maxEpisodes = Number(searchParams.get("maxEpisodes") ?? 30);
-    const type = searchParams.get("type") ?? "any";
-    const genres = searchParams.get("genres") ?? "";
-    const roll = searchParams.get("roll") ?? "";
-
+    const id = searchParams.get("id") ?? "";
     const [anime, setAnime] = useState<Anime | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const requestId = useRef(0);
-
     useEffect(() => {
-        const run = async () => {
-            const myId = ++requestId.current;
+        if (!id) {
+            setAnime(null);
+            setError("Missing anime id");
+            return;
+        }
 
+        async function loadAnime() {
             try {
                 setLoading(true);
                 setError(null);
 
-                const params = new URLSearchParams({
-                    minEpisodes: String(minEpisodes),
-                    maxEpisodes: String(maxEpisodes),
-                    type,
-                });
-
-                if (genres) {
-                    params.set("genres", genres);
-                }
-
-                const res = await fetch(`/api/jikan/random?${params.toString()}`);
+                const res = await fetch(`/api/jikan/anime?id=${id}`);
                 const json = await res.json();
 
                 if (!res.ok) {
-                    throw new Error(json?.error ?? "Random roll failed");
+                    throw new Error(json?.error ?? "Failed to load anime");
                 }
-
-                if (myId !== requestId.current) return;
 
                 setAnime(json.data);
             } catch (e: any) {
-                if (myId !== requestId.current) return;
-
                 setError(e?.message ?? "Something went wrong");
                 setAnime(null);
             } finally {
-                if (myId === requestId.current) {
-                    setLoading(false);
-                }
+                setLoading(false);
             }
-        };
+        }
 
-        run();
-    }, [minEpisodes, maxEpisodes, type, genres, roll]);
+        loadAnime();
+    }, [id]);
 
     return (
         <main className="mx-auto max-w-6xl px-4 py-8">
             <SearchControls />
 
             <section className="mt-10">
-                <h1 className="text-2xl font-bold text-purple-950">
-                    Random Anime Roll
-                </h1>
-
                 {loading && (
                     <p className="mt-4 text-purple-900/70">
-                        Rolling...
+                        Loading anime...
                     </p>
                 )}
-
                 {error && (
                     <p className="mt-4 text-red-500">
                         {error}
@@ -119,8 +96,9 @@ export default function RandomPage() {
                         </div>
 
                         <div>
-                            <h2 className="text-3xl font-bold text-purple-950">
+                            <h2 className="text-3xl font-bold text-purple-950 justify-between flex">
                                 {anime.title}
+                                <WishlistButton />
                             </h2>
 
                             {anime.title_english && anime.title_english !== anime.title && (
@@ -193,5 +171,6 @@ export default function RandomPage() {
                 )}
             </section>
         </main>
-    );
+    )
 }
+export default Page

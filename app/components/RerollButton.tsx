@@ -10,8 +10,15 @@ const RerollButton = ({ onClick }: Props) => {
     return (
         <Button
             variant="contained"
-            color="secondary"
             onClick={onClick}
+            sx={{
+                backgroundColor: "#581c87",
+                "&:hover": {
+                    backgroundColor: "#6b21a8",
+                },
+                borderRadius: "0.75rem",
+                textTransform: "none",
+            }}
         >
             <RefreshIcon />
         </Button>

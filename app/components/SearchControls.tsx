@@ -65,7 +65,7 @@ const SearchControls = () => {
         router.push(`/search?${params.toString()}`);
     }
 
-    function handleRandomRoll() {
+    async function handleRandomRoll() {
         const [min, max] = episodeRange;
         const genreIds = selectedGenres.map((genre) => genre.mal_id).join(",");
 
@@ -73,12 +73,21 @@ const SearchControls = () => {
             minEpisodes: String(min),
             maxEpisodes: String(max),
             type,
-            genres: genreIds,
         });
 
-        params.set("roll", String(Date.now()));
+        if (genreIds) {
+            params.set("genres", genreIds);
+        }
 
-        router.push(`/random?${params.toString()}`);
+        const res = await fetch(`/api/jikan/random?${params.toString()}`);
+        const json = await res.json();
+
+        if (!res.ok) {
+            console.error(json?.error ?? "Random roll failed");
+            return;
+        }
+
+        router.push(`/anime?id=${json.data.mal_id}`);
     }
 
     return (

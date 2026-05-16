@@ -28,7 +28,18 @@ const EpisodeSlider = ({value, setValue}: Props) => {
                 disableSwap
                 min={1}
                 max={30}
-                color={"secondary"}
+                sx={{
+                    color: "#581c87",
+                    "& .MuiSlider-thumb": {
+                        backgroundColor: "#581c87",
+                    },
+                    "& .MuiSlider-track": {
+                        backgroundColor: "#581c87",
+                    },
+                    "& .MuiSlider-valueLabel": {
+                        backgroundColor: "#581c87",
+                    },
+                }}
             />
         </div>
     )

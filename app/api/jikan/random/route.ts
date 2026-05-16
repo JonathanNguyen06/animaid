@@ -80,22 +80,11 @@ export async function GET(req: Request) {
             const randomAnime =
                 filtered[Math.floor(Math.random() * filtered.length)];
 
-            const simplified = {
-                mal_id: randomAnime.mal_id,
-                title: randomAnime.title,
-                title_english: randomAnime.title_english,
-                score: randomAnime.score,
-                images: randomAnime.images,
-                type: randomAnime.type,
-                year: randomAnime.year,
-                episodes: randomAnime.episodes,
-                status: randomAnime.status,
-                rating: randomAnime.rating,
-                synopsis: randomAnime.synopsis,
-                genres: randomAnime.genres,
-            };
-
-            return NextResponse.json({ data: simplified });
+            return NextResponse.json({
+                data: {
+                    mal_id: randomAnime.mal_id,
+                },
+            });
         }
 
         return NextResponse.json(
