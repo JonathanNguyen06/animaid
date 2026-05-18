@@ -11,6 +11,7 @@ import {
   updateProfile,
   type User,
 } from "firebase/auth";
+import { getFirestore } from "firebase/firestore";
 
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
@@ -61,5 +62,7 @@ export async function signUpWithEmail(params: {
   }
   return cred;
 }
+
+export const db = getFirestore(app);
 
 export default app;

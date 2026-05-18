@@ -3,6 +3,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import Image from "next/image";
 import {auth, observeAuth, signOut} from "@/lib/firebase";
 import { usePathname, useRouter } from "next/navigation";
+import Link from "next/link";
 
 const Navbar = () => {
     const [username, setUsername] = useState<string | null>(null);
@@ -78,7 +79,9 @@ const Navbar = () => {
                         {username && (
                             <>
                                 <a href="#friends" className="text-purple-900/80 hover:text-purple-900">Friends</a>
-                                <a href="#wishlist" className="text-purple-900/80 hover:text-purple-900">Wishlist</a>
+                                <Link href="/wishlist">
+                                    Wishlist
+                                </Link>
                                 <div className="relative" ref={menuRef}>
                                     <button
                                         type="button"

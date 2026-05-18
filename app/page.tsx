@@ -1,7 +1,5 @@
 import React from "react";
 import AuthGate from "@/app/components/AuthGate";
-import Searchbar from "@/app/components/Searchbar";
-import EpisodeSlider from "@/app/components/EpisodeSlider";
 import SearchControls from "@/app/components/SearchControls";
 
 export default function Home() {
