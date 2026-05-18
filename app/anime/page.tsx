@@ -98,7 +98,7 @@ const Page = () => {
                         <div>
                             <h2 className="text-3xl font-bold text-purple-950 justify-between flex">
                                 {anime.title}
-                                <WishlistButton />
+                                <WishlistButton anime={anime}/>
                             </h2>
 
                             {anime.title_english && anime.title_english !== anime.title && (
