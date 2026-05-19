@@ -11,7 +11,7 @@ import {
   updateProfile,
   type User,
 } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { getFirestore, doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
@@ -61,6 +61,21 @@ export async function signUpWithEmail(params: {
     await cred.user.reload();
   }
   return cred;
+}
+
+export async function ensureUserProfile(user: User, username?: string) {
+    const userRef = doc(db, "users", user.uid);
+    const snapshot = await getDoc(userRef);
+
+    if (!snapshot.exists()) {
+        await setDoc(userRef, {
+            uid: user.uid,
+            username: username?.toLowerCase() ?? "",
+            email: user.email ?? "",
+            photoURL: user.photoURL ?? "",
+            created_at: serverTimestamp(),
+        });
+    }
 }
 
 export const db = getFirestore(app);
