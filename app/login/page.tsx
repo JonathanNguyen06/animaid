@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { signInWithEmail, signInWithGoogle } from "@/lib/firebase";
+import {ensureUserProfile, signInWithEmail, signInWithGoogle} from "@/lib/firebase";
 import {EyeIcon, EyeSlashIcon} from "@heroicons/react/24/outline";
 
 export default function LoginPage() {
@@ -19,7 +19,8 @@ export default function LoginPage() {
     setError(null);
     setLoading(true);
     try {
-      await signInWithEmail(email, password);
+      const cred = await signInWithEmail(email, password);
+      await ensureUserProfile(cred.user);
       router.push("/");
     } catch (err: any) {
       setError(err?.message || "Failed to sign in");
@@ -32,7 +33,8 @@ export default function LoginPage() {
     setError(null);
     setLoading(true);
     try {
-      await signInWithGoogle();
+      const cred = await signInWithGoogle();
+      await ensureUserProfile(cred.user);
       router.push("/");
     } catch (err: any) {
       setError(err?.message || "Google sign-in failed");

@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { signUpWithEmail } from "@/lib/firebase";
+import {ensureUserProfile, signUpWithEmail} from "@/lib/firebase";
 import {EyeIcon, EyeSlashIcon} from "@heroicons/react/24/outline";
 
 export default function SignupPage() {
@@ -26,7 +26,8 @@ export default function SignupPage() {
     }
     setLoading(true);
     try {
-      await signUpWithEmail({ username, email, password });
+      const cred = await signUpWithEmail({ username, email, password });
+      await ensureUserProfile(cred.user, username);
       router.push("/");
     } catch (err: any) {
       setError(err?.message || "Failed to sign up");

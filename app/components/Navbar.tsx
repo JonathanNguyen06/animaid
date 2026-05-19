@@ -78,8 +78,10 @@ const Navbar = () => {
                     <nav className="flex items-center gap-7 text-base font-medium">
                         {username && (
                             <>
-                                <a href="#friends" className="text-purple-900/80 hover:text-purple-900">Friends</a>
-                                <Link href="/wishlist">
+                                <Link href="/friends" className="text-purple-900/80 hover:text-purple-900">
+                                    Friends
+                                </Link>
+                                <Link href="/wishlist" className="text-purple-900/80 hover:text-purple-900">
                                     Wishlist
                                 </Link>
                                 <div className="relative" ref={menuRef}>

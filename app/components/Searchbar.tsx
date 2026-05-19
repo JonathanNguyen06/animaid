@@ -1,11 +1,20 @@
 type Props = {
-    query: string
-    setQuery: (value: string) => void
-    onSubmit: (e: React.FormEvent) => void
-}
+    query: string;
+    setQuery: (value: string) => void;
+    onSubmit: (e: React.FormEvent) => void;
+    placeholder?: string;
+    ariaLabel?: string;
+    buttonText?: string;
+};
 
-export default function SearchBar({ query, setQuery, onSubmit }: Props) {
-
+export default function SearchBar({
+                                      query,
+                                      setQuery,
+                                      onSubmit,
+                                      placeholder = "e.g. Naruto, Attack on Titan",
+                                      ariaLabel = "Search",
+                                      buttonText = "Search",
+                                  }: Props) {
     return (
         <form
             onSubmit={onSubmit}
@@ -16,16 +25,16 @@ export default function SearchBar({ query, setQuery, onSubmit }: Props) {
                 name="q"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="e.g. Naruto, Attack on Titan"
+                placeholder={placeholder}
                 className="w-full rounded-xl px-4 py-3 text-purple-950 placeholder-purple-900/40 outline-none"
-                aria-label="Search anime or manga by prompt or interests"
+                aria-label={ariaLabel}
                 autoComplete="off"
             />
             <button
                 type="submit"
                 className="ml-2 inline-flex cursor-pointer items-center justify-center rounded-xl bg-purple-900 px-5 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-purple-800"
             >
-                Search
+                {buttonText}
             </button>
         </form>
     );
