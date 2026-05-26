@@ -13,6 +13,7 @@ import {
 type UserProfile = {
     uid: string;
     username?: string;
+    photoURL?: string;
 };
 
 type Props = {
@@ -33,12 +34,19 @@ export default function AddFriendButton({ targetUser }: Props) {
             return;
         }
 
-        if (currentUser.uid === targetUser.uid) {
-            return;
-        }
+        if (currentUser.uid === targetUser.uid) return;
 
         try {
             setLoading(true);
+
+            const myProfileRef = doc(db, "users", currentUser.uid);
+            const myProfileSnap = await getDoc(myProfileRef);
+
+            if (!myProfileSnap.exists()) {
+                return;
+            }
+
+            const myProfile = myProfileSnap.data() as UserProfile;
 
             const requestRef = doc(
                 db,
@@ -50,7 +58,8 @@ export default function AddFriendButton({ targetUser }: Props) {
 
             await setDoc(requestRef, {
                 fromUid: currentUser.uid,
-                fromUsername: currentUser.displayName ?? "",
+                fromUsername: myProfile.username ?? "",
+                fromPhotoURL: myProfile.photoURL ?? "",
                 status: "pending",
                 created_at: serverTimestamp(),
             });
@@ -68,17 +77,13 @@ export default function AddFriendButton({ targetUser }: Props) {
             type="button"
             disabled={loading || sent}
             onClick={handleAddFriend}
-            className={`rounded-xl px-4 py-2 text-sm font-semibold text-white shadow-sm transition cursor-pointer ${
+            className={`rounded-xl px-4 py-2 text-sm font-semibold text-white shadow-sm transition ${
                 sent
                     ? "bg-green-600"
                     : "bg-purple-900 hover:bg-purple-800"
             } disabled:cursor-not-allowed disabled:opacity-70`}
         >
-            {loading
-                ? "Sending..."
-                : sent
-                    ? "Request Sent"
-                    : "Add Friend"}
+            {loading ? "Sending..." : sent ? "Request Sent" : "Add Friend"}
         </button>
     );
 }
