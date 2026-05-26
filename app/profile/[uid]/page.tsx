@@ -112,7 +112,7 @@ export default function ProfilePage() {
 
             {!loading && !error && profile && (
                 <>
-                    <section className="rounded-3xl border border-purple-200 bg-white/70 p-6 shadow-sm">
+                    <section className="rounded-3xl border border-purple-200 bg-white relative z-10 p-6 shadow-sm">
                         <div className="flex items-center gap-4">
                             <div className="relative h-20 w-20 overflow-hidden rounded-2xl bg-purple-100">
                                 {profile.photoURL ? (

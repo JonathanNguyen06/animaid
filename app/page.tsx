@@ -1,12 +1,13 @@
 import React from "react";
 import AuthGate from "@/app/components/AuthGate";
 import SearchControls from "@/app/components/SearchControls";
+import {HeartIcon} from "@heroicons/react/24/outline";
 
 export default function Home() {
   return (
       <AuthGate>
       <main className="mx-auto flex min-h-[calc(100vh-130px)] w-full max-w-6xl flex-col items-center justify-center px-4">
-      <section className="w-full max-w-3xl text-center">
+      <section className="w-full max-w-3xl text-center z-10">
         <h1 className="text-4xl font-bold tracking-tight text-purple-950 sm:text-5xl">
           Find your next favorite anime
         </h1>

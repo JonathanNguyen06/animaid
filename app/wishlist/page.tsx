@@ -68,7 +68,7 @@ export default function WishlistPage() {
                     <Link
                         key={anime.mal_id}
                         href={`/anime?id=${anime.mal_id}`}
-                        className="flex gap-4 rounded-2xl border border-purple-200 bg-white/70 p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                        className="flex gap-4 rounded-2xl border border-purple-200 bg-white relative z-10 p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
                     >
                         <div className="relative h-32 w-24 shrink-0 overflow-hidden rounded-xl bg-purple-100">
                             {anime.image_url ? (

@@ -69,7 +69,7 @@ export default function MyProfilePage() {
             )}
 
             {profile && (
-                <section className="mt-6 rounded-3xl border border-purple-200 bg-white/70 p-6 shadow-sm">
+                <section className="mt-6 rounded-3xl border border-purple-200 bg-white relative z-10 p-6 shadow-sm">
                     <div className="flex flex-col gap-6 sm:flex-row sm:items-center">
                         <div className="relative h-28 w-28 overflow-hidden rounded-3xl bg-purple-100">
                             {profile.photoURL ? (

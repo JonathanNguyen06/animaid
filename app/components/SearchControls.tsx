@@ -91,8 +91,8 @@ const SearchControls = () => {
     }
 
     return (
-        <div className="mx-auto w-full max-w-4xl space-y-6">
-            <div className="rounded-3xl border border-purple-200/70 bg-white/70 p-5 shadow-sm">
+        <div className="mx-auto w-full max-w-4xl space-y-6 z-10">
+            <div className="rounded-3xl border border-purple-200/70 bg-white p-5 shadow-sm">
                 <h2 className="mb-4 text-lg font-semibold text-purple-950">
                     Search by title
                 </h2>
@@ -109,7 +109,7 @@ const SearchControls = () => {
                 <div className="flex-1 border-t border-purple-200" />
             </div>
 
-            <div className="rounded-3xl border border-purple-200/70 bg-white/50 p-5 shadow-sm">
+            <div className="rounded-3xl border border-purple-200/70 bg-white p-5 shadow-sm">
                 <h2 className="text-lg font-semibold text-purple-950">
                     Roll a random anime
                 </h2>
