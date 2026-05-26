@@ -1,6 +1,7 @@
 import React from 'react'
 import RefreshIcon from '@mui/icons-material/Refresh';
 import Button from '@mui/material/Button';
+import { Dices } from 'lucide-react'
 
 type Props = {
     onClick: () => void;
@@ -20,7 +21,7 @@ const RerollButton = ({ onClick }: Props) => {
                 textTransform: "none",
             }}
         >
-            <RefreshIcon />
+            <Dices />
         </Button>
     )
 }

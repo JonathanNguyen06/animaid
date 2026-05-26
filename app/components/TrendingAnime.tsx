@@ -44,7 +44,7 @@ const TrendingAnime = () => {
 
 
     return (
-        <div className="mt-6 grid sm:grid-cols-3 md:grid-cols-6 gap-2">
+        <div className="my-6 grid sm:grid-cols-3 md:grid-cols-6 gap-2">
             {results.map((anime) => (
                 <AnimeCard key={anime.mal_id} anime={anime} />
             ))}
