@@ -43,8 +43,6 @@ export async function GET(req: Request) {
             images: a.images,
             type: a.type,
             year: a.year,
-            episodes: a.episodes,
-            genres: a.genres,
         }));
 
         return NextResponse.json({ data: simplified });

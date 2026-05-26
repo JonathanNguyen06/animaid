@@ -82,7 +82,7 @@ const Page = () => {
                 )}
 
                 {!loading && !error && anime && (
-                    <div className="mt-6 grid gap-6 rounded-3xl border border-purple-200 bg-white/70 p-6 shadow-sm md:grid-cols-[220px_1fr]">
+                    <div className="mt-6 grid gap-6 rounded-3xl border border-purple-200 bg-white relative z-10 p-6 shadow-sm md:grid-cols-[220px_1fr]">
                         <div className="overflow-hidden rounded-2xl bg-purple-100">
                             {anime.images?.webp?.large_image_url && (
                                 <Image

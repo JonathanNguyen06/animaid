@@ -11,6 +11,8 @@ type Anime = {
     };
     type?: string | null;
     year?: number | null;
+    episodes?: number | null;
+    genre?: string | null;
 };
 
 export default function AnimeCard({ anime }: { anime: Anime }) {
@@ -40,15 +42,12 @@ export default function AnimeCard({ anime }: { anime: Anime }) {
                     </div>
 
                     <div className="mt-2 flex flex-wrap gap-1.5">
-                        <span className="inline-flex items-center rounded-full border border-purple-200 bg-purple-50 px-2 py-0.5 text-[11px] font-medium text-purple-800">
-                            {anime.score ? (
+                        {anime.score &&
+                            <span className="inline-flex items-center rounded-full border border-purple-200 bg-purple-50 px-2 py-0.5 text-[11px] font-medium text-purple-800">
                                 <>
                                     <span className="mr-1">⭐</span> {anime.score}
                                 </>
-                            ) : (
-                                "No score"
-                            )}
-                        </span>
+                            </span>}
                         {anime.type ? (
                             <span className="inline-flex items-center rounded-full border border-purple-200 bg-purple-50 px-2 py-0.5 text-[11px] font-medium text-purple-800">
                                 {anime.type}

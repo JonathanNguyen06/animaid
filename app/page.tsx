@@ -2,6 +2,7 @@ import React from "react";
 import AuthGate from "@/app/components/AuthGate";
 import SearchControls from "@/app/components/SearchControls";
 import {HeartIcon} from "@heroicons/react/24/outline";
+import TrendingAnime from "@/app/components/TrendingAnime";
 
 export default function Home() {
   return (
@@ -15,6 +16,8 @@ export default function Home() {
           Search with a prompt or your interests, and we’ll recommend titles that match your vibe.
         </p>
         <SearchControls />
+          <p className="mx-auto my-6 max-w-2xl text-base text-purple-900/70 sm:text-lg">Trending Anime</p>
+        <TrendingAnime />
       </section>
         </main>
       </AuthGate>

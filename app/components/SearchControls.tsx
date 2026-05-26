@@ -91,7 +91,7 @@ const SearchControls = () => {
     }
 
     return (
-        <div className="mx-auto w-full max-w-4xl space-y-6 z-10">
+        <div className="mx-auto w-full max-w-4xl space-y-6 z-10 relative">
             <div className="rounded-3xl border border-purple-200/70 bg-white p-5 shadow-sm">
                 <h2 className="mb-4 text-lg font-semibold text-purple-950">
                     Search by title
