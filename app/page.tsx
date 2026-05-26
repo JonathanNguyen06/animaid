@@ -14,8 +14,8 @@ export default function Home() {
         </h1>
         <SearchControls />
           <p className="mx-auto my-6 max-w-2xl text-base text-purple-900/70 sm:text-lg md:text-2xl font-bold">Trending Anime</p>
-        <TrendingAnime />
       </section>
+          <TrendingAnime />
         </main>
       </AuthGate>
   );

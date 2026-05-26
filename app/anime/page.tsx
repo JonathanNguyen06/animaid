@@ -128,7 +128,7 @@ const Page = () => {
 
                                 {anime.score && (
                                     <span className="rounded-full bg-purple-100 px-3 py-1 text-purple-900">
-                                        Score: {anime.score}
+                                        ⭐ {anime.score}
                                     </span>
                                 )}
 

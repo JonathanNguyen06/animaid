@@ -7,6 +7,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import TypeDropdown from "@/app/components/TypeDropdown";
 import GenreMultiselect from "@/app/components/GenreMultiselect";
 import RerollButton from "@/app/components/RerollButton";
+import ScoreSlider from "@/app/components/ScoreSlider";
+import PopularityDropdown from "@/app/components/PopularityDropdown";
 
 type Genre = {
     mal_id: number;
@@ -26,6 +28,9 @@ const SearchControls = () => {
     const [type, setType] = useState(searchParams.get("type") ?? "any");
     const [genreOptions, setGenreOptions] = useState<Genre[]>([]);
     const [selectedGenres, setSelectedGenres] = useState<Genre[]>([]);
+    const [showAdvanced, setShowAdvanced] = useState(false);
+    const [minScore, setMinScore] = useState(Number(searchParams.get("minScore") ?? 1));
+    const [popularity, setPopularity] = useState(searchParams.get("popularity") ?? "any")
 
     useEffect(() => {
         async function loadGenres() {
@@ -73,6 +78,8 @@ const SearchControls = () => {
             minEpisodes: String(min),
             maxEpisodes: String(max),
             type,
+            minScore: String(minScore),
+            popularity
         });
 
         if (genreIds) {
@@ -103,7 +110,7 @@ const SearchControls = () => {
                 />
             </div>
 
-            <div className="flex items-center gap-4 text-xs font-bold uppercase tracking-widest text-purple-900/40">
+            <div className="flex items-center gap-4 text-xs font-bold uppercase tracking-widest text-purple-900/50">
                 <div className="flex-1 border-t border-purple-200" />
                 <span>or</span>
                 <div className="flex-1 border-t border-purple-200" />
@@ -117,7 +124,8 @@ const SearchControls = () => {
                     Pick filters, then let AnimAid surprise you.
                 </p>
 
-                <div className="mt-8 grid grid-cols-1 items-end gap-8 md:grid-cols-[1fr_1fr_1.5fr]">
+                {/* Main filters */}
+                <div className="my-8 grid grid-cols-1 items-end gap-8 md:grid-cols-[1fr_1fr_1.5fr]">
                     <EpisodeSlider
                         value={episodeRange}
                         setValue={setEpisodeRange}
@@ -129,6 +137,45 @@ const SearchControls = () => {
                         setValue={setSelectedGenres}
                     />
                 </div>
+
+                {/* Advanced toggle */}
+                <div className="flex justify-center">
+                    <button
+                        type="button"
+                        className="w-fit text-sm font-medium text-purple-900/60 transition hover:cursor-pointer hover:text-purple-900"
+                        onClick={() => setShowAdvanced(!showAdvanced)}
+                    >
+                        {showAdvanced ? "Hide advanced filters" : "Show advanced filters"}
+                    </button>
+                </div>
+
+                {/* Advanced filters */}
+                {showAdvanced && (
+                    <div className="mt-6 rounded-2xl border border-purple-100 bg-purple-50/40 p-6">
+                        <p className="mb-6 text-center text-sm font-semibold text-purple-950">
+                            Advanced filters
+                        </p>
+
+                        <div className="grid grid-cols-1 items-end gap-10 md:grid-cols-2">
+                            <div className="w-full">
+                                <p className="mb-4 text-center text-sm font-medium text-purple-900/70">
+                                    Minimum Score
+                                </p>
+                                <ScoreSlider
+                                    value={minScore}
+                                    setValue={setMinScore}
+                                />
+                            </div>
+
+                            <div className="w-full">
+                                <PopularityDropdown
+                                    value={popularity}
+                                    setValue={setPopularity}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 <div className="mt-6 flex justify-center">
                     <RerollButton onClick={handleRandomRoll} />
