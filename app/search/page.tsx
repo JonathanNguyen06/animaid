@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import AnimeCard from "@/app/components/AnimeCard";
-import Searchbar from "../components/Searchbar";
+import AnimeCardSkeleton from "@/app/components/AnimeCardSkeleton";
 import SearchControls from "@/app/components/SearchControls";
 
 type Anime = {
@@ -27,7 +27,6 @@ export default function SearchPage() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    // prevents older requests overwriting newer ones
     const requestId = useRef(0);
 
     useEffect(() => {
@@ -52,9 +51,7 @@ export default function SearchPage() {
                     type,
                 });
 
-                if (genres) {
-                    params.set("genres", genres);
-                }
+                if (genres) params.set("genres", genres);
 
                 const res = await fetch(`/api/jikan/search?${params.toString()}`);
                 const json = await res.json();
@@ -78,13 +75,14 @@ export default function SearchPage() {
     return (
         <main className="max-w-6xl mx-auto px-4 py-8">
             <SearchControls />
+
             <h1 className="text-2xl mt-4 font-bold">
-                {q ? `Results for “${q}”` : "Search"}
+                {q ? `Results for "${q}"` : "Search"}
             </h1>
 
-            {loading && <p className="mt-3 opacity-70">Searching…</p>}
             {error && <p className="mt-3 text-red-500">{error}</p>}
 
+            {/* Result count — only show when done */}
             {!loading && !error && q && (
                 <p className="mt-2 text-sm opacity-70">{results.length} results</p>
             )}
@@ -94,9 +92,14 @@ export default function SearchPage() {
             )}
 
             <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                {results.map((anime) => (
-                    <AnimeCard key={anime.mal_id} anime={anime} />
-                ))}
+                {loading
+                    ? Array.from({ length: 12 }).map((_, i) => (
+                        <AnimeCardSkeleton key={i} />
+                    ))
+                    : results.map((anime) => (
+                        <AnimeCard key={anime.mal_id} anime={anime} />
+                    ))
+                }
             </div>
         </main>
     );

@@ -1,22 +1,28 @@
 @import "tailwindcss";
 
 :root {
-  /* Light pastel pink background (slightly darker) */
-  --background: #fce7f3;
-  --foreground: #171717;
+    /* Light pastel pink background (slightly darker) */
+    --background: #fce7f3;
+    --foreground: #171717;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-josefin);
-  --font-mono: var(--font-geist-mono);
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+    --font-sans: var(--font-josefin);
+    --font-mono: var(--font-geist-mono);
 }
 
 /* Force the site to stay on the light pastel pink background regardless of system dark mode. */
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-sans), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+@keyframes shimmer {
+    100% {
+        transform: translateX(100%);
+    }
 }

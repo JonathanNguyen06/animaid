@@ -1,7 +1,8 @@
 'use client'
 
-import React, {useEffect, useRef, useState} from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import AnimeCard from "@/app/components/AnimeCard";
+import AnimeCardSkeleton from "@/app/components/AnimeCardSkeleton";
 
 type Anime = {
     mal_id: number;
@@ -14,6 +15,7 @@ type Anime = {
 
 const TrendingAnime = () => {
     const [results, setResults] = useState<Anime[]>([])
+    const [loading, setLoading] = useState(true);
 
     const requestId = useRef(0);
 
@@ -21,13 +23,8 @@ const TrendingAnime = () => {
         const run = async () => {
             const myId = ++requestId.current;
 
-            const params = new URLSearchParams({
-                filter: "airing",
-                limit: "6"
-            });
-
             try {
-                const res = await fetch(`/api/jikan/trending?${params.toString()}`)
+                const res = await fetch(`/api/jikan/trending`)
                 const json = await res.json();
 
                 if (!res.ok) throw new Error(json?.error ?? "Could not load trending anime");
@@ -37,18 +34,25 @@ const TrendingAnime = () => {
             } catch (e: any) {
                 if (myId !== requestId.current) return;
                 setResults([]);
+            } finally {
+                if (myId === requestId.current) setLoading(false);
             }
         }
         run();
     }, [])
 
-
     return (
-        <div className="my-6 grid sm:grid-cols-3 md:grid-cols-6 gap-2">
-            {results.map((anime) => (
-                <AnimeCard key={anime.mal_id} anime={anime} />
-            ))}
+        <div className="mb-6 grid sm:grid-cols-3 md:grid-cols-6 gap-2">
+            {loading
+                ? Array.from({ length: 6 }).map((_, i) => (
+                    <AnimeCardSkeleton key={i} />
+                ))
+                : results.map((anime) => (
+                    <AnimeCard key={anime.mal_id} anime={anime} />
+                ))
+            }
         </div>
     )
 }
+
 export default TrendingAnime
