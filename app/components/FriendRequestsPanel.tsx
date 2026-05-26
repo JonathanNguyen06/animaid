@@ -6,6 +6,7 @@ import {
     collection,
     deleteDoc,
     doc,
+    getDoc,
     getDocs,
     serverTimestamp,
     setDoc,
@@ -14,7 +15,14 @@ import {
 type FriendRequest = {
     fromUid: string;
     fromUsername?: string;
+    fromPhotoURL?: string;
     status?: string;
+};
+
+type UserProfile = {
+    uid: string;
+    username?: string;
+    photoURL?: string;
 };
 
 export default function FriendRequestsPanel() {
@@ -48,6 +56,12 @@ export default function FriendRequestsPanel() {
         const user = auth.currentUser;
         if (!user) return;
 
+        const myProfileSnap = await getDoc(doc(db, "users", user.uid));
+
+        if (!myProfileSnap.exists()) return;
+
+        const myProfile = myProfileSnap.data() as UserProfile;
+
         const myFriendRef = doc(db, "users", user.uid, "friends", request.fromUid);
         const theirFriendRef = doc(db, "users", request.fromUid, "friends", user.uid);
         const requestRef = doc(db, "users", user.uid, "friendRequests", request.fromUid);
@@ -55,12 +69,14 @@ export default function FriendRequestsPanel() {
         await setDoc(myFriendRef, {
             uid: request.fromUid,
             username: request.fromUsername ?? "",
+            photoURL: request.fromPhotoURL ?? "",
             created_at: serverTimestamp(),
         });
 
         await setDoc(theirFriendRef, {
             uid: user.uid,
-            username: user.displayName ?? "",
+            username: myProfile.username ?? "",
+            photoURL: myProfile.photoURL ?? "",
             created_at: serverTimestamp(),
         });
 

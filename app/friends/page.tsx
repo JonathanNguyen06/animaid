@@ -14,6 +14,7 @@ import {
 import AddFriendButton from "@/app/components/AddFriendButton";
 import FriendRequestsPanel from "@/app/components/FriendRequestsPanel";
 import Link from "next/link";
+import Image from "next/image"
 
 type UserProfile = {
     uid: string;
@@ -187,13 +188,32 @@ export default function FriendsPage() {
                 <div className="mt-4 flex flex-col gap-3">
                     {friends.map((friend) => (
                         <Link
-                            href={`/profile?uid=${friend.uid}`}
+                            href={`/profile/${friend.uid}`}
                             key={friend.uid}
                             className="rounded-xl border border-purple-100 bg-white p-3 transition hover:bg-purple-50"
                         >
-                            <p className="font-medium text-purple-950">
-                                @{friend.username}
-                            </p>
+                            <div className="flex items-center gap-3">
+                                <div className="relative h-12 w-12 overflow-hidden rounded-xl bg-purple-100">
+                                    {friend.photoURL ? (
+                                        <Image
+                                            src={friend.photoURL}
+                                            alt={friend.username ?? "Profile picture"}
+                                            fill
+                                            className="object-cover"
+                                        />
+                                    ) : (
+                                        <div className="flex h-full w-full items-center justify-center font-bold text-purple-300">
+                                            {friend.username?.[0]?.toUpperCase() ?? "?"}
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div>
+                                    <p className="font-medium text-purple-950">
+                                        @{friend.username || "unknown user"}
+                                    </p>
+                                </div>
+                            </div>
                         </Link>
                     ))}
                 </div>

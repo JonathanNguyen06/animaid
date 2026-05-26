@@ -96,13 +96,9 @@ const Navbar = () => {
                                     {open && (
                                         <div
                                             className="absolute right-0 mt-2 w-44 overflow-hidden rounded-md border border-purple-200/70 bg-white shadow-lg">
-                                            <a
-                                                href="#profile"
-                                                className="block px-4 py-2 text-sm text-purple-900/80 hover:bg-purple-50 hover:text-purple-900 cursor-pointer"
-                                                onClick={() => setOpen(false)}
-                                            >
+                                            <Link href="/profile/me" className={"block px-4 py-2 text-sm text-purple-900/80 hover:bg-purple-50 hover:text-purple-900 cursor-pointer"}>
                                                 Profile
-                                            </a>
+                                            </Link>
                                             <button
                                                 type="button"
                                                 onClick={onLogout}

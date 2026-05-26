@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { db } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
 import { collection, doc, getDoc, getDocs } from "firebase/firestore";
 
 type UserProfile = {
@@ -24,13 +24,15 @@ type WishlistAnime = {
 };
 
 export default function ProfilePage() {
-    const searchParams = useSearchParams();
-    const uid = searchParams.get("uid") ?? "";
+    const params = useParams();
+    const uid = params.uid as string;
 
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [wishlist, setWishlist] = useState<WishlistAnime[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [canViewWishlist, setCanViewWishlist] = useState(false);
+
 
     useEffect(() => {
         async function loadProfile() {
@@ -41,15 +43,39 @@ export default function ProfilePage() {
             }
 
             try {
+                setLoading(true);
+                setError(null);
+
                 const profileSnap = await getDoc(doc(db, "users", uid));
 
                 if (!profileSnap.exists()) {
                     setError("User not found");
-                    setLoading(false);
                     return;
                 }
 
                 setProfile(profileSnap.data() as UserProfile);
+
+                const currentUser = auth.currentUser;
+
+                if (!currentUser) {
+                    setCanViewWishlist(false);
+                    return;
+                }
+
+                const isOwnProfile = currentUser.uid === uid;
+
+                const friendSnap = await getDoc(
+                    doc(db, "users", currentUser.uid, "friends", uid)
+                );
+
+                const isFriend = friendSnap.exists();
+
+                if (!isOwnProfile && !isFriend) {
+                    setCanViewWishlist(false);
+                    return;
+                }
+
+                setCanViewWishlist(true);
 
                 const wishlistSnap = await getDocs(
                     collection(db, "users", uid, "wishlist")
@@ -87,15 +113,40 @@ export default function ProfilePage() {
             {!loading && !error && profile && (
                 <>
                     <section className="rounded-3xl border border-purple-200 bg-white/70 p-6 shadow-sm">
-                        <h1 className="text-3xl font-bold text-purple-950">
-                            @{profile.username}
-                        </h1>
-                        <p className="mt-2 text-purple-900/70">
-                            Wishlist
-                        </p>
+                        <div className="flex items-center gap-4">
+                            <div className="relative h-20 w-20 overflow-hidden rounded-2xl bg-purple-100">
+                                {profile.photoURL ? (
+                                    <Image
+                                        src={profile.photoURL}
+                                        alt={profile.username ?? "Profile picture"}
+                                        fill
+                                        className="object-cover"
+                                    />
+                                ) : (
+                                    <div className="flex h-full w-full items-center justify-center text-2xl font-bold text-purple-300">
+                                        {profile.username?.[0]?.toUpperCase() ?? "?"}
+                                    </div>
+                                )}
+                            </div>
+
+                            <div>
+                                <h1 className="text-3xl font-bold text-purple-950">
+                                    @{profile.username}
+                                </h1>
+                                <p className="mt-1 text-purple-900/70">
+                                    Wishlist
+                                </p>
+                            </div>
+                        </div>
                     </section>
 
-                    {wishlist.length === 0 ? (
+                    {!canViewWishlist && (
+                        <p className="mt-6 text-purple-900/70">
+                            This wishlist is private.
+                        </p>
+                    )}
+
+                    {wishlist.length === 0 && canViewWishlist ? (
                         <p className="mt-6 text-purple-900/70">
                             This user has no anime in their wishlist.
                         </p>
