@@ -168,7 +168,7 @@ export default function FriendsPage() {
                 ))}
             </div>
 
-            <section className="mt-6 rounded-2xl border border-purple-200 bg-white/70 p-4 shadow-sm">
+            <section className="mt-6 rounded-2xl border border-purple-200 bg-white p-4 shadow-sm z-10 relative">
                 <h2 className="text-xl font-semibold text-purple-950">
                     Your Friends
                 </h2>
