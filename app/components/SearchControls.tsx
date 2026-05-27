@@ -5,7 +5,7 @@ import Searchbar from "@/app/components/Searchbar";
 import EpisodeSlider from "@/app/components/EpisodeSlider";
 import { useRouter, useSearchParams } from "next/navigation";
 import TypeDropdown from "@/app/components/TypeDropdown";
-import GenreMultiselect from "@/app/components/GenreMultiselect";
+import GenreToggleGrid from "@/app/components/GenreToggleGrid";
 import RerollButton from "@/app/components/RerollButton";
 import ScoreSlider from "@/app/components/ScoreSlider";
 import PopularityDropdown from "@/app/components/PopularityDropdown";
@@ -30,7 +30,9 @@ const SearchControls = () => {
     const [selectedGenres, setSelectedGenres] = useState<Genre[]>([]);
     const [showAdvanced, setShowAdvanced] = useState(false);
     const [minScore, setMinScore] = useState(Number(searchParams.get("minScore") ?? 1));
-    const [popularity, setPopularity] = useState(searchParams.get("popularity") ?? "any")
+    const [popularity, setPopularity] = useState(searchParams.get("popularity") ?? "any");
+    const [rolling, setRolling] = useState(false);
+    const [rollError, setRollError] = useState<string | null>(null);
 
     useEffect(() => {
         async function loadGenres() {
@@ -38,7 +40,6 @@ const SearchControls = () => {
             const json = await res.json();
             setGenreOptions(json.data ?? []);
         }
-
         loadGenres();
     }, []);
 
@@ -59,18 +60,15 @@ const SearchControls = () => {
 
     function handleSearchSubmit(e: React.FormEvent) {
         e.preventDefault();
-
         const q = query.trim();
         if (!q) return;
-
-        const params = new URLSearchParams({
-            q,
-        });
-
-        router.push(`/search?${params.toString()}`);
+        router.push(`/search?${new URLSearchParams({ q }).toString()}`);
     }
 
     async function handleRandomRoll() {
+        setRollError(null);
+        setRolling(true);
+
         const [min, max] = episodeRange;
         const genreIds = selectedGenres.map((genre) => genre.mal_id).join(",");
 
@@ -79,26 +77,36 @@ const SearchControls = () => {
             maxEpisodes: String(max),
             type,
             minScore: String(minScore),
-            popularity
+            popularity,
         });
 
-        if (genreIds) {
-            params.set("genres", genreIds);
+        if (genreIds) params.set("genres", genreIds);
+
+        try {
+            const res = await fetch(`/api/jikan/random?${params.toString()}`);
+            const json = await res.json();
+
+            if (res.status === 404) {
+                setRollError("No anime matched your filters. Try loosening them a bit!");
+                return;
+            }
+
+            if (!res.ok) {
+                setRollError("Something went wrong. Please try again.");
+                return;
+            }
+
+            router.push(`/anime?id=${json.data.mal_id}`);
+        } catch {
+            setRollError("Couldn't reach the server. Check your connection and try again.");
+        } finally {
+            setRolling(false);
         }
-
-        const res = await fetch(`/api/jikan/random?${params.toString()}`);
-        const json = await res.json();
-
-        if (!res.ok) {
-            console.error(json?.error ?? "Random roll failed");
-            return;
-        }
-
-        router.push(`/anime?id=${json.data.mal_id}`);
     }
 
     return (
         <div className="mx-auto w-full max-w-4xl space-y-6 z-10 relative">
+            {/* Search by title */}
             <div className="rounded-3xl border border-purple-200/70 bg-white p-5 shadow-sm">
                 <h2 className="mb-4 text-lg font-semibold text-purple-950">
                     Search by title
@@ -116,6 +124,7 @@ const SearchControls = () => {
                 <div className="flex-1 border-t border-purple-200" />
             </div>
 
+            {/* Random roll */}
             <div className="rounded-3xl border border-purple-200/70 bg-white p-5 shadow-sm">
                 <h2 className="text-lg font-semibold text-purple-950">
                     Roll a random anime
@@ -124,22 +133,21 @@ const SearchControls = () => {
                     Pick filters, then let AnimAid surprise you.
                 </p>
 
-                {/* Main filters */}
-                <div className="my-8 grid grid-cols-1 items-end gap-8 md:grid-cols-[1fr_1fr_1.5fr]">
-                    <EpisodeSlider
-                        value={episodeRange}
-                        setValue={setEpisodeRange}
-                    />
+                {/* Episodes + Type row */}
+                <div className="my-6 grid grid-cols-1 items-end gap-6 sm:grid-cols-2">
+                    <EpisodeSlider value={episodeRange} setValue={setEpisodeRange} />
                     <TypeDropdown value={type} setValue={setType} />
-                    <GenreMultiselect
-                        genreOptions={genreOptions}
-                        value={selectedGenres}
-                        setValue={setSelectedGenres}
-                    />
                 </div>
 
+                {/* Genre toggle grid — full width */}
+                <GenreToggleGrid
+                    genreOptions={genreOptions}
+                    value={selectedGenres}
+                    setValue={setSelectedGenres}
+                />
+
                 {/* Advanced toggle */}
-                <div className="flex justify-center">
+                <div className="mt-6 flex justify-center">
                     <button
                         type="button"
                         className="w-fit text-sm font-medium text-purple-900/60 transition hover:cursor-pointer hover:text-purple-900"
@@ -155,25 +163,33 @@ const SearchControls = () => {
                         <p className="mb-6 text-center text-sm font-semibold text-purple-950">
                             Advanced filters
                         </p>
-
                         <div className="grid grid-cols-1 items-end gap-10 md:grid-cols-2">
                             <div className="w-full">
                                 <p className="mb-4 text-center text-sm font-medium text-purple-900/70">
                                     Minimum Score
                                 </p>
-                                <ScoreSlider
-                                    value={minScore}
-                                    setValue={setMinScore}
-                                />
+                                <ScoreSlider value={minScore} setValue={setMinScore} />
                             </div>
-
                             <div className="w-full">
-                                <PopularityDropdown
-                                    value={popularity}
-                                    setValue={setPopularity}
-                                />
+                                <PopularityDropdown value={popularity} setValue={setPopularity} />
                             </div>
                         </div>
+                    </div>
+                )}
+
+                {/* Error message */}
+                {rollError && (
+                    <div className="mt-5 flex items-center gap-2.5 rounded-2xl border border-purple-200 bg-purple-50 px-4 py-3 text-sm text-purple-900">
+                        <span className="text-base">🎲</span>
+                        <span>{rollError}</span>
+                        <button
+                            type="button"
+                            onClick={() => setRollError(null)}
+                            className="ml-auto text-purple-400 hover:text-purple-700 cursor-pointer transition-colors"
+                            aria-label="Dismiss"
+                        >
+                            ✕
+                        </button>
                     </div>
                 )}
 
@@ -183,6 +199,6 @@ const SearchControls = () => {
             </div>
         </div>
     );
-}
+};
 
 export default SearchControls;
