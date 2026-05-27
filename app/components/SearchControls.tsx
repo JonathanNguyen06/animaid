@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react'
 import Searchbar from "@/app/components/Searchbar";
 import EpisodeSlider from "@/app/components/EpisodeSlider";
 import { useRouter, useSearchParams } from "next/navigation";
-import TypeDropdown from "@/app/components/TypeDropdown";
+import TypeTogglePills from "@/app/components/TypeTogglePills";
 import GenreToggleGrid from "@/app/components/GenreToggleGrid";
 import RerollButton from "@/app/components/RerollButton";
 import ScoreSlider from "@/app/components/ScoreSlider";
@@ -107,7 +107,7 @@ const SearchControls = () => {
     return (
         <div className="mx-auto w-full max-w-4xl space-y-6 z-10 relative">
             {/* Search by title */}
-            <div className="rounded-3xl border border-purple-200/70 bg-white p-5 shadow-sm">
+            <div className="rounded-3xl border border-purple-200/70 bg-white p-5 shadow-sm text-center">
                 <h2 className="mb-4 text-lg font-semibold text-purple-950">
                     Search by title
                 </h2>
@@ -125,7 +125,7 @@ const SearchControls = () => {
             </div>
 
             {/* Random roll */}
-            <div className="rounded-3xl border border-purple-200/70 bg-white p-5 shadow-sm">
+            <div className="rounded-3xl border border-purple-200/70 bg-white p-5 shadow-sm text-center">
                 <h2 className="text-lg font-semibold text-purple-950">
                     Roll a random anime
                 </h2>
@@ -133,10 +133,10 @@ const SearchControls = () => {
                     Pick filters, then let AnimAid surprise you.
                 </p>
 
-                {/* Episodes + Type row */}
-                <div className="my-6 grid grid-cols-1 items-end gap-6 sm:grid-cols-2">
+                {/* Episodes + Type rows */}
+                <div className="my-6 space-y-6 flex flex-col items-center">
                     <EpisodeSlider value={episodeRange} setValue={setEpisodeRange} />
-                    <TypeDropdown value={type} setValue={setType} />
+                    <TypeTogglePills value={type} setValue={setType} />
                 </div>
 
                 {/* Genre toggle grid — full width */}
@@ -194,7 +194,7 @@ const SearchControls = () => {
                 )}
 
                 <div className="mt-6 flex justify-center">
-                    <RerollButton onClick={handleRandomRoll} />
+                    <RerollButton onClick={handleRandomRoll} rolling={rolling} />
                 </div>
             </div>
         </div>

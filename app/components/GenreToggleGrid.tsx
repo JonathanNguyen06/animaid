@@ -17,12 +17,6 @@ type Props = {
 const GENRE_ICONS: Record<string, string> = {
     Action: '⚔️',
     Adventure: '🗺️',
-    'Avant Garde': '✨',
-    'Award Winning': '🏆',
-    'Boys Love': '👬',
-    'Girls Love': '👭',
-    Gourmet: '🍔',
-    Suspense: '😱',
     Comedy: '😂',
     Drama: '🎭',
     Fantasy: '🧙',
@@ -31,9 +25,38 @@ const GENRE_ICONS: Record<string, string> = {
     Romance: '💕',
     'Sci-Fi': '🚀',
     'Slice of Life': '🌸',
-    Sports: '🏀',
-    Supernatural: '🦸',
+    Sports: '🏆',
+    Supernatural: '✨',
+    Thriller: '😱',
     Music: '🎵',
+    Mecha: '🤖',
+    Psychological: '🧠',
+    'Martial Arts': '🥋',
+    Military: '🎖️',
+    Historical: '📜',
+    School: '🏫',
+    Isekai: '🌀',
+    Harem: '💫',
+    Ecchi: '🔞',
+    'Shounen Ai': '💙',
+    'Shoujo Ai': '💜',
+    Yaoi: '💙',
+    Yuri: '💜',
+    Kids: '🧸',
+    Parody: '🎪',
+    'Super Power': '💥',
+    Vampire: '🧛',
+    Demons: '👿',
+    Magic: '🪄',
+    'Space': '🌌',
+    Cars: '🚗',
+    'Game': '🎮',
+    Samurai: '⛩️',
+    Police: '🚔',
+    Josei: '👩',
+    Shoujo: '🌷',
+    Seinen: '📖',
+    Shounen: '🔥',
 };
 
 const COLLAPSED_COUNT = 18;
@@ -59,8 +82,8 @@ export default function GenreToggleGrid({ genreOptions, value, setValue }: Props
     const hiddenCount = genreOptions.length - COLLAPSED_COUNT;
 
     return (
-        <div className="w-full">
-            <div className="mb-2 flex items-center justify-between">
+        <div className="w-full flex flex-col items-center">
+            <div className="mb-2 flex items-center justify-between w-full max-w-fit">
                 <span className="text-sm font-medium text-purple-900/70">
                     Genre
                     {value.length > 0 && (
@@ -80,7 +103,7 @@ export default function GenreToggleGrid({ genreOptions, value, setValue }: Props
                 )}
             </div>
 
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap justify-center gap-2">
                 {visibleGenres.map((genre) => {
                     const isSelected = selectedIds.has(genre.mal_id);
                     const icon = GENRE_ICONS[genre.name];
@@ -95,9 +118,9 @@ export default function GenreToggleGrid({ genreOptions, value, setValue }: Props
                                 transition-all duration-150 cursor-pointer select-none
                                 active:scale-95
                                 ${isSelected
-                                    ? 'border-purple-900 bg-purple-900 text-white shadow-sm shadow-purple-300'
-                                    : 'border-purple-200 bg-white text-purple-800 hover:border-purple-400 hover:bg-purple-50'
-                                }
+                                ? 'border-purple-900 bg-purple-900 text-white shadow-sm shadow-purple-300'
+                                : 'border-purple-200 bg-white text-purple-800 hover:border-purple-400 hover:bg-purple-50'
+                            }
                             `}
                         >
                             {icon && <span className="text-[11px] leading-none">{icon}</span>}

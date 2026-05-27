@@ -18,8 +18,8 @@ const EpisodeSlider = ({value, setValue}: Props) => {
     };
 
     return (
-        <div>
-            Episodes
+        <div className="w-2/3 text-center">
+            <p className="mb-2 text-sm font-medium text-purple-900/70">Episodes</p>
             <Slider
                 value={value}
                 onChange={handleChange}
@@ -38,6 +38,9 @@ const EpisodeSlider = ({value, setValue}: Props) => {
                     },
                     "& .MuiSlider-valueLabel": {
                         backgroundColor: "#581c87",
+                        fontFamily: "var(--font-josefin), ui-sans-serif, system-ui",
+                        fontSize: "0.75rem",
+                        fontWeight: 600,
                     },
                 }}
             />
