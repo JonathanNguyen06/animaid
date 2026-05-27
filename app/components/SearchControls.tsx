@@ -95,8 +95,10 @@ const SearchControls = () => {
                 setRollError("Something went wrong. Please try again.");
                 return;
             }
+            const animeParams = new URLSearchParams(params);
+            animeParams.set("id", String(json.data.mal_id));
 
-            router.push(`/anime?id=${json.data.mal_id}`);
+            router.push(`/anime?${animeParams.toString()}`);
         } catch {
             setRollError("Couldn't reach the server. Check your connection and try again.");
         } finally {

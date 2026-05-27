@@ -60,7 +60,7 @@ export default function GenreToggleGrid({ genreOptions, value, setValue }: Props
 
     return (
         <div className="w-full flex flex-col items-center">
-            <div className="mb-2 flex items-center justify-between w-full max-w-fit">
+            <div className="mb-2 flex items-center justify-between w-full max-w-fit space-x-2">
                 <span className="text-sm font-medium text-purple-900/70">
                     Genre
                     {value.length > 0 && (

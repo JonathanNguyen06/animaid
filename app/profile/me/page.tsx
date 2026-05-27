@@ -94,10 +94,6 @@ export default function MyProfilePage() {
                             <p className="mt-1 text-purple-900/60">
                                 {profile.email}
                             </p>
-
-                            <p className="mt-4 text-sm text-purple-900/60">
-                                Profile avatar selection coming soon.
-                            </p>
                         </div>
                     </div>
                 </section>

@@ -56,7 +56,7 @@ export default function LoginPage() {
       <h1 className="mb-4 text-2xl font-semibold text-purple-900">Welcome back</h1>
       <p className="mb-6 text-purple-900/70">Sign in to continue</p>
 
-      <form onSubmit={onSubmit} className="w-full space-y-4 rounded-xl border border-purple-200/60 bg-white p-6 shadow-sm">
+      <form onSubmit={onSubmit} className="w-full space-y-4 rounded-xl border border-purple-200/60 bg-white relative z-10 p-6 shadow-sm">
         {error && (
           <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>
         )}
