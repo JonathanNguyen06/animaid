@@ -9,7 +9,7 @@ import {
     query,
     where,
     orderBy,
-    limit,
+    limit, getDoc, doc,
 } from "firebase/firestore";
 import AddFriendButton from "@/app/components/AddFriendButton";
 import FriendRequestsPanel from "@/app/components/FriendRequestsPanel";
@@ -33,6 +33,7 @@ export default function FriendsPage() {
     const [friends, setFriends] = useState<UserProfile[]>([]);
     const [friendsLoading, setFriendsLoading] = useState(true);
 
+    // Change the friends loading effect to fetch live photoURLs:
     useEffect(() => {
         const unsubscribe = observeAuth(async (user) => {
             if (!user) {
@@ -44,10 +45,20 @@ export default function FriendsPage() {
             const friendsRef = collection(db, "users", user.uid, "friends");
             const snapshot = await getDocs(friendsRef);
 
-            const data = snapshot.docs.map((doc) => ({
-                uid: doc.id,
-                ...doc.data(),
-            })) as UserProfile[];
+            // Fetch each friend's current profile to get up-to-date photoURL
+            const data = await Promise.all(
+                snapshot.docs.map(async (friendDoc) => {
+                    try {
+                        const profileSnap = await getDoc(doc(db, "users", friendDoc.id));
+                        console.log("friend profile data:", profileSnap.data());
+                        if (profileSnap.exists()) {
+                            return { uid: friendDoc.id, ...profileSnap.data() } as UserProfile;
+                        }
+                    } catch {}
+                    // fallback to subcollection data
+                    return { uid: friendDoc.id, ...friendDoc.data() } as UserProfile;
+                })
+            );
 
             setFriends(data);
             setFriendsLoading(false);

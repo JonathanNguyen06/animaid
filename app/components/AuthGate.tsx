@@ -7,10 +7,6 @@ type Props = {
   children: React.ReactNode;
 };
 
-/**
- * Delays rendering of the app until Firebase Auth state is known.
- * Shows a full-screen loading page meanwhile.
- */
 export default function AuthGate({ children }: Props) {
   const [initialized, setInitialized] = useState(false);
 
