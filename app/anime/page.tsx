@@ -72,9 +72,45 @@ const Page = () => {
 
             <section className="mt-10">
                 {loading && (
-                    <p className="mt-4 text-purple-900/70">
-                        Loading anime...
-                    </p>
+                    <div className="mt-6 grid gap-6 rounded-3xl border border-purple-200 bg-white relative z-10 p-6 shadow-sm md:grid-cols-[220px_1fr]">
+                        {/* Poster */}
+                        <div className="animate-pulse rounded-2xl bg-purple-100" style={{ height: 320 }} />
+
+                        <div className="flex flex-col gap-0">
+                            {/* Title row + wishlist button */}
+                            <div className="flex items-center justify-between">
+                                <div className="animate-pulse h-8 w-[55%] rounded-lg bg-purple-100" />
+                                <div className="animate-pulse h-10 w-10 rounded-xl bg-purple-100 shrink-0" />
+                            </div>
+
+                            {/* English subtitle */}
+                            <div className="animate-pulse mt-2.5 h-4 w-[30%] rounded-md bg-purple-100" />
+
+                            {/* Stat pills row 1 */}
+                            <div className="mt-4 flex flex-wrap gap-2">
+                                {[60, 80, 50, 68, 74, 90].map((w, i) => (
+                                    <div key={i} className="animate-pulse h-7 rounded-full bg-purple-100" style={{ width: w }} />
+                                ))}
+                            </div>
+
+                            {/* Genre pills row 2 */}
+                            <div className="mt-3 flex flex-wrap gap-2">
+                                {[70, 58, 82].map((w, i) => (
+                                    <div key={i} className="animate-pulse h-7 rounded-full bg-purple-100" style={{ width: w }} />
+                                ))}
+                            </div>
+
+                            {/* Synopsis */}
+                            <div className="mt-6">
+                                <div className="animate-pulse h-5 w-24 rounded-md bg-purple-100" />
+                                <div className="mt-3 flex flex-col gap-2">
+                                    {[100, 95, 98, 88, 92, 60].map((w, i) => (
+                                        <div key={i} className="animate-pulse h-3.5 rounded bg-purple-100" style={{ width: `${w}%` }} />
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 )}
                 {error && (
                     <p className="mt-4 text-red-500">
