@@ -38,7 +38,7 @@ export async function GET(req: Request) {
 
         const simplified = (json.data ?? []).map((a: any) => ({
             mal_id: a.mal_id,
-            title: a.title,
+            title: a.title_english || a.title,
             score: a.score,
             images: a.images,
             type: a.type,
