@@ -85,3 +85,45 @@ export async function ensureUserProfile(user: User, username?: string) {
 export const db = getFirestore(app);
 
 export default app;
+
+export async function getDailyProgress(
+    userId: string,
+    date: string
+) {
+    const progressRef = doc(
+        db,
+        "dailyProgress",
+        `${userId}-${date}`
+    );
+
+    const snapshot = await getDoc(progressRef);
+
+    return snapshot.exists() ? snapshot.data() : null;
+}
+
+export async function saveDailyProgress(
+    userId: string,
+    date: string,
+    animeId: number,
+    attempts: any[],
+    won: boolean
+) {
+    const progressRef = doc(
+        db,
+        "dailyProgress",
+        `${userId}-${date}`
+    );
+
+    await setDoc(
+        progressRef,
+        {
+            userId,
+            date,
+            animeId,
+            attempts,
+            won,
+            updatedAt: serverTimestamp(),
+        },
+        { merge: true }
+    );
+}

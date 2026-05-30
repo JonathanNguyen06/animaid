@@ -1,8 +1,8 @@
 import React from "react";
 import AuthGate from "@/app/components/AuthGate";
 import SearchControls from "@/app/components/SearchControls";
-import {HeartIcon} from "@heroicons/react/24/outline";
 import TrendingAnime from "@/app/components/TrendingAnime";
+import DailyQuestReminder from "@/app/components/DailyQuestReminder";
 
 export default function Home() {
   return (
@@ -16,6 +16,7 @@ export default function Home() {
           <p className="mx-auto my-6 max-w-2xl text-base text-purple-900/70 sm:text-lg md:text-2xl font-bold">Trending Anime</p>
       </section>
           <TrendingAnime />
+          <DailyQuestReminder />
         </main>
       </AuthGate>
   );
