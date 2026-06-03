@@ -31,6 +31,9 @@ const ScoreSlider = ({ value, setValue }: Props) => {
                     },
                     "& .MuiSlider-valueLabel": {
                         backgroundColor: "#581c87",
+                        fontFamily: "var(--font-josefin), ui-sans-serif, system-ui",
+                        fontSize: "0.75rem",
+                        fontWeight: 600,
                     },
                 }}
             />

@@ -155,6 +155,13 @@ export default function DailyPage() {
 
     const lost = attempts.length >= 6 && !won;
 
+    const answerTitle =
+        dailyAnime?.title_english || dailyAnime?.title;
+
+    const answerImage =
+        dailyAnime?.images?.jpg?.image_url ||
+        dailyAnime?.images?.webp?.image_url;
+
     type CellStatus = "correct" | "close" | "wrong";
 
     function cellClass(status: CellStatus) {
@@ -355,15 +362,53 @@ export default function DailyPage() {
                         </table>
                     </div>
 
-                    {won && (
-                        <div className="mt-6 rounded-2xl border border-green-200 bg-green-50 p-4 text-green-800">
-                            You got it! You earned 1 character pack.
-                        </div>
-                    )}
+                    {(won || lost) && dailyAnime && (
+                        <div
+                            className={`mt-6 rounded-3xl border p-5 text-left ${
+                                won
+                                    ? "border-green-200 bg-green-50"
+                                    : "border-red-200 bg-red-50"
+                            }`}
+                        >
+                            <p
+                                className={`text-sm font-semibold ${
+                                    won ? "text-green-800" : "text-red-700"
+                                }`}
+                            >
+                                {won
+                                    ? "You got it! You earned 1 character pack."
+                                    : "Out of guesses! The correct answer was:"}
+                            </p>
 
-                    {lost && (
-                        <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-red-700">
-                            Out of guesses! Today’s anime was {dailyAnime.title}.
+                            <Link
+                                href={`/anime?id=${dailyAnime.mal_id}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="mt-4 flex gap-4 rounded-2xl border border-purple-200 bg-white p-4 shadow-sm transition hover:-translate-y-1 hover:shadow-md"
+                            >
+                                {answerImage && (
+                                    <img
+                                        src={answerImage}
+                                        alt={answerTitle}
+                                        className="h-28 w-20 rounded-xl object-cover"
+                                    />
+                                )}
+
+                                <div className="flex flex-col justify-center">
+                                    <h3 className="text-lg font-bold text-purple-950">
+                                        {answerTitle}
+                                    </h3>
+
+                                    <p className="mt-1 text-sm text-purple-900/60">
+                                        {dailyAnime.year ?? "Unknown year"} •{" "}
+                                        {dailyAnime.studio ?? "Unknown studio"}
+                                    </p>
+
+                                    <p className="mt-2 text-sm font-semibold text-purple-900">
+                                        View anime →
+                                    </p>
+                                </div>
+                            </Link>
                         </div>
                     )}
 
