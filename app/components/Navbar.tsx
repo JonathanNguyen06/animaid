@@ -75,6 +75,12 @@ const Navbar = () => {
                 <nav className="flex items-center gap-7 text-base font-medium">
                     {username && (
                         <>
+                            <Link href="/packs" className="text-purple-900/80 hover:text-purple-900">
+                                Packs
+                            </Link>
+                            <Link href="/collection" className="text-purple-900/80 hover:text-purple-900">
+                                Collection
+                            </Link>
                             <Link href="/friends" className="text-purple-900/80 hover:text-purple-900">
                                 Friends
                             </Link>

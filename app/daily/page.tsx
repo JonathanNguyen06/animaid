@@ -2,9 +2,15 @@
 
 import {useEffect, useState} from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import Loading from "@/app/components/Loading";
 import AnimeGuessAutocomplete from "@/app/components/AnimeGuessAutocomplete";
-import {getDailyProgress, observeAuth, saveDailyProgress} from "@/lib/firebase";
+import {
+    claimDailyPack,
+    getDailyProgress,
+    observeAuth,
+    saveDailyProgress
+} from "@/lib/firebase";
 import type {User} from "firebase/auth";
 
 type GuessAnime = {
@@ -34,18 +40,25 @@ export default function DailyPage() {
     const [dailyAnime, setDailyAnime] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [showRules, setShowRules] = useState(false);
+    const [authLoading, setAuthLoading] = useState(true);
+    const [rewardClaimed, setRewardClaimed] = useState(false);
     const [guessError, setGuessError] = useState<string | null>(null);
     const today = new Date().toISOString().slice(0, 10);
+
+    const router = useRouter();
 
     useEffect(() => {
         const unsubscribe = observeAuth((firebaseUser) => {
             setUser(firebaseUser);
+            setAuthLoading(false);
         });
 
         return () => unsubscribe();
     }, []);
 
     useEffect(() => {
+        if (authLoading) return;
+
         async function loadDailyAnime() {
             if (!user) {
                 setLoading(false);
@@ -53,22 +66,19 @@ export default function DailyPage() {
             }
 
             try {
+                setLoading(true);
+
                 const res = await fetch("/api/jikan/daily");
                 const json = await res.json();
 
                 setDailyAnime(json.data);
 
-                const progress = await getDailyProgress(
-                    user.uid,
-                    today
-                );
+                const progress = await getDailyProgress(user.uid, today);
 
-                if (
-                    progress &&
-                    progress.animeId === json.data.mal_id
-                ) {
+                if (progress && progress.animeId === json.data.mal_id) {
                     setAttempts(progress.attempts ?? []);
                     setWon(progress.won ?? false);
+                    setRewardClaimed(progress.rewardClaimed ?? false);
                 }
             } catch (error) {
                 console.error("Daily challenge load error:", error);
@@ -79,7 +89,23 @@ export default function DailyPage() {
         }
 
         loadDailyAnime();
-    }, [user, today]);
+    }, [authLoading, user, today]);
+
+    async function handleClaimPack() {
+        if (!user) {
+            setGuessError("You must be signed in to claim a pack.");
+            return;
+        }
+
+        try {
+            const packId = await claimDailyPack(user.uid, today);
+
+            setRewardClaimed(true);
+            router.push(`/packs/${packId}`);
+        } catch (error: any) {
+            setGuessError(error?.message ?? "Failed to claim pack.");
+        }
+    }
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
@@ -224,11 +250,12 @@ export default function DailyPage() {
         return guess < answer ? "⬆️" : "⬇️";
     }
 
+    if (loading || authLoading) {
+        return <Loading />;
+    }
+
     return (
         <main className="mx-auto flex min-h-[calc(100vh-130px)] max-w-4xl flex-col items-center justify-center px-4 py-10">
-            {loading && dailyAnime &&
-                <Loading />
-            }
             <section className="w-full rounded-3xl border border-purple-200 bg-white relative z-10 p-6 text-center shadow-sm">
                 <p className="text-xs font-bold uppercase tracking-widest text-purple-900/50">
                     Daily Quest
@@ -410,6 +437,22 @@ export default function DailyPage() {
                                 </div>
                             </Link>
                         </div>
+                    )}
+
+                    {won && !rewardClaimed && (
+                        <button
+                            type="button"
+                            onClick={handleClaimPack}
+                            className="mt-4 w-full rounded-2xl bg-purple-900 px-5 py-3 font-semibold text-white shadow-sm transition hover:bg-purple-800 hover:cursor-pointer"
+                        >
+                            Claim Character Pack
+                        </button>
+                    )}
+
+                    {won && rewardClaimed && (
+                        <p className="mt-4 rounded-2xl border border-purple-200 bg-purple-50 px-4 py-3 text-sm font-semibold text-purple-900">
+                            Character pack claimed!
+                        </p>
                     )}
 
                     <div className="mt-8">
