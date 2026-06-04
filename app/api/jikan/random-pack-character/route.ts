@@ -33,12 +33,31 @@ export async function GET() {
             const characters = (charactersJson.data ?? []).filter(
                 (entry: any) =>
                     entry.character?.mal_id &&
-                    entry.character?.name
+                    entry.character?.name &&
+                    (
+                        entry.character?.images?.jpg?.image_url ||
+                        entry.character?.images?.webp?.image_url
+                    )
             );
 
             if (characters.length === 0) continue;
 
             const entry = characters[randomInt(0, characters.length - 1)];
+
+            const characterRes = await fetch(
+                `https://api.jikan.moe/v4/characters/${entry.character.mal_id}/full`
+            );
+
+            if (!characterRes.ok) continue;
+
+            const characterJson = await characterRes.json();
+            const fullCharacter = characterJson.data;
+
+            const imageUrl =
+                fullCharacter?.images?.jpg?.image_url ||
+                fullCharacter?.images?.webp?.image_url;
+
+            if (!imageUrl) continue;
 
             return NextResponse.json({
                 data: {
@@ -50,10 +69,10 @@ export async function GET() {
                         popularity: anime.popularity ?? 500,
                     },
                     character: {
-                        mal_id: entry.character.mal_id,
-                        name: entry.character.name,
-                        images: entry.character.images,
-                        favorites: entry.character.favorites ?? 0,
+                        mal_id: fullCharacter.mal_id,
+                        name: fullCharacter.name,
+                        images: fullCharacter.images,
+                        favorites: fullCharacter.favorites ?? 0,
                         role: entry.role ?? "Supporting",
                     },
                 },

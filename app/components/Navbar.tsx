@@ -93,7 +93,7 @@ const Navbar = () => {
                                     onClick={() => setOpen((v) => !v)}
                                     className="inline-flex items-center gap-2 rounded-full cursor-pointer border border-purple-200 px-3 py-1.5 text-purple-900/80 hover:text-purple-900 hover:border-purple-300"
                                 >
-                                    <div className="relative h-7 w-7 overflow-hidden rounded-full bg-purple-200 shrink-0">
+                                    <div className="relative h-7 w-7 overflow-hidden rounded-full border border-purple-300/80 shadow-sm bg-purple-200 shrink-0">
                                         {photoURL ? (
                                             <Image
                                                 src={photoURL}

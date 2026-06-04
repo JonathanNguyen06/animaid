@@ -6,6 +6,7 @@ import Link from "next/link";
 import Loading from "@/app/components/Loading";
 import { getPack, observeAuth, Pack, openPack } from "@/lib/firebase";
 import type { User } from "firebase/auth";
+import OpenPackButton from "@/app/components/OpenPackButton";
 
 export default function PackPage() {
     const params = useParams();
@@ -150,14 +151,10 @@ export default function PackPage() {
                         </div>
 
                         {pack.status === "unopened" && (
-                            <button
-                                type="button"
+                            <OpenPackButton
                                 onClick={handleOpenPack}
-                                disabled={opening}
-                                className="mt-8 rounded-2xl bg-purple-900 px-6 py-3 font-semibold text-white shadow-sm transition hover:bg-purple-800 hover:cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
-                            >
-                                {opening ? "Opening..." : "Open Pack"}
-                            </button>
+                                opening={opening}
+                            />
                         )}
 
                         {pack.status === "opened" && rewards.length === 0 && (
