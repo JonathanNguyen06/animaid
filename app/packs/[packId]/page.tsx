@@ -7,6 +7,7 @@ import Loading from "@/app/components/Loading";
 import { getPack, observeAuth, Pack, openPack } from "@/lib/firebase";
 import type { User } from "firebase/auth";
 import OpenPackButton from "@/app/components/OpenPackButton";
+import { motion } from "framer-motion";
 
 export default function PackPage() {
     const params = useParams();
@@ -19,6 +20,7 @@ export default function PackPage() {
     const [rewards, setRewards] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [openingAnimation, setOpeningAnimation] = useState(false);
 
     useEffect(() => {
         const unsubscribe = observeAuth((firebaseUser) => {
@@ -84,7 +86,10 @@ export default function PackPage() {
 
         try {
             setOpening(true);
+            setOpeningAnimation(true);
             setError(null);
+
+            await new Promise((resolve) => setTimeout(resolve, 2000));
 
             const openedRewards = await openPack(pack.id, user.uid);
 
@@ -97,6 +102,7 @@ export default function PackPage() {
         } catch (error: any) {
             setError(error?.message ?? "Failed to open pack.");
         } finally {
+            setOpeningAnimation(false);
             setOpening(false);
         }
     }
@@ -148,6 +154,25 @@ export default function PackPage() {
 
             default:
                 return "text-purple-900";
+        }
+    }
+
+    function rarityGlow(rarity: string) {
+        switch (rarity) {
+            case "Mythic":
+                return "shadow-red-400/60 ring-2 ring-red-400";
+
+            case "Legendary":
+                return "shadow-yellow-400/60 ring-2 ring-yellow-400";
+
+            case "Epic":
+                return "shadow-purple-400/50 ring-2 ring-purple-400";
+
+            case "Rare":
+                return "shadow-blue-400/40 ring-2 ring-blue-400";
+
+            default:
+                return "";
         }
     }
 
@@ -203,7 +228,7 @@ export default function PackPage() {
                         {pack.status === "unopened" && (
                             <OpenPackButton
                                 onClick={handleOpenPack}
-                                opening={opening}
+                                opening={opening || openingAnimation}
                             />
                         )}
 
@@ -213,12 +238,56 @@ export default function PackPage() {
                             </p>
                         )}
 
-                        {rewards.length > 0 && (
+                        {!openingAnimation && rewards.length > 0 && (
                             <div className="relative z-10 mt-8 grid gap-4 sm:grid-cols-3">
                                 {rewards.map((reward, index) => (
-                                    <div
+                                    <motion.div
                                         key={`${reward.characterId}-${index}`}
-                                        className="relative z-10 overflow-hidden rounded-3xl border border-purple-200 bg-white shadow-sm"
+                                        initial={{ opacity: 0, y: 24, scale: 0.95 }}
+                                        animate={{
+                                            opacity: 1,
+                                            y: 0,
+                                            scale: 1,
+
+                                            ...(reward.rarity === "Mythic" && {
+                                                boxShadow: [
+                                                    "0 0 0px rgba(239, 68, 68, 0.3)",
+                                                    "0 0 30px rgba(239, 68, 68, 0.75)",
+                                                    "0 0 0px rgba(239, 68, 68, 0.3)",
+                                                ],
+                                            }),
+
+                                            ...(reward.rarity === "Legendary" && {
+                                                boxShadow: [
+                                                    "0 0 0px rgba(250, 204, 21, 0.3)",
+                                                    "0 0 25px rgba(250, 204, 21, 0.65)",
+                                                    "0 0 0px rgba(250, 204, 21, 0.3)",
+                                                ],
+                                            }),
+                                        }}
+                                        transition={{
+                                            opacity: {
+                                                duration: 0.35,
+                                                delay: index * 0.18,
+                                            },
+                                            y: {
+                                                duration: 0.35,
+                                                delay: index * 0.18,
+                                            },
+                                            scale: {
+                                                duration: 0.35,
+                                                delay: index * 0.18,
+                                            },
+                                            boxShadow: {
+                                                duration: reward.rarity === "Mythic" ? 2 : 2.5,
+                                                repeat:
+                                                    reward.rarity === "Mythic" || reward.rarity === "Legendary"
+                                                        ? Infinity
+                                                        : 0,
+                                                ease: "easeInOut",
+                                            },
+                                        }}
+                                        className={`relative z-10 overflow-hidden rounded-3xl border border-purple-200 bg-white shadow-lg ${rarityGlow(reward.rarity)}`}
                                     >
                                         {reward.imageUrl && (
                                             <img
@@ -249,7 +318,7 @@ export default function PackPage() {
                                                 Power: {reward.powerLevel}
                                             </p>
                                         </div>
-                                    </div>
+                                    </motion.div>
                                 ))}
                             </div>
                         )}
