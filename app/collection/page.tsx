@@ -24,6 +24,7 @@ export default function CollectionPage() {
     const [authLoading, setAuthLoading] = useState(true);
     const [characters, setCharacters] = useState<OwnedCharacterCard[]>([]);
     const [loading, setLoading] = useState(true);
+    const [showPowerInfo, setShowPowerInfo] = useState(false);
 
     useEffect(() => {
         const unsubscribe = observeAuth((firebaseUser) => {
@@ -55,6 +56,56 @@ export default function CollectionPage() {
         return <Loading />;
     }
 
+    function rarityClass(rarity: string) {
+        switch (rarity) {
+            case "Common":
+                return "bg-gray-100 text-gray-700";
+
+            case "Uncommon":
+                return "bg-green-100 text-green-700";
+
+            case "Rare":
+                return "bg-blue-100 text-blue-700";
+
+            case "Epic":
+                return "bg-purple-100 text-purple-700";
+
+            case "Legendary":
+                return "bg-yellow-100 text-yellow-700";
+
+            case "Mythic":
+                return "bg-red-100 text-red-700";
+
+            default:
+                return "bg-purple-100 text-purple-900";
+        }
+    }
+
+    function rarityPowerClass(rarity: string) {
+        switch (rarity) {
+            case "Common":
+                return "text-gray-700";
+
+            case "Uncommon":
+                return "text-green-700";
+
+            case "Rare":
+                return "text-blue-700";
+
+            case "Epic":
+                return "text-purple-700";
+
+            case "Legendary":
+                return "text-yellow-700";
+
+            case "Mythic":
+                return "text-red-700";
+
+            default:
+                return "text-purple-900";
+        }
+    }
+
     return (
         <main className="mx-auto min-h-[calc(100vh-130px)] max-w-6xl px-4 py-10">
             <section className="relative z-10 rounded-3xl border border-purple-200 bg-white p-8 shadow-sm">
@@ -62,9 +113,20 @@ export default function CollectionPage() {
                     Collection
                 </p>
 
-                <h1 className="mt-3 text-4xl font-bold text-purple-950">
-                    Your Characters
-                </h1>
+                <div className="mt-3 flex items-start justify-between gap-4">
+                    <h1 className="text-4xl font-bold text-purple-950">
+                        Your Characters
+                    </h1>
+
+                    <button
+                        type="button"
+                        onClick={() => setShowPowerInfo(true)}
+                        className="mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-purple-200 bg-purple-50 text-sm font-bold text-purple-900 transition hover:bg-purple-100 hover:cursor-pointer"
+                        aria-label="Power information"
+                    >
+                        ?
+                    </button>
+                </div>
 
                 <p className="mt-3 text-purple-900/70">
                     View the characters you have earned from packs.
@@ -99,7 +161,9 @@ export default function CollectionPage() {
                                 )}
 
                                 <div className="p-4">
-                                    <span className="rounded-full bg-purple-100 px-3 py-1 text-xs font-bold uppercase text-purple-900">
+                                    <span
+                                        className={`rounded-full px-3 py-1 text-xs font-bold uppercase ${rarityClass(character.rarity)}`}
+                                    >
                                         {character.rarity}
                                     </span>
 
@@ -111,7 +175,9 @@ export default function CollectionPage() {
                                         From {character.animeTitle ?? "Unknown Anime"}
                                     </p>
 
-                                    <p className="mt-3 text-sm font-semibold text-purple-900">
+                                    <p
+                                        className={`mt-3 text-sm font-semibold ${rarityPowerClass(character.rarity)}`}
+                                    >
                                         Power: {character.powerLevel}
                                     </p>
 
@@ -124,6 +190,59 @@ export default function CollectionPage() {
                     </div>
                 )}
             </section>
+
+            {showPowerInfo && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4">
+                    <div className="relative z-10 w-full max-w-lg rounded-3xl border border-purple-200 bg-white p-6 shadow-xl">
+                        <div className="flex items-start justify-between gap-4">
+                            <h2 className="text-2xl font-bold text-purple-950">
+                                Power Levels
+                            </h2>
+
+                            <button
+                                type="button"
+                                onClick={() => setShowPowerInfo(false)}
+                                className="text-purple-400 transition hover:text-purple-900 hover:cursor-pointer"
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        <div className="mt-5 space-y-4 text-sm leading-6 text-purple-900/70">
+                            <p>
+                                Every character has a Power Level that represents their overall value and rarity.
+                            </p>
+
+                            <p>
+                                Power is influenced by factors such as the character's popularity, the success of their anime, and the significance of their role within the story.
+                            </p>
+
+                            <p>
+                                More iconic and influential characters tend to receive higher Power Levels and rarer classifications.
+                            </p>
+
+                            <div className="rounded-2xl border border-purple-200 bg-purple-50 p-4">
+                                <h3 className="font-semibold text-purple-950">
+                                    Rarity Tiers
+                                </h3>
+
+                                <ul className="mt-2 space-y-1">
+                                    <li>Common</li>
+                                    <li>Uncommon</li>
+                                    <li>Rare</li>
+                                    <li>Epic</li>
+                                    <li>Legendary</li>
+                                    <li>Mythic</li>
+                                </ul>
+                            </div>
+
+                            <p className="text-xs text-purple-900/50">
+                                The exact formula is intentionally hidden to encourage discovery and collecting.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
         </main>
     );
 }

@@ -101,6 +101,56 @@ export default function PackPage() {
         }
     }
 
+    function rarityClass(rarity: string) {
+        switch (rarity) {
+            case "Common":
+                return "bg-gray-100 text-gray-700";
+
+            case "Uncommon":
+                return "bg-green-100 text-green-700";
+
+            case "Rare":
+                return "bg-blue-100 text-blue-700";
+
+            case "Epic":
+                return "bg-purple-100 text-purple-700";
+
+            case "Legendary":
+                return "bg-yellow-100 text-yellow-700";
+
+            case "Mythic":
+                return "bg-red-100 text-red-700";
+
+            default:
+                return "bg-purple-100 text-purple-900";
+        }
+    }
+
+    function rarityPowerClass(rarity: string) {
+        switch (rarity) {
+            case "Common":
+                return "text-gray-700";
+
+            case "Uncommon":
+                return "text-green-700";
+
+            case "Rare":
+                return "text-blue-700";
+
+            case "Epic":
+                return "text-purple-700";
+
+            case "Legendary":
+                return "text-yellow-700";
+
+            case "Mythic":
+                return "text-red-700";
+
+            default:
+                return "text-purple-900";
+        }
+    }
+
     return (
         <main className="mx-auto flex min-h-[calc(100vh-130px)] max-w-3xl flex-col items-center justify-center px-4 py-10">
             <section className="w-full rounded-3xl border border-purple-200 bg-white relative z-10 p-8 text-center shadow-sm">
@@ -179,7 +229,9 @@ export default function PackPage() {
                                         )}
 
                                         <div className="p-4 text-left">
-                                            <span className="rounded-full bg-purple-100 px-3 py-1 text-xs font-bold uppercase text-purple-900">
+                                            <span
+                                                className={`rounded-full px-3 py-1 text-xs font-bold uppercase ${rarityClass(reward.rarity)}`}
+                                            >
                                                 {reward.rarity}
                                             </span>
 
@@ -191,7 +243,9 @@ export default function PackPage() {
                                                 From {reward.animeTitle ?? "Unknown Anime"}
                                             </p>
 
-                                            <p className="mt-3 text-sm font-semibold text-purple-900">
+                                            <p
+                                                className={`mt-3 text-sm font-semibold ${rarityPowerClass(reward.rarity)}`}
+                                            >
                                                 Power: {reward.powerLevel}
                                             </p>
                                         </div>

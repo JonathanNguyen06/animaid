@@ -6,7 +6,7 @@ function randomInt(min: number, max: number) {
 
 export async function GET() {
     try {
-        for (let attempt = 0; attempt < 12; attempt++) {
+        for (let attempt = 0; attempt < 20; attempt++) {
             const page = randomInt(1, 20);
 
             const topRes = await fetch(
@@ -30,34 +30,53 @@ export async function GET() {
 
             const charactersJson = await charactersRes.json();
 
-            const characters = (charactersJson.data ?? []).filter(
-                (entry: any) =>
+            const characters = (charactersJson.data ?? []).filter((entry: any) => {
+                const imageUrl =
+                    entry.character?.images?.jpg?.image_url ||
+                    entry.character?.images?.webp?.image_url;
+
+                return (
                     entry.character?.mal_id &&
                     entry.character?.name &&
-                    (
-                        entry.character?.images?.jpg?.image_url ||
-                        entry.character?.images?.webp?.image_url
-                    )
-            );
+                    imageUrl
+                );
+            });
 
             if (characters.length === 0) continue;
 
             const entry = characters[randomInt(0, characters.length - 1)];
 
-            const characterRes = await fetch(
-                `https://api.jikan.moe/v4/characters/${entry.character.mal_id}/full`
-            );
+            let favorites =
+                entry.character?.favorites ??
+                entry.favorites ??
+                0;
 
-            if (!characterRes.ok) continue;
+            let images = entry.character.images;
 
-            const characterJson = await characterRes.json();
-            const fullCharacter = characterJson.data;
+            try {
+                const characterRes = await fetch(
+                    `https://api.jikan.moe/v4/characters/${entry.character.mal_id}/full`
+                );
 
-            const imageUrl =
-                fullCharacter?.images?.jpg?.image_url ||
-                fullCharacter?.images?.webp?.image_url;
+                if (characterRes.ok) {
+                    const characterJson = await characterRes.json();
+                    const fullCharacter = characterJson.data;
 
-            if (!imageUrl) continue;
+                    const fullImageUrl =
+                        fullCharacter?.images?.jpg?.image_url ||
+                        fullCharacter?.images?.webp?.image_url;
+
+                    if (fullImageUrl) {
+                        images = fullCharacter.images;
+                    }
+
+                    favorites =
+                        fullCharacter?.favorites ??
+                        favorites;
+                }
+            } catch {
+                // If full character lookup fails, still use the anime characters endpoint data.
+            }
 
             return NextResponse.json({
                 data: {
@@ -69,10 +88,10 @@ export async function GET() {
                         popularity: anime.popularity ?? 500,
                     },
                     character: {
-                        mal_id: fullCharacter.mal_id,
-                        name: fullCharacter.name,
-                        images: fullCharacter.images,
-                        favorites: fullCharacter.favorites ?? 0,
+                        mal_id: entry.character.mal_id,
+                        name: entry.character.name,
+                        images,
+                        favorites,
                         role: entry.role ?? "Supporting",
                     },
                 },

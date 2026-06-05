@@ -351,7 +351,9 @@ export default function DailyPage() {
                                             <>
                                                 {attempt?.year}
                                                 {" "}
-                                                {numericArrow(attempt?.year, dailyAnime?.year)}
+                                                {attempt &&
+                                                    compareYear(attempt.year, dailyAnime.year) !== "correct" &&
+                                                    numericArrow(attempt.year, dailyAnime.year)}
                                             </>
                                         </td>
 
@@ -363,7 +365,9 @@ export default function DailyPage() {
                                             <>
                                                 {attempt?.score}
                                                 {" "}
-                                                {numericArrow(attempt?.score, dailyAnime?.score)}
+                                                {attempt &&
+                                                    compareScore(attempt.score, dailyAnime.score) !== "correct" &&
+                                                    numericArrow(attempt.score, dailyAnime.score)}
                                             </>
                                         </td>
 
