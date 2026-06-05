@@ -14,6 +14,32 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [showing, setShowing] = useState(false);
 
+    function getFriendlyAuthError(error: any) {
+        const code = error?.code;
+
+        switch (code) {
+            case "auth/invalid-credential":
+            case "auth/wrong-password":
+            case "auth/user-not-found":
+                return "Invalid email or password. Please try again.";
+
+            case "auth/invalid-email":
+                return "Please enter a valid email address.";
+
+            case "auth/too-many-requests":
+                return "Too many failed attempts. Please wait a bit and try again.";
+
+            case "auth/network-request-failed":
+                return "Network error. Please check your connection and try again.";
+
+            case "auth/popup-closed-by-user":
+                return "Google sign-in was cancelled.";
+
+            default:
+                return "Something went wrong. Please try again.";
+        }
+    }
+
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -23,7 +49,7 @@ export default function LoginPage() {
       await ensureUserProfile(cred.user);
       router.push("/");
     } catch (err: any) {
-      setError(err?.message || "Failed to sign in");
+        setError(getFriendlyAuthError(err));
     } finally {
       setLoading(false);
     }
@@ -37,7 +63,7 @@ export default function LoginPage() {
       await ensureUserProfile(cred.user);
       router.push("/");
     } catch (err: any) {
-      setError(err?.message || "Google sign-in failed");
+        setError(getFriendlyAuthError(err));
     } finally {
       setLoading(false);
     }

@@ -9,6 +9,7 @@ const Navbar = () => {
     const [username, setUsername] = useState<string | null>(null);
     const [photoURL, setPhotoURL] = useState<string | null>(null);
     const [open, setOpen] = useState(false);
+    const [authLoading, setAuthLoading] = useState(true);
     const menuRef = useRef<HTMLDivElement | null>(null);
     const pathname = usePathname();
     const router = useRouter();
@@ -21,6 +22,8 @@ const Navbar = () => {
         }
 
         const unsubscribe = observeAuth((user) => {
+            setAuthLoading(false);
+
             if (user) {
                 const current = auth.currentUser;
                 const name =
@@ -73,7 +76,7 @@ const Navbar = () => {
                     <Image src={"/icons/animaid_logo.png"} alt={"AnimAid"} width={150} height={150}/>
                 </a>
                 <nav className="flex items-center gap-7 text-base font-medium">
-                    {username && (
+                    {!authLoading && username && (
                         <>
                             <Link href="/packs" className="text-purple-900/80 hover:text-purple-900">
                                 Packs
@@ -129,9 +132,15 @@ const Navbar = () => {
                             </div>
                         </>
                     )}
-                    {!username && (
-                        <a href="/login"
-                           className="rounded-md bg-purple-600 px-4 py-2 text-white hover:bg-purple-700 cursor-pointer">
+                    {authLoading && (
+                        <div className="h-9 w-20 animate-pulse rounded-md bg-purple-100" />
+                    )}
+
+                    {!authLoading && !username && (
+                        <a
+                            href="/login"
+                            className="rounded-md bg-purple-600 px-4 py-2 text-white hover:bg-purple-700 cursor-pointer"
+                        >
                             Log in
                         </a>
                     )}

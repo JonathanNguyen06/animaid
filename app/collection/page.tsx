@@ -187,7 +187,7 @@ export default function CollectionPage() {
                                     <img
                                         src={character.imageUrl}
                                         alt={character.name}
-                                        className="h-64 w-full object-cover"
+                                        className="h-64 w-full object-cover object-[center_5%]"
                                     />
                                 )}
 
