@@ -5,6 +5,7 @@ import Link from "next/link";
 import Loading from "@/app/components/Loading";
 import { getUserCharacters, observeAuth } from "@/lib/firebase";
 import type { User } from "firebase/auth";
+import SortButton, { CharacterSortOption } from "@/app/components/SortButton";
 
 type OwnedCharacterCard = {
     id: string;
@@ -25,6 +26,7 @@ export default function CollectionPage() {
     const [characters, setCharacters] = useState<OwnedCharacterCard[]>([]);
     const [loading, setLoading] = useState(true);
     const [showPowerInfo, setShowPowerInfo] = useState(false);
+    const [sortBy, setSortBy] = useState<CharacterSortOption>("power-desc");
 
     useEffect(() => {
         const unsubscribe = observeAuth((firebaseUser) => {
@@ -106,6 +108,31 @@ export default function CollectionPage() {
         }
     }
 
+    const sortedCharacters = [...characters].sort((a, b) => {
+        switch (sortBy) {
+            case "power-desc":
+                return b.powerLevel - a.powerLevel;
+
+            case "power-asc":
+                return a.powerLevel - b.powerLevel;
+
+            case "name-asc":
+                return a.name.localeCompare(b.name);
+
+            case "anime-asc":
+                return (a.animeTitle ?? "").localeCompare(b.animeTitle ?? "");
+
+            case "favorites-desc":
+                return b.favorites - a.favorites;
+
+            case "favorites-asc":
+                return a.favorites - b.favorites;
+
+            default:
+                return 0;
+        }
+    });
+
     return (
         <main className="mx-auto min-h-[calc(100vh-130px)] max-w-6xl px-4 py-10">
             <section className="relative z-10 rounded-3xl border border-purple-200 bg-white p-8 shadow-sm">
@@ -132,6 +159,10 @@ export default function CollectionPage() {
                     View the characters you have earned from packs.
                 </p>
 
+                <div className="mt-6 flex justify-end">
+                    <SortButton value={sortBy} setValue={setSortBy} />
+                </div>
+
                 {!user && (
                     <p className="mt-8 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-red-700">
                         You must be signed in to view your collection.
@@ -146,7 +177,7 @@ export default function CollectionPage() {
 
                 {user && characters.length > 0 && (
                     <div className="relative z-10 mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-                        {characters.map((character) => (
+                        {sortedCharacters.map((character) => (
                             <Link
                                 key={character.id}
                                 href={`/anime?id=${character.animeId}`}
@@ -172,7 +203,7 @@ export default function CollectionPage() {
                                     </h2>
 
                                     <p className="mt-1 text-sm text-purple-900/60">
-                                        From {character.animeTitle ?? "Unknown Anime"}
+                                        {character.animeTitle ?? "Unknown Anime"}
                                     </p>
 
                                     <p
@@ -226,14 +257,31 @@ export default function CollectionPage() {
                                     Rarity Tiers
                                 </h3>
 
-                                <ul className="mt-2 space-y-1">
-                                    <li>Common</li>
-                                    <li>Uncommon</li>
-                                    <li>Rare</li>
-                                    <li>Epic</li>
-                                    <li>Legendary</li>
-                                    <li>Mythic</li>
-                                </ul>
+                                <div className="mt-3 flex flex-wrap gap-2">
+                                    <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-bold uppercase text-gray-700">
+                                        Common
+                                    </span>
+
+                                    <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-bold uppercase text-green-700">
+                                        Uncommon
+                                    </span>
+
+                                    <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-bold uppercase text-blue-700">
+                                        Rare
+                                    </span>
+
+                                    <span className="rounded-full bg-purple-100 px-3 py-1 text-xs font-bold uppercase text-purple-700">
+                                        Epic
+                                    </span>
+
+                                    <span className="rounded-full bg-yellow-100 px-3 py-1 text-xs font-bold uppercase text-yellow-700">
+                                        Legendary
+                                    </span>
+
+                                    <span className="rounded-full bg-red-100 px-3 py-1 text-xs font-bold uppercase text-red-700">
+                                        Mythic
+                                    </span>
+                                </div>
                             </div>
 
                             <p className="text-xs text-purple-900/50">
