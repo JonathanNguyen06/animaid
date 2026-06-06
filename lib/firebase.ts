@@ -260,6 +260,16 @@ export async function openPack(
 
     const realRewards: OwnedCharacter[] = [];
 
+    const ownedCharactersSnap = await getDocs(
+        collection(db, "users", userId, "characters")
+    );
+
+    const ownedCharacterIds = new Set(
+        ownedCharactersSnap.docs.map((doc) => doc.data().characterId)
+    );
+
+    const pulledCharacterIds = new Set<number>();
+
     for (let i = 0; i < 3; i++) {
         if (i > 0) {
             await sleep(1000);
@@ -275,6 +285,16 @@ export async function openPack(
 
         const anime = json.data.anime;
         const character = json.data.character;
+
+        if (
+            ownedCharacterIds.has(character.mal_id) ||
+            pulledCharacterIds.has(character.mal_id)
+        ) {
+            i--;
+            continue;
+        }
+
+        pulledCharacterIds.add(character.mal_id);
 
         const powerLevel = calculatePowerLevel({
             characterFavorites: character.favorites ?? 0,
