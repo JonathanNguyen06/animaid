@@ -78,6 +78,9 @@ const Navbar = () => {
                 <nav className="flex items-center gap-7 text-base font-medium">
                     {!authLoading && username && (
                         <>
+                            <Link href="/games" className="text-purple-900/80 hover:text-purple-900">
+                                Games
+                            </Link>
                             <Link href="/packs" className="text-purple-900/80 hover:text-purple-900">
                                 Packs
                             </Link>
