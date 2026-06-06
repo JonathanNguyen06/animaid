@@ -9,7 +9,8 @@ import {
     claimDailyPack,
     getDailyProgress,
     observeAuth,
-    saveDailyProgress
+    saveDailyProgress,
+    updateDailyStreak
 } from "@/lib/firebase";
 import type {User} from "firebase/auth";
 
@@ -173,6 +174,10 @@ export default function DailyPage() {
                 newAttempts,
                 didWin || won
             );
+
+            if (didWin) {
+                await updateDailyStreak(user.uid, today);
+            }
 
             setSelectedAnime(null);
         } catch {

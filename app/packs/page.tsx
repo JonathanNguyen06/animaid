@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Loading from "@/app/components/Loading";
-import { getUserPacks, observeAuth } from "@/lib/firebase";
+import { getUserPacks, getUserProfile, observeAuth } from "@/lib/firebase";
 import type { User } from "firebase/auth";
 
 type Pack = {
@@ -19,6 +19,7 @@ export default function PacksPage() {
     const [authLoading, setAuthLoading] = useState(true);
     const [packs, setPacks] = useState<Pack[]>([]);
     const [loading, setLoading] = useState(true);
+    const [dailyStreak, setDailyStreak] = useState(0);
 
     useEffect(() => {
         const unsubscribe = observeAuth((firebaseUser) => {
@@ -40,6 +41,8 @@ export default function PacksPage() {
 
             const userPacks = await getUserPacks(user.uid);
             setPacks(userPacks as Pack[]);
+            const profile = await getUserProfile(user.uid);
+            setDailyStreak(profile?.dailyStreak ?? 0);
             setLoading(false);
         }
 
@@ -60,6 +63,20 @@ export default function PacksPage() {
                 <h1 className="mt-3 text-4xl font-bold text-purple-950">
                     Your Character Packs
                 </h1>
+
+                <div className="mt-4 inline-flex items-center gap-3 rounded-2xl border border-orange-200 bg-gradient-to-r from-orange-50 to-yellow-50 px-4 py-2 shadow-sm">
+                    <span className="text-3xl">🔥</span>
+
+                    <div>
+                        <p className="text-2xl font-bold leading-none text-orange-700">
+                            {dailyStreak}
+                        </p>
+
+                        <p className="text-xs font-semibold uppercase tracking-widest text-orange-600/70">
+                            Streak
+                        </p>
+                    </div>
+                </div>
 
                 <p className="mt-3 text-purple-900/70">
                     View and open the character packs you have earned.

@@ -458,3 +458,53 @@ export async function getUserCharacters(userId: string) {
         ...doc.data(),
     }));
 }
+
+function getYesterday(date: string) {
+    const d = new Date(date);
+    d.setDate(d.getDate() - 1);
+    return d.toISOString().slice(0, 10);
+}
+
+export async function updateDailyStreak(
+    userId: string,
+    today: string
+) {
+    const userRef = doc(db, "users", userId);
+    const userSnap = await getDoc(userRef);
+
+    if (!userSnap.exists()) {
+        return;
+    }
+
+    const userData = userSnap.data();
+
+    if (userData.lastDailyWinDate === today) {
+        return;
+    }
+
+    const yesterday = getYesterday(today);
+
+    const currentStreak =
+        typeof userData.dailyStreak === "number"
+            ? userData.dailyStreak
+            : 0;
+
+    const newStreak =
+        userData.lastDailyWinDate === yesterday
+            ? currentStreak + 1
+            : 1;
+
+    await updateDoc(userRef, {
+        dailyStreak: newStreak,
+        lastDailyWinDate: today,
+    });
+
+    return newStreak;
+}
+
+export async function getUserProfile(userId: string) {
+    const userRef = doc(db, "users", userId);
+    const snapshot = await getDoc(userRef);
+
+    return snapshot.exists() ? snapshot.data() : null;
+}
