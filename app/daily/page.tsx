@@ -43,6 +43,7 @@ export default function DailyPage() {
     const [authLoading, setAuthLoading] = useState(true);
     const [rewardClaimed, setRewardClaimed] = useState(false);
     const [guessError, setGuessError] = useState<string | null>(null);
+    const [showHint, setShowHint] = useState(false);
     const today = new Date().toISOString().slice(0, 10);
 
     const router = useRouter();
@@ -250,6 +251,23 @@ export default function DailyPage() {
         return guess < answer ? "⬆️" : "⬇️";
     }
 
+    function getTitleHint(title?: string) {
+        if (!title) return "";
+
+        return title
+            .split("")
+            .map((char) => {
+                if (char === " ") return "/";
+
+                if (/[a-zA-Z0-9]/.test(char)) {
+                    return "_";
+                }
+
+                return char;
+            })
+            .join(" ");
+    }
+
     if (loading || authLoading) {
         return <Loading />;
     }
@@ -305,6 +323,30 @@ export default function DailyPage() {
                             >
                                 ✕
                             </button>
+                        </div>
+                    )}
+
+                    {attempts.length >= 3 && !won && !lost && dailyAnime && (
+                        <div className="mt-4 rounded-2xl border border-purple-200 bg-purple-50 p-4">
+                            {!showHint ? (
+                                <button
+                                    type="button"
+                                    onClick={() => setShowHint(true)}
+                                    className="rounded-xl bg-purple-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-purple-800 hover:cursor-pointer"
+                                >
+                                    Reveal Hint
+                                </button>
+                            ) : (
+                                <div>
+                                    <p className="text-xs font-bold uppercase tracking-widest text-purple-900/50">
+                                        Title Length Hint
+                                    </p>
+
+                                    <p className="mt-2 break-words font-mono text-lg font-bold tracking-widest text-purple-950">
+                                        {getTitleHint(answerTitle)}
+                                    </p>
+                                </div>
+                            )}
                         </div>
                     )}
 
