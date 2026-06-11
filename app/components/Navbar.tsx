@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useRef, useState } from 'react'
 import Image from "next/image";
-import {auth, observeAuth, signOut} from "@/lib/firebase";
+import {auth, observeAuth, signOut, observeUnopenedPackCount} from "@/lib/firebase";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -10,9 +10,29 @@ const Navbar = () => {
     const [photoURL, setPhotoURL] = useState<string | null>(null);
     const [open, setOpen] = useState(false);
     const [authLoading, setAuthLoading] = useState(true);
+    const [unopenedPackCount, setUnopenedPackCount] = useState(0);
     const menuRef = useRef<HTMLDivElement | null>(null);
     const pathname = usePathname();
     const router = useRouter();
+
+    useEffect(() => {
+        if (pathname === "/login" || pathname === "/signup") {
+            setUnopenedPackCount(0);
+            return;
+        }
+
+        if (!auth.currentUser) {
+            setUnopenedPackCount(0);
+            return;
+        }
+
+        const unsubscribe = observeUnopenedPackCount(
+            auth.currentUser.uid,
+            setUnopenedPackCount
+        );
+
+        return () => unsubscribe();
+    }, [username, pathname]);
 
     useEffect(() => {
         if (pathname === "/login" || pathname === "/signup") {
@@ -81,8 +101,17 @@ const Navbar = () => {
                             <Link href="/games" className="text-purple-900/80 hover:text-purple-900">
                                 Games
                             </Link>
-                            <Link href="/packs" className="text-purple-900/80 hover:text-purple-900">
+                            <Link
+                                href="/packs"
+                                className="relative text-purple-900/80 hover:text-purple-900"
+                            >
                                 Packs
+
+                                {unopenedPackCount > 0 && (
+                                    <span className="absolute -right-4 -top-3 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[11px] font-bold leading-none text-white shadow-sm">
+                                {unopenedPackCount > 99 ? "99+" : unopenedPackCount}
+                            </span>
+                                )}
                             </Link>
                             <Link href="/collection" className="text-purple-900/80 hover:text-purple-900">
                                 Collection

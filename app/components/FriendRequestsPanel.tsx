@@ -113,7 +113,7 @@ export default function FriendRequestsPanel() {
             {requests.map((request) => (
                 <div
                     key={request.fromUid}
-                    className="flex items-center justify-between rounded-2xl border border-purple-200 bg-white/70 p-4 shadow-sm"
+                    className="flex items-center justify-between rounded-2xl border border-purple-200 bg-white relative z-10 p-4 shadow-sm"
                 >
                     <p className="font-medium text-purple-950">
                         @{request.fromUsername || "unknown user"}

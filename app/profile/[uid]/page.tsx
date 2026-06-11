@@ -6,11 +6,15 @@ import Link from "next/link";
 import Image from "next/image";
 import { auth, db, getUserCharacters } from "@/lib/firebase";
 import { collection, doc, getDoc, getDocs } from "firebase/firestore";
+import AddFriendButton from "@/app/components/AddFriendButton";
 
 type UserProfile = {
     uid: string;
     username?: string;
     photoURL?: string;
+
+    dailyStreak?: number;
+    higherLowerBestStreak?: number;
 };
 
 type WishlistAnime = {
@@ -48,6 +52,12 @@ export default function ProfilePage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [canViewWishlist, setCanViewWishlist] = useState(false);
+    const [isOwnProfile, setIsOwnProfile] = useState(false);
+
+    const totalCollectionPower = characters.reduce(
+        (sum, character) => sum + character.powerLevel,
+        0
+    );
 
     useEffect(() => {
         async function loadProfile() {
@@ -80,7 +90,8 @@ export default function ProfilePage() {
                     return;
                 }
 
-                const isOwnProfile = currentUser.uid === uid;
+                const ownProfile = currentUser.uid === uid;
+                setIsOwnProfile(ownProfile);
 
                 const friendSnap = await getDoc(
                     doc(db, "users", currentUser.uid, "friends", uid)
@@ -88,7 +99,7 @@ export default function ProfilePage() {
 
                 const isFriend = friendSnap.exists();
 
-                if (!isOwnProfile && !isFriend) {
+                if (!ownProfile && !isFriend) {
                     setCanViewWishlist(false);
                     return;
                 }
@@ -129,8 +140,8 @@ export default function ProfilePage() {
             {!loading && !error && profile && (
                 <>
                     <section className="relative z-10 rounded-3xl border border-purple-200 bg-white p-6 shadow-sm">
-                        <div className="flex items-center gap-4">
-                            <div className="relative h-20 w-20 overflow-hidden rounded-2xl border border-purple-200 bg-purple-100 shadow-sm">
+                        <div className="flex flex-col gap-6 sm:flex-row sm:items-center">
+                            <div className="relative h-28 w-28 overflow-hidden rounded-3xl border border-purple-200 bg-purple-100 shadow-sm">
                                 {profile.photoURL ? (
                                     <Image
                                         src={profile.photoURL}
@@ -139,20 +150,74 @@ export default function ProfilePage() {
                                         className="object-cover"
                                     />
                                 ) : (
-                                    <div className="flex h-full w-full items-center justify-center text-2xl font-bold text-purple-300">
+                                    <div className="flex h-full w-full items-center justify-center text-3xl font-bold text-purple-300">
                                         {profile.username?.[0]?.toUpperCase() ?? "?"}
                                     </div>
                                 )}
                             </div>
 
-                            <div>
+                            <div className="flex flex-1 items-center justify-between gap-4">
+                                <div>
+                                    <p className="text-xs font-bold uppercase tracking-widest text-purple-900/50">
+                                        username
+                                    </p>
+
+                                    <h2 className="mt-2 text-2xl font-semibold text-purple-950">
+                                        @{profile.username}
+                                    </h2>
+                                </div>
+
+                                {!isOwnProfile && (
+                                    <AddFriendButton
+                                        targetUser={{
+                                            uid: profile.uid,
+                                            username: profile.username,
+                                            photoURL: profile.photoURL,
+                                        }}
+                                    />
+                                )}
+                            </div>
+                        </div>
+                    </section>
+
+                    <section className="relative z-10 mt-6 rounded-3xl border border-purple-200 bg-white p-6 shadow-sm">
+                        <p className="text-xs font-bold uppercase tracking-widest text-purple-900/50">
+                            Statistics
+                        </p>
+
+                        <h2 className="mt-2 text-2xl font-bold text-purple-950">
+                            Account Stats
+                        </h2>
+
+                        <div className="mt-5 grid gap-4 sm:grid-cols-3">
+                            <div className="rounded-2xl border border-purple-200 bg-purple-50 p-5">
                                 <p className="text-xs font-bold uppercase tracking-widest text-purple-900/50">
-                                    Trainer Profile
+                                    Collection Power
                                 </p>
 
-                                <h1 className="mt-1 text-3xl font-bold text-purple-950">
-                                    @{profile.username}
-                                </h1>
+                                <p className="mt-2 text-3xl font-bold text-purple-950">
+                                    {totalCollectionPower.toLocaleString()}
+                                </p>
+                            </div>
+
+                            <div className="rounded-2xl border border-orange-200 bg-orange-50 p-5">
+                                <p className="text-xs font-bold uppercase tracking-widest text-orange-700/60">
+                                    Daily Streak
+                                </p>
+
+                                <p className="mt-2 text-3xl font-bold text-orange-700">
+                                    🔥 {profile.dailyStreak ?? 0}
+                                </p>
+                            </div>
+
+                            <div className="rounded-2xl border border-green-200 bg-green-50 p-5">
+                                <p className="text-xs font-bold uppercase tracking-widest text-green-700/60">
+                                    Best Higher / Lower
+                                </p>
+
+                                <p className="mt-2 text-3xl font-bold text-green-700">
+                                    {profile.higherLowerBestStreak ?? 0}
+                                </p>
                             </div>
                         </div>
                     </section>

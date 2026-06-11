@@ -24,6 +24,7 @@ import {
     where,
     getDocs,
     orderBy,
+    onSnapshot,
 } from "firebase/firestore";
 
 // Your web app's Firebase configuration
@@ -666,4 +667,21 @@ export async function claimHigherLowerPack(
     });
 
     return packRef.id;
+}
+
+export function observeUnopenedPackCount(
+    userId: string,
+    callback: (count: number) => void
+) {
+    const packsRef = collection(db, "packs");
+
+    const q = query(
+        packsRef,
+        where("userId", "==", userId),
+        where("status", "==", "unopened")
+    );
+
+    return onSnapshot(q, (snapshot) => {
+        callback(snapshot.size);
+    });
 }

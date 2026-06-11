@@ -9,7 +9,7 @@ import {
     query,
     where,
     orderBy,
-    limit, getDoc, doc,
+    limit, getDoc, doc, onSnapshot
 } from "firebase/firestore";
 import AddFriendButton from "@/app/components/AddFriendButton";
 import FriendRequestsPanel from "@/app/components/FriendRequestsPanel";
@@ -32,39 +32,110 @@ export default function FriendsPage() {
     const [showRequests, setShowRequests] = useState(false);
     const [friends, setFriends] = useState<UserProfile[]>([]);
     const [friendsLoading, setFriendsLoading] = useState(true);
+    const [requestCount, setRequestCount] = useState(0);
 
-    // Change the friends loading effect to fetch live photoURLs:
     useEffect(() => {
-        const unsubscribe = observeAuth(async (user) => {
+        let unsubscribeFriends: (() => void) | null = null;
+
+        const unsubscribeAuth = observeAuth((user) => {
+            if (unsubscribeFriends) {
+                unsubscribeFriends();
+                unsubscribeFriends = null;
+            }
+
             if (!user) {
                 setFriends([]);
                 setFriendsLoading(false);
                 return;
             }
 
+            setFriendsLoading(true);
+
             const friendsRef = collection(db, "users", user.uid, "friends");
-            const snapshot = await getDocs(friendsRef);
 
-            // Fetch each friend's current profile to get up-to-date photoURL
-            const data = await Promise.all(
-                snapshot.docs.map(async (friendDoc) => {
-                    try {
-                        const profileSnap = await getDoc(doc(db, "users", friendDoc.id));
-                        console.log("friend profile data:", profileSnap.data());
-                        if (profileSnap.exists()) {
-                            return { uid: friendDoc.id, ...profileSnap.data() } as UserProfile;
-                        }
-                    } catch {}
-                    // fallback to subcollection data
-                    return { uid: friendDoc.id, ...friendDoc.data() } as UserProfile;
-                })
+            unsubscribeFriends = onSnapshot(
+                friendsRef,
+                async (snapshot) => {
+                    const data = await Promise.all(
+                        snapshot.docs.map(async (friendDoc) => {
+                            try {
+                                const profileSnap = await getDoc(
+                                    doc(db, "users", friendDoc.id)
+                                );
+
+                                if (profileSnap.exists()) {
+                                    return {
+                                        uid: friendDoc.id,
+                                        ...profileSnap.data(),
+                                    } as UserProfile;
+                                }
+                            } catch {}
+
+                            return {
+                                uid: friendDoc.id,
+                                ...friendDoc.data(),
+                            } as UserProfile;
+                        })
+                    );
+
+                    setFriends(data);
+                    setFriendsLoading(false);
+                },
+                (error) => {
+                    console.error("Failed to listen for friends:", error);
+                    setFriends([]);
+                    setFriendsLoading(false);
+                }
             );
-
-            setFriends(data);
-            setFriendsLoading(false);
         });
 
-        return () => unsubscribe();
+        return () => {
+            unsubscribeAuth();
+
+            if (unsubscribeFriends) {
+                unsubscribeFriends();
+            }
+        };
+    }, []);
+
+    useEffect(() => {
+        let unsubscribeRequests: (() => void) | null = null;
+
+        const unsubscribeAuth = observeAuth((user) => {
+            if (unsubscribeRequests) {
+                unsubscribeRequests();
+                unsubscribeRequests = null;
+            }
+
+            if (!user) {
+                setRequestCount(0);
+                return;
+            }
+
+            const requestsRef = collection(
+                db,
+                "users",
+                user.uid,
+                "friendRequests"
+            );
+
+            const requestsQuery = query(
+                requestsRef,
+                where("status", "==", "pending")
+            );
+
+            unsubscribeRequests = onSnapshot(requestsQuery, (snapshot) => {
+                setRequestCount(snapshot.size);
+            });
+        });
+
+        return () => {
+            unsubscribeAuth();
+
+            if (unsubscribeRequests) {
+                unsubscribeRequests();
+            }
+        };
     }, []);
 
     async function handleSearch(e: React.FormEvent) {
@@ -92,7 +163,10 @@ export default function FriendsPage() {
             const currentUserId = auth.currentUser?.uid;
 
             const results = snapshot.docs
-                .map((doc) => doc.data() as UserProfile)
+                .map((userDoc) => ({
+                    uid: userDoc.id,
+                    ...userDoc.data(),
+                } as UserProfile))
                 .filter((user) => user.uid !== currentUserId);
 
             setUsers(results);
@@ -114,9 +188,15 @@ export default function FriendsPage() {
                 <button
                     type="button"
                     onClick={() => setShowRequests(!showRequests)}
-                    className="rounded-xl bg-purple-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-purple-800 cursor-pointer"
+                    className="relative rounded-xl bg-purple-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-purple-800 cursor-pointer"
                 >
                     {showRequests ? "Hide Requests" : "View Requests"}
+
+                    {requestCount > 0 && (
+                        <span className="absolute -right-2 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[11px] font-bold leading-none text-white shadow-sm">
+                            {requestCount > 99 ? "99+" : requestCount}
+                        </span>
+                    )}
                 </button>
             </div>
 
@@ -161,21 +241,47 @@ export default function FriendsPage() {
 
             <div className="mt-6 flex flex-col gap-4">
                 {users.map((user) => (
-                    <div
+                    <Link
                         key={user.uid}
-                        className="flex items-center justify-between rounded-2xl border border-purple-200 bg-white/70 p-4 shadow-sm"
+                        href={`/profile/${user.uid}`}
+                        className="flex items-center justify-between rounded-2xl border border-purple-200 bg-white p-4 shadow-sm transition hover:bg-purple-50 hover:shadow-md relative z-10"
                     >
-                        <div>
-                            <h2 className="font-semibold text-purple-950">
-                                {user.displayName || user.username || "Unnamed user"}
-                            </h2>
-                            <p className="text-sm text-purple-900/60">
-                                @{user.username}
-                            </p>
+                        <div className="flex items-center gap-3">
+                            <div className="relative h-12 w-12 overflow-hidden rounded-xl bg-purple-100">
+                                {user.photoURL ? (
+                                    <Image
+                                        src={user.photoURL}
+                                        alt={user.username ?? "Profile picture"}
+                                        fill
+                                        className="object-cover"
+                                    />
+                                ) : (
+                                    <div className="flex h-full w-full items-center justify-center font-bold text-purple-300">
+                                        {user.username?.[0]?.toUpperCase() ?? "?"}
+                                    </div>
+                                )}
+                            </div>
+
+                            <div>
+                                <h2 className="font-semibold text-purple-950">
+                                    {user.displayName || user.username || "Unnamed user"}
+                                </h2>
+
+                                <p className="text-sm text-purple-900/60">
+                                    @{user.username}
+                                </p>
+                            </div>
                         </div>
 
-                        <AddFriendButton targetUser={user}/>
-                    </div>
+                        <div
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                            }}
+                        >
+                            <AddFriendButton targetUser={user} />
+                        </div>
+                    </Link>
                 ))}
             </div>
 

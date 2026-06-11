@@ -133,6 +133,11 @@ export default function CollectionPage() {
         }
     });
 
+    const totalPower = characters.reduce(
+        (sum, character) => sum + character.powerLevel,
+        0
+    );
+
     return (
         <main className="mx-auto min-h-[calc(100vh-130px)] max-w-6xl px-4 py-10">
             <section className="relative z-10 rounded-3xl border border-purple-200 bg-white p-8 shadow-sm">
@@ -158,6 +163,20 @@ export default function CollectionPage() {
                 <p className="mt-3 text-purple-900/70">
                     View the characters you have earned from packs.
                 </p>
+
+                {user && characters.length > 0 && (
+                    <div className="mt-5 inline-flex rounded-2xl border border-purple-200 bg-purple-50 px-5 py-3 shadow-sm">
+                        <div>
+                            <p className="text-xs font-bold uppercase tracking-widest text-purple-900/50">
+                                Total Collection Power
+                            </p>
+
+                            <p className="mt-1 text-2xl font-bold text-purple-950">
+                                {totalPower.toLocaleString()}
+                            </p>
+                        </div>
+                    </div>
+                )}
 
                 <div className="mt-6 flex justify-end">
                     <SortButton value={sortBy} setValue={setSortBy} />

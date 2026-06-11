@@ -11,6 +11,9 @@ type UserProfile = {
     uid: string;
     username?: string;
     photoURL?: string;
+
+    dailyStreak?: number;
+    higherLowerBestStreak?: number;
 };
 
 type WishlistAnime = {
@@ -39,6 +42,11 @@ export default function MyProfilePage() {
     const [characters, setCharacters] = useState<OwnedCharacter[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+
+    const totalCollectionPower = characters.reduce(
+        (sum, character) => sum + character.powerLevel,
+        0
+    );
 
     useEffect(() => {
         const unsubscribe = observeAuth(async (user) => {
@@ -120,12 +128,54 @@ export default function MyProfilePage() {
 
                             <div className="flex-1">
                                 <p className="text-xs font-bold uppercase tracking-widest text-purple-900/50">
-                                    Trainer Profile
+                                    Username
                                 </p>
 
                                 <h2 className="mt-2 text-2xl font-semibold text-purple-950">
                                     @{profile.username}
                                 </h2>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section className="relative z-10 mt-6 rounded-3xl border border-purple-200 bg-white p-6 shadow-sm">
+                        <p className="text-xs font-bold uppercase tracking-widest text-purple-900/50">
+                            Statistics
+                        </p>
+
+                        <h2 className="mt-2 text-2xl font-bold text-purple-950">
+                            Account Stats
+                        </h2>
+
+                        <div className="mt-5 grid gap-4 sm:grid-cols-3">
+                            <div className="rounded-2xl border border-purple-200 bg-purple-50 p-5">
+                                <p className="text-xs font-bold uppercase tracking-widest text-purple-900/50">
+                                    Collection Power
+                                </p>
+
+                                <p className="mt-2 text-3xl font-bold text-purple-950">
+                                    {totalCollectionPower.toLocaleString()}
+                                </p>
+                            </div>
+
+                            <div className="rounded-2xl border border-orange-200 bg-orange-50 p-5">
+                                <p className="text-xs font-bold uppercase tracking-widest text-orange-700/60">
+                                    Daily Streak
+                                </p>
+
+                                <p className="mt-2 text-3xl font-bold text-orange-700">
+                                    🔥 {profile.dailyStreak ?? 0}
+                                </p>
+                            </div>
+
+                            <div className="rounded-2xl border border-green-200 bg-green-50 p-5">
+                                <p className="text-xs font-bold uppercase tracking-widest text-green-700/60">
+                                    Best Higher / Lower
+                                </p>
+
+                                <p className="mt-2 text-3xl font-bold text-green-700">
+                                    {profile.higherLowerBestStreak ?? 0}
+                                </p>
                             </div>
                         </div>
                     </section>
