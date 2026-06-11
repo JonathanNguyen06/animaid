@@ -6,17 +6,17 @@ function randomInt(min: number, max: number) {
 
 export async function GET() {
     try {
-        for (let attempt = 0; attempt < 20; attempt++) {
-            const page = randomInt(1, 20);
+        for (let attempt = 0; attempt < 30; attempt++) {
+            const page = randomInt(1, 40);
 
-            const topRes = await fetch(
+            const topAnimeRes = await fetch(
                 `https://api.jikan.moe/v4/top/anime?filter=bypopularity&page=${page}&limit=25`
             );
 
-            if (!topRes.ok) continue;
+            if (!topAnimeRes.ok) continue;
 
-            const topJson = await topRes.json();
-            const animeList = topJson.data ?? [];
+            const topAnimeJson = await topAnimeRes.json();
+            const animeList = topAnimeJson.data ?? [];
 
             if (animeList.length === 0) continue;
 
@@ -51,8 +51,6 @@ export async function GET() {
                 entry.favorites ??
                 0;
 
-            let images = entry.character.images;
-
             try {
                 const characterRes = await fetch(
                     `https://api.jikan.moe/v4/characters/${entry.character.mal_id}/full`
@@ -60,22 +58,13 @@ export async function GET() {
 
                 if (characterRes.ok) {
                     const characterJson = await characterRes.json();
-                    const fullCharacter = characterJson.data;
-
-                    const fullImageUrl =
-                        fullCharacter?.images?.jpg?.image_url ||
-                        fullCharacter?.images?.webp?.image_url;
-
-                    if (fullImageUrl) {
-                        images = fullCharacter.images;
-                    }
 
                     favorites =
-                        fullCharacter?.favorites ??
+                        characterJson.data?.favorites ??
                         favorites;
                 }
             } catch {
-                // If full character lookup fails, still use the anime characters endpoint data.
+                // keep fallback favorites
             }
 
             return NextResponse.json({
@@ -83,14 +72,16 @@ export async function GET() {
                     anime: {
                         mal_id: anime.mal_id,
                         title: anime.title,
-                        title_english: anime.title_english,
+                        title_english:
+                            anime.title_english ??
+                            anime.title,
                         score: anime.score ?? 0,
-                        popularity: anime.popularity ?? 500,
+                        popularity: anime.popularity ?? 1000,
                     },
                     character: {
                         mal_id: entry.character.mal_id,
                         name: entry.character.name,
-                        images,
+                        images: entry.character.images,
                         favorites,
                         role: entry.role ?? "Supporting",
                     },

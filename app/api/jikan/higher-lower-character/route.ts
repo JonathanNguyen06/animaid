@@ -20,6 +20,7 @@ export async function GET() {
         }
 
         const json = await res.json();
+
         const characters = (json.data ?? []).filter((character: any) => {
             const imageUrl =
                 character.images?.jpg?.image_url ||
@@ -37,6 +38,33 @@ export async function GET() {
 
         const character = characters[randomInt(0, characters.length - 1)];
 
+        let animeId = 0;
+        let animeTitle = "";
+
+        try {
+            const fullRes = await fetch(
+                `https://api.jikan.moe/v4/characters/${character.mal_id}/full`
+            );
+
+            if (fullRes.ok) {
+                const fullJson = await fullRes.json();
+
+                const firstAnime =
+                    fullJson.data?.animeography?.[0]?.anime ||
+                    fullJson.data?.anime?.[0]?.anime;
+
+                if (firstAnime) {
+                    animeId = firstAnime.mal_id ?? 0;
+                    animeTitle =
+                        firstAnime.title_english ||
+                        firstAnime.title ||
+                        "";
+                }
+            }
+        } catch {
+            // Anime info is optional.
+        }
+
         const imageUrl =
             character.images?.jpg?.image_url ||
             character.images?.webp?.image_url;
@@ -47,11 +75,8 @@ export async function GET() {
                 name: character.name,
                 imageUrl,
                 favorites: character.favorites ?? 0,
-                animeId: character.anime?.mal_id ?? 0,
-                animeTitle:
-                    character.anime?.title_english ||
-                    character.anime?.title ||
-                    "Unknown Anime",
+                animeId,
+                animeTitle,
             },
         });
     } catch (error) {

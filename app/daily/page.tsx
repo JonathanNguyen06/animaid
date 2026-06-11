@@ -100,10 +100,9 @@ export default function DailyPage() {
         }
 
         try {
-            const packId = await claimDailyPack(user.uid, today);
+            await claimDailyPack(user.uid, today);
 
             setRewardClaimed(true);
-            router.push(`/packs/${packId}`);
         } catch (error: any) {
             setGuessError(error?.message ?? "Failed to claim pack.");
         }
@@ -132,7 +131,7 @@ export default function DailyPage() {
 
         try {
             const res = await fetch(
-                `/api/jikan/guess?q=${encodeURIComponent(selectedAnime.title)}`
+                `/api/jikan/guess?id=${selectedAnime.mal_id}`
             );
 
             const json = await res.json();
@@ -501,9 +500,9 @@ export default function DailyPage() {
                     )}
 
                     {won && rewardClaimed && (
-                        <p className="mt-4 rounded-2xl border border-purple-200 bg-purple-50 px-4 py-3 text-sm font-semibold text-purple-900">
-                            Character pack claimed!
-                        </p>
+                        <div className="mt-4 rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-semibold text-green-800">
+                            Character pack added to your collection of packs!
+                        </div>
                     )}
 
                     <div className="mt-8">

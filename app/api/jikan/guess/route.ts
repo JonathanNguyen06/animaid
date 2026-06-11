@@ -1,59 +1,80 @@
 import { NextResponse } from "next/server";
-import {isFirstSeasonAnime} from "@/app/api/jikan/daily/route";
+
+function formatAnime(anime: any) {
+    return {
+        mal_id: anime.mal_id,
+        title: anime.title,
+        title_english: anime.title_english ?? null,
+        source: anime.source ?? null,
+        year: anime.year ?? null,
+        score: anime.score ?? null,
+        studio: anime.studios?.[0]?.name ?? null,
+        genres: anime.genres?.map((genre: any) => genre.name) ?? [],
+    };
+}
 
 export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
-    const q = (searchParams.get("q") ?? "").trim();
 
-    if (!q) {
-        return NextResponse.json(
-            { error: "Missing guess" },
-            { status: 400 }
-        );
-    }
-
-    const url = new URL("https://api.jikan.moe/v4/anime");
-    url.searchParams.set("q", q);
-    url.searchParams.set("limit", "1");
-    url.searchParams.set("sfw", "true");
+    const id = searchParams.get("id");
+    const q = searchParams.get("q");
 
     try {
-        const res = await fetch(url.toString(), {
-            next: { revalidate: 3600 },
-        });
+        if (id) {
+            const res = await fetch(`https://api.jikan.moe/v4/anime/${id}`);
+            const json = await res.json();
 
-        if (!res.ok) {
+            if (!res.ok || !json.data) {
+                return NextResponse.json(
+                    { error: "Anime not found." },
+                    { status: 404 }
+                );
+            }
+
+            return NextResponse.json({
+                data: formatAnime(json.data),
+            });
+        }
+
+        if (!q) {
             return NextResponse.json(
-                { error: `Jikan error: ${res.status}` },
-                { status: res.status }
+                { error: "Missing anime search." },
+                { status: 400 }
             );
         }
 
-        const json = await res.json();
-        const anime = (json.data ?? []).find(isFirstSeasonAnime);
+        const res = await fetch(
+            `https://api.jikan.moe/v4/anime?q=${encodeURIComponent(q)}&limit=10`
+        );
 
-        if (!anime) {
+        const json = await res.json();
+
+        if (!res.ok) {
             return NextResponse.json(
-                { error: "Anime not found" },
+                { error: "Anime not found." },
                 { status: 404 }
             );
         }
 
-        const simplified = {
-            mal_id: anime.mal_id,
-            title: anime.title_english || anime.title,
-            title_english: anime.title_english,
-            source: anime.source,
-            year: anime.year,
-            score: anime.score,
-            studio: anime.studios?.[0]?.name ?? null,
-            genres: anime.genres?.map((genre: any) => genre.name) ?? [],
-        };
+        const anime = (json.data ?? []).find(
+            (item: any) => item.type === "TV"
+        );
 
-        return NextResponse.json({ data: simplified });
-    } catch {
+        if (!anime) {
+            return NextResponse.json(
+                { error: "Anime not found." },
+                { status: 404 }
+            );
+        }
+
+        return NextResponse.json({
+            data: formatAnime(anime),
+        });
+    } catch (error) {
+        console.error("Guess route error:", error);
+
         return NextResponse.json(
-            { error: "Server failed to reach Jikan" },
+            { error: "Failed to load anime." },
             { status: 500 }
         );
     }

@@ -105,7 +105,9 @@ export default function PacksPage() {
                                 <p className="text-xs font-bold uppercase tracking-widest text-purple-900/50">
                                     {pack.source === "dailyQuest"
                                         ? "Daily Quest"
-                                        : pack.source}
+                                        : pack.source === "higherLower"
+                                            ? "Higher or Lower"
+                                            : pack.source}
                                 </p>
 
                                 <h2 className="mt-3 text-xl font-bold text-purple-950">

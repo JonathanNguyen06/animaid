@@ -298,7 +298,7 @@ export async function openPack(
 
         const powerLevel = calculatePowerLevel({
             characterFavorites: character.favorites ?? 0,
-            animePopularityRank: anime.popularity ?? 500,
+            animePopularityRank: anime.popularity ?? 5000,
             animeScore: anime.score ?? 0,
             role: character.role ?? "Supporting",
         });
@@ -394,11 +394,11 @@ export async function addCharacterToCollection(
 export function getRarity(
     powerLevel: number
 ): CharacterRarity {
-    if (powerLevel >= 9700) return "Mythic";
-    if (powerLevel >= 8500) return "Legendary";
-    if (powerLevel >= 6500) return "Epic";
-    if (powerLevel >= 4000) return "Rare";
-    if (powerLevel >= 2000) return "Uncommon";
+    if (powerLevel >= 9950) return "Mythic";
+    if (powerLevel >= 9400) return "Legendary";
+    if (powerLevel >= 8000) return "Epic";
+    if (powerLevel >= 6000) return "Rare";
+    if (powerLevel >= 3000) return "Uncommon";
 
     return "Common";
 }
@@ -424,10 +424,16 @@ export function calculatePowerLevel(params: {
         ) * 9999;
 
     const animePopularityScore =
-        ((501 - animePopularityRank) / 500) * 9999;
+        Math.max(
+            0,
+            ((5001 - animePopularityRank) / 5000) * 9999
+        );
 
     const animeRatingScore =
-        (animeScore / 10) * 9999;
+        Math.max(
+            0,
+            Math.min(animeScore / 10, 1)
+        ) * 9999;
 
     const roleBonus =
         role === "Main"
@@ -435,15 +441,17 @@ export function calculatePowerLevel(params: {
             : 2500;
 
     const powerLevel =
-        characterFavoritesScore * 0.6 +
-        animePopularityScore * 0.2 +
-        animeRatingScore * 0.15 +
-        roleBonus * 0.05;
+        characterFavoritesScore * 0.72 +
+        animePopularityScore * 0.10 +
+        animeRatingScore * 0.08 +
+        roleBonus * 0.10;
+
+    const randomVariance = Math.random() * 900 - 450;
 
     return Math.round(
         Math.max(
             1,
-            Math.min(powerLevel, 9999)
+            Math.min(powerLevel + randomVariance, 9999)
         )
     );
 }
@@ -527,4 +535,135 @@ export async function getUserProfile(userId: string) {
     const snapshot = await getDoc(userRef);
 
     return snapshot.exists() ? snapshot.data() : null;
+}
+
+export type HigherLowerMode =
+    | "animeScore"
+    | "animePopularity"
+    | "character";
+
+export type HigherLowerProgress = {
+    userId: string;
+    date: string;
+    claimedMilestones: number[];
+    bestDailyStreak: number;
+};
+
+export async function getHigherLowerProgress(
+    userId: string,
+    date: string
+): Promise<HigherLowerProgress | null> {
+    const progressRef = doc(
+        db,
+        "higherLowerProgress",
+        `${userId}-${date}`
+    );
+
+    const snapshot = await getDoc(progressRef);
+
+    if (!snapshot.exists()) {
+        return null;
+    }
+
+    return snapshot.data() as HigherLowerProgress;
+}
+
+export async function saveHigherLowerProgress(
+    userId: string,
+    date: string,
+    streak: number
+) {
+    const progressRef = doc(
+        db,
+        "higherLowerProgress",
+        `${userId}-${date}`
+    );
+
+    const snapshot = await getDoc(progressRef);
+    const existing = snapshot.exists()
+        ? snapshot.data()
+        : null;
+
+    const currentBest =
+        typeof existing?.bestDailyStreak === "number"
+            ? existing.bestDailyStreak
+            : 0;
+
+    await setDoc(
+        progressRef,
+        {
+            userId,
+            date,
+            claimedMilestones: existing?.claimedMilestones ?? [],
+            bestDailyStreak: Math.max(currentBest, streak),
+            updatedAt: serverTimestamp(),
+        },
+        { merge: true }
+    );
+
+    const userRef = doc(db, "users", userId);
+    const userSnap = await getDoc(userRef);
+    const userData = userSnap.exists() ? userSnap.data() : null;
+
+    const allTimeBest =
+        typeof userData?.higherLowerBestStreak === "number"
+            ? userData.higherLowerBestStreak
+            : 0;
+
+    if (streak > allTimeBest) {
+        await updateDoc(userRef, {
+            higherLowerBestStreak: streak,
+        });
+    }
+}
+
+export async function claimHigherLowerPack(
+    userId: string,
+    date: string,
+    milestone: number
+) {
+    if (![5, 10, 15, 20].includes(milestone)) {
+        throw new Error("Invalid reward milestone.");
+    }
+
+    const progressRef = doc(
+        db,
+        "higherLowerProgress",
+        `${userId}-${date}`
+    );
+
+    const progressSnap = await getDoc(progressRef);
+
+    if (!progressSnap.exists()) {
+        throw new Error("No Higher or Lower progress found.");
+    }
+
+    const progress = progressSnap.data();
+
+    const claimedMilestones: number[] =
+        progress.claimedMilestones ?? [];
+
+    if (claimedMilestones.includes(milestone)) {
+        throw new Error("You already claimed this reward today.");
+    }
+
+    if ((progress.bestDailyStreak ?? 0) < milestone) {
+        throw new Error("You have not reached this streak yet.");
+    }
+
+    const packRef = await addDoc(collection(db, "packs"), {
+        userId,
+        source: "higherLower",
+        date,
+        status: "unopened",
+        milestone,
+        createdAt: serverTimestamp(),
+    });
+
+    await updateDoc(progressRef, {
+        claimedMilestones: [...claimedMilestones, milestone],
+        updatedAt: serverTimestamp(),
+    });
+
+    return packRef.id;
 }

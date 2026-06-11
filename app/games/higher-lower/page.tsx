@@ -4,54 +4,52 @@ import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
 
-const games = [
+const modes = [
     {
-        title: "Daily Quest",
-        description: "Guess today’s anime in 6 tries and earn a character pack.",
-        href: "/daily",
-        status: "Available Daily",
-        imageLabel: "Daily Quest Image",
-        imageLink: "/game-images/daily-game.png"
+        title: "Anime Score",
+        description: "Guess which anime has the higher MAL score.",
+        href: "/games/higher-lower/anime-score",
+        status: "Score Mode",
+        imageLink: "/game-images/higher-lower-score.jpeg",
     },
     {
-        title: "Higher or Lower",
-        description: "Compare animes based on their ratings or popularity, or characters based on popularity.",
-        href: "/games/higher-lower",
-        status: "Available",
-        imageLabel: "Higher or Lower Image",
-        imageLink: "/game-images/higher-or-lower.jpg"
+        title: "Anime Popularity",
+        description: "Guess which anime is more popular on MAL.",
+        href: "/games/higher-lower/anime-popularity",
+        status: "Popularity Mode",
+        imageLink: "/game-images/higher-lower-popularity-v2.jpg",
     },
     {
-        title: "Mystery Game",
-        description: "A new anime challenge mode will be revealed soon.",
-        href: "#",
-        status: "Coming Soon",
-        imageLabel: "Mystery Game Image",
-        imageLink: "/game-images/daily.jpg"
+        title: "Character Favorites",
+        description: "Guess which character has more favorites.",
+        href: "/games/higher-lower/character",
+        status: "Character Mode",
+        imageLink: "/game-images/higher-lower-character.jpg",
     },
 ];
 
-export default function GamesPage() {
+export default function HigherLowerSelectPage() {
     return (
         <main className="mx-auto flex min-h-[calc(100vh-130px)] max-w-7xl flex-col px-4 py-10">
             <section className="relative z-10 mb-8 text-center">
                 <p className="text-xs font-bold uppercase tracking-widest text-purple-900/50">
-                    Game Modes
+                    Higher or Lower
                 </p>
 
                 <h1 className="mt-3 text-5xl font-bold text-purple-950">
-                    Choose Your Challenge
+                    Choose a Mode
                 </h1>
 
                 <p className="mx-auto mt-3 max-w-2xl text-purple-900/70">
-                    Play anime-themed challenges, earn packs, and grow your character collection.
+                    Build your streak by guessing which anime or character ranks higher.
+                    Earn packs every 5 correct answers, up to 4 per day.
                 </p>
             </section>
 
             <section className="relative z-10 grid flex-1 gap-6 lg:grid-cols-3">
-                {games.map((game, index) => (
+                {modes.map((mode, index) => (
                     <motion.div
-                        key={game.title}
+                        key={mode.title}
                         initial={{ opacity: 0, y: 24, scale: 0.96 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         transition={{
@@ -60,15 +58,15 @@ export default function GamesPage() {
                         }}
                     >
                         <Link
-                            href={game.href}
+                            href={mode.href}
                             className="group relative z-10 flex min-h-[520px] overflow-hidden rounded-3xl border border-purple-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl"
                         >
-                            <div className="absolute inset-0">
+                            <div className="absolute inset-0 bg-purple-100">
                                 <Image
-                                    src={game.imageLink}
-                                    alt={game.title}
+                                    src={mode.imageLink}
+                                    alt={mode.title}
                                     fill
-                                    className="object-cover"
+                                    className="object-cover object-top"
                                 />
                             </div>
 
@@ -76,19 +74,19 @@ export default function GamesPage() {
 
                             <div className="relative z-10 mt-auto flex w-full flex-col p-6 text-left">
                                 <span className="mb-3 w-fit rounded-full border border-white/30 bg-white/20 px-3 py-1 text-xs font-bold uppercase tracking-widest text-white backdrop-blur-sm">
-                                    {game.status}
+                                    {mode.status}
                                 </span>
 
                                 <h2 className="text-3xl font-bold text-white">
-                                    {game.title}
+                                    {mode.title}
                                 </h2>
 
                                 <p className="mt-3 text-sm leading-6 text-white/80">
-                                    {game.description}
+                                    {mode.description}
                                 </p>
 
                                 <div className="mt-6 inline-flex w-fit rounded-2xl bg-white px-5 py-3 text-sm font-bold text-purple-950 transition group-hover:bg-purple-100">
-                                    Play Now
+                                    Play Mode
                                 </div>
                             </div>
                         </Link>
