@@ -81,7 +81,12 @@ export default function ProfilePage() {
                 setProfile(profileSnap.data() as UserProfile);
 
                 const ownedCharacters = await getUserCharacters(uid);
-                setCharacters(ownedCharacters as OwnedCharacter[]);
+
+                const sortedCharacters = (ownedCharacters as OwnedCharacter[]).sort(
+                    (a, b) => b.powerLevel - a.powerLevel
+                );
+
+                setCharacters(sortedCharacters);
 
                 const currentUser = auth.currentUser;
 

@@ -142,10 +142,15 @@ function AnimePageContent() {
                             </div>
 
                             <div>
-                                <h2 className="flex justify-between text-3xl font-bold text-purple-950">
-                                    {anime.title}
-                                    <WishlistButton anime={anime} />
-                                </h2>
+                                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                                    <h2 className="min-w-0 break-words text-3xl font-bold text-purple-950">
+                                        {anime.title}
+                                    </h2>
+
+                                    <div className="shrink-0">
+                                        <WishlistButton anime={anime} />
+                                    </div>
+                                </div>
 
                                 {anime.title_english && anime.title_english !== anime.title && (
                                     <p className="mt-1 text-purple-900/60">

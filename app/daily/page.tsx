@@ -240,6 +240,42 @@ export default function DailyPage() {
         return overlap ? "close" : "wrong";
     }
 
+    function genresAreExact(
+        guessGenres: string[] = [],
+        answerGenres: string[] = []
+    ) {
+        if (guessGenres.length === 0 || answerGenres.length === 0) return false;
+
+        const normalizedAnswer = answerGenres.map((genre) => genre.toLowerCase());
+
+        return (
+            guessGenres.length === answerGenres.length &&
+            guessGenres.every((genre) =>
+                normalizedAnswer.includes(genre.toLowerCase())
+            )
+        );
+    }
+
+    function genrePillClass(
+        genre: string,
+        answerGenres: string[] = [],
+        allGenresCorrect: boolean
+    ) {
+        if (allGenresCorrect) {
+            return "border-green-200 bg-green-100 text-green-800";
+        }
+
+        const isPartialMatch = answerGenres
+            .map((answerGenre) => answerGenre.toLowerCase())
+            .includes(genre.toLowerCase());
+
+        if (isPartialMatch) {
+            return "border-yellow-200 bg-yellow-100 text-yellow-800";
+        }
+
+        return "border-purple-100 bg-white text-purple-900/50";
+    }
+
     function numericArrow(
         guess?: number | null,
         answer?: number | null
@@ -425,12 +461,40 @@ export default function DailyPage() {
                                             {attempt?.studio ?? "—"}
                                         </td>
 
-                                        <td className={`px-4 py-4 ${
-                                            attempt
-                                                ? cellClass(compareGenres(attempt.genres, dailyAnime.genres))
-                                                : "text-purple-300"
-                                        }`}>
-                                            {attempt?.genres?.join(", ") ?? "—"}
+                                        <td
+                                            className={`px-4 py-4 ${
+                                                attempt && genresAreExact(attempt.genres, dailyAnime.genres)
+                                                    ? "border-green-200 bg-green-100"
+                                                    : attempt
+                                                        ? "bg-purple-50"
+                                                        : "text-purple-300"
+                                            }`}
+                                        >
+                                            {attempt?.genres?.length ? (
+                                                <div className="flex flex-wrap justify-center gap-1.5">
+                                                    {attempt.genres.map((genre) => {
+                                                        const allGenresCorrect = genresAreExact(
+                                                            attempt.genres,
+                                                            dailyAnime.genres
+                                                        );
+
+                                                        return (
+                                                            <span
+                                                                key={genre}
+                                                                className={`rounded-full border px-2 py-1 text-xs font-semibold ${genrePillClass(
+                                                                    genre,
+                                                                    dailyAnime.genres,
+                                                                    allGenresCorrect
+                                                                )}`}
+                                                            >
+                                                                {genre}
+                                                            </span>
+                                                        );
+                                                    })}
+                                                </div>
+                                            ) : (
+                                                "—"
+                                            )}
                                         </td>
                                     </tr>
                                 );

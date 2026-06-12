@@ -26,8 +26,8 @@ const games = [
         description: "A new anime challenge mode will be revealed soon.",
         href: "#",
         status: "Coming Soon",
-        imageLabel: "",
-        imageLink: ""
+        imageLabel: "Mystery Game Image",
+        imageLink: "/game-images/mystery.jpg"
     },
 ];
 

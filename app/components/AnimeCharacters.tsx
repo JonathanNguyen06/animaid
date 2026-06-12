@@ -28,15 +28,24 @@ export default function AnimeCharacters({ animeId }: Props) {
     useEffect(() => {
         async function loadCharacters() {
             try {
+                setLoading(true);
+
                 const res = await fetch(`/api/jikan/characters?id=${animeId}`);
                 const json = await res.json();
-                setCharacters(json.data ?? []);
+
+                if (!res.ok || !Array.isArray(json.data)) {
+                    setCharacters([]);
+                    return;
+                }
+
+                setCharacters(json.data);
             } catch {
                 setCharacters([]);
             } finally {
                 setLoading(false);
             }
         }
+
         loadCharacters();
     }, [animeId]);
 
@@ -105,7 +114,7 @@ export default function AnimeCharacters({ animeId }: Props) {
             </p>
 
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
-                {characters.map((character) => {
+                {Array.isArray(characters) && characters.map((character) => {
                     const isLoading = settingPhoto === character.mal_id;
                     const isSuccess = successId === character.mal_id;
 
