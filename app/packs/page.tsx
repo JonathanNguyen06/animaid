@@ -107,7 +107,9 @@ export default function PacksPage() {
                                         ? "Daily Quest"
                                         : pack.source === "higherLower"
                                             ? "Higher or Lower"
-                                            : pack.source}
+                                            : pack.source === "exchange"
+                                                ? "Character Exchange"
+                                                : pack.source}
                                 </p>
 
                                 <h2 className="mt-3 text-xl font-bold text-purple-950">

@@ -25,6 +25,7 @@ import {
     getDocs,
     orderBy,
     onSnapshot,
+    deleteDoc,
 } from "firebase/firestore";
 
 // Your web app's Firebase configuration
@@ -684,4 +685,59 @@ export function observeUnopenedPackCount(
     return onSnapshot(q, (snapshot) => {
         callback(snapshot.size);
     });
+}
+
+export async function exchangeCharactersForPack(params: {
+    userId: string;
+    characterDocIds: string[];
+    rarity: string;
+}) {
+    const { userId, characterDocIds, rarity } = params;
+
+    function requiredAmount(rarity: string) {
+        switch (rarity) {
+            case "Common":
+                return 10;
+            case "Uncommon":
+                return 5;
+            case "Rare":
+                return 3;
+            case "Epic":
+                return 2;
+            case "Legendary":
+                return 1;
+            default:
+                return null;
+        }
+    }
+
+    const required = requiredAmount(rarity);
+
+    if (!required) {
+        throw new Error("This rarity cannot be exchanged.");
+    }
+
+    if (characterDocIds.length !== required) {
+        throw new Error(`You need ${required} ${rarity} characters to exchange.`);
+    }
+
+    for (const characterDocId of characterDocIds) {
+        await deleteDoc(
+            doc(db, "users", userId, "characters", characterDocId)
+        );
+    }
+
+    const today = new Date().toISOString().slice(0, 10);
+
+    const packRef = await addDoc(collection(db, "packs"), {
+        userId,
+        source: "exchange",
+        date: today,
+        status: "unopened",
+        exchangedRarity: rarity,
+        exchangedCharacterCount: required,
+        createdAt: serverTimestamp(),
+    });
+
+    return packRef.id;
 }

@@ -3,7 +3,11 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Loading from "@/app/components/Loading";
-import { getUserCharacters, observeAuth } from "@/lib/firebase";
+import {
+    exchangeCharactersForPack,
+    getUserCharacters,
+    observeAuth
+} from "@/lib/firebase";
 import type { User } from "firebase/auth";
 import SortButton, { CharacterSortOption } from "@/app/components/SortButton";
 
@@ -27,6 +31,8 @@ export default function CollectionPage() {
     const [loading, setLoading] = useState(true);
     const [showPowerInfo, setShowPowerInfo] = useState(false);
     const [sortBy, setSortBy] = useState<CharacterSortOption>("power-desc");
+    const [exchangeMode, setExchangeMode] = useState(false);
+    const [selectedCharacters, setSelectedCharacters] = useState<OwnedCharacterCard[]>([]);
 
     useEffect(() => {
         const unsubscribe = observeAuth((firebaseUser) => {
@@ -138,6 +144,83 @@ export default function CollectionPage() {
         0
     );
 
+    function exchangeRequirement(rarity: string) {
+        switch (rarity) {
+            case "Common":
+                return 10;
+            case "Uncommon":
+                return 5;
+            case "Rare":
+                return 3;
+            case "Epic":
+                return 2;
+            case "Legendary":
+                return 1;
+            default:
+                return null;
+        }
+    }
+
+    function canSelectCharacter(character: OwnedCharacterCard) {
+        if (character.rarity === "Mythic") return false;
+
+        if (selectedCharacters.length === 0) return true;
+
+        const selectedRarity = selectedCharacters[0].rarity;
+        const required = exchangeRequirement(selectedRarity);
+
+        return (
+            character.rarity === selectedRarity &&
+            selectedCharacters.length < (required ?? 0)
+        );
+    }
+
+    function toggleSelectedCharacter(character: OwnedCharacterCard) {
+        if (!exchangeMode) return;
+
+        const alreadySelected = selectedCharacters.some(
+            (selected) => selected.id === character.id
+        );
+
+        if (alreadySelected) {
+            setSelectedCharacters((current) =>
+                current.filter((selected) => selected.id !== character.id)
+            );
+            return;
+        }
+
+        if (!canSelectCharacter(character)) return;
+
+        setSelectedCharacters((current) => [...current, character]);
+    }
+
+    async function handleExchangeCharacters() {
+        if (!user || selectedCharacters.length === 0) return;
+
+        const rarity = selectedCharacters[0].rarity;
+        const required = exchangeRequirement(rarity);
+
+        if (!required || selectedCharacters.length !== required) return;
+
+        await exchangeCharactersForPack({
+            userId: user.uid,
+            characterDocIds: selectedCharacters.map((character) => character.id),
+            rarity,
+        });
+
+        setCharacters((current) =>
+            current.filter(
+                (character) =>
+                    !selectedCharacters.some(
+                        (selected) => selected.id === character.id
+                    )
+            )
+        );
+
+        setSelectedCharacters([]);
+        setExchangeMode(false);
+    }
+
     return (
         <main className="mx-auto min-h-[calc(100vh-130px)] max-w-6xl px-4 py-10">
             <section className="relative z-10 rounded-3xl border border-purple-200 bg-white p-8 shadow-sm">
@@ -178,9 +261,41 @@ export default function CollectionPage() {
                     </div>
                 )}
 
-                <div className="mt-6 flex justify-end">
+                <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
+                    <button
+                        type="button"
+                        onClick={() => {
+                            setExchangeMode((current) => !current);
+                            setSelectedCharacters([]);
+                        }}
+                        className={`rounded-2xl px-5 py-3 text-sm font-bold transition hover:cursor-pointer ${
+                            exchangeMode
+                                ? "bg-red-100 text-red-700 hover:bg-red-200"
+                                : "bg-purple-900 text-white hover:bg-purple-800"
+                        }`}
+                    >
+                        {exchangeMode ? "Cancel Exchange" : "Exchange Characters"}
+                    </button>
+
                     <SortButton value={sortBy} setValue={setSortBy} />
                 </div>
+
+                {exchangeMode && (
+                    <div className="mt-5 rounded-2xl border border-yellow-200 bg-yellow-50 p-4 text-sm text-yellow-800">
+                        {selectedCharacters.length === 0 ? (
+                            <p>
+                                Select characters of the same rarity to exchange for 1 character pack.
+                                Mythic characters cannot be exchanged.
+                            </p>
+                        ) : (
+                            <p>
+                                Selected {selectedCharacters.length} /{" "}
+                                {exchangeRequirement(selectedCharacters[0].rarity)}{" "}
+                                {selectedCharacters[0].rarity} characters.
+                            </p>
+                        )}
+                    </div>
+                )}
 
                 {!user && (
                     <p className="mt-8 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-red-700">
@@ -197,10 +312,24 @@ export default function CollectionPage() {
                 {user && characters.length > 0 && (
                     <div className="relative z-10 mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
                         {sortedCharacters.map((character) => (
-                            <Link
+                            <button
                                 key={character.id}
-                                href={`/anime?id=${character.animeId}`}
-                                className="relative z-10 overflow-hidden rounded-3xl border border-purple-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-md"
+                                type="button"
+                                onClick={() => {
+                                    if (exchangeMode) {
+                                        toggleSelectedCharacter(character);
+                                    }
+                                }}
+                                disabled={exchangeMode && !canSelectCharacter(character) && !selectedCharacters.some((selected) => selected.id === character.id)}
+                                className={`relative z-10 overflow-hidden rounded-3xl border hover:cursor-pointer bg-white text-left shadow-sm transition hover:-translate-y-1 hover:shadow-md ${
+                                    selectedCharacters.some((selected) => selected.id === character.id)
+                                        ? "border-yellow-400 ring-4 ring-yellow-200"
+                                        : "border-purple-200"
+                                } ${
+                                    exchangeMode && character.rarity === "Mythic"
+                                        ? "opacity-50"
+                                        : ""
+                                }`}
                             >
                                 {character.imageUrl && (
                                     <img
@@ -235,8 +364,31 @@ export default function CollectionPage() {
                                         {character.role} • {character.favorites} favorites
                                     </p>
                                 </div>
-                            </Link>
+                            </button>
                         ))}
+                    </div>
+                )}
+
+                {exchangeMode && selectedCharacters.length > 0 && (
+                    <div className="sticky bottom-4 z-20 mt-6 rounded-3xl border border-purple-200 bg-white p-4 shadow-xl">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                            <p className="font-semibold text-purple-950">
+                                {selectedCharacters.length} /{" "}
+                                {exchangeRequirement(selectedCharacters[0].rarity)} selected
+                            </p>
+
+                            <button
+                                type="button"
+                                onClick={handleExchangeCharacters}
+                                disabled={
+                                    selectedCharacters.length !==
+                                    exchangeRequirement(selectedCharacters[0].rarity)
+                                }
+                                className="rounded-2xl bg-purple-900 px-5 py-3 font-bold text-white transition hover:bg-purple-800 hover:cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                                Exchange for Pack
+                            </button>
+                        </div>
                     </div>
                 )}
             </section>

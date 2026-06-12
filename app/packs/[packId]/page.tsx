@@ -204,8 +204,12 @@ export default function PackPage() {
 
                             <p className="mt-1 text-xl font-bold text-purple-950">
                                 {pack.source === "dailyQuest"
-                                    ? "Daily Quest Reward"
-                                    : pack.source}
+                                    ? "Daily Quest"
+                                    : pack.source === "higherLower"
+                                        ? "Higher or Lower"
+                                        : pack.source === "exchange"
+                                            ? "Character Exchange"
+                                            : pack.source}
                             </p>
 
                             <p className="mt-4 text-sm font-semibold text-purple-900/60">
