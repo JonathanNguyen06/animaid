@@ -272,12 +272,27 @@ export async function openPack(
 
     const pulledCharacterIds = new Set<number>();
 
+    const wishlistSnap = await getDocs(
+        collection(db, "users", userId, "wishlist")
+    );
+
+    const wishlistAnimeIds = wishlistSnap.docs
+        .map((doc) => doc.data().mal_id)
+        .filter(Boolean);
+
+    const wishlistParam = encodeURIComponent(
+        wishlistAnimeIds.join(",")
+    );
+
     for (let i = 0; i < 3; i++) {
         if (i > 0) {
             await sleep(1000);
         }
 
-        const res = await fetch("/api/jikan/random-pack-character");
+        const res = await fetch(
+            `/api/jikan/random-pack-character?wishlist=${wishlistParam}`
+        );
+
         const json = await res.json();
 
         if (!res.ok) {
@@ -322,7 +337,7 @@ export async function openPack(
             favorites: character.favorites ?? 0,
             powerLevel,
             rarity,
-            obtainedFrom: "dailyQuest",
+            obtainedFrom: pack.source ?? "pack",
         });
     }
 

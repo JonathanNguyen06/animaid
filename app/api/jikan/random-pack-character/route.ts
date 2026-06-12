@@ -4,8 +4,109 @@ function randomInt(min: number, max: number) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-export async function GET() {
+async function getCharacterFromAnime(anime: any) {
+    const charactersRes = await fetch(
+        `https://api.jikan.moe/v4/anime/${anime.mal_id}/characters`
+    );
+
+    if (!charactersRes.ok) return null;
+
+    const charactersJson = await charactersRes.json();
+
+    const characters = (charactersJson.data ?? []).filter((entry: any) => {
+        const imageUrl =
+            entry.character?.images?.jpg?.image_url ||
+            entry.character?.images?.webp?.image_url;
+
+        return (
+            entry.character?.mal_id &&
+            entry.character?.name &&
+            imageUrl
+        );
+    });
+
+    if (characters.length === 0) return null;
+
+    const entry = characters[randomInt(0, characters.length - 1)];
+
+    let favorites =
+        entry.character?.favorites ??
+        entry.favorites ??
+        0;
+
     try {
+        const characterRes = await fetch(
+            `https://api.jikan.moe/v4/characters/${entry.character.mal_id}/full`
+        );
+
+        if (characterRes.ok) {
+            const characterJson = await characterRes.json();
+
+            favorites =
+                characterJson.data?.favorites ??
+                favorites;
+        }
+    } catch {
+        // keep fallback favorites
+    }
+
+    return {
+        anime: {
+            mal_id: anime.mal_id,
+            title: anime.title,
+            title_english:
+                anime.title_english ??
+                anime.title,
+            score: anime.score ?? 0,
+            popularity: anime.popularity ?? 5000,
+        },
+        character: {
+            mal_id: entry.character.mal_id,
+            name: entry.character.name,
+            images: entry.character.images,
+            favorites,
+            role: entry.role ?? "Supporting",
+        },
+    };
+}
+
+export async function GET(req: Request) {
+    try {
+        const { searchParams } = new URL(req.url);
+
+        const wishlist =
+            searchParams
+                .get("wishlist")
+                ?.split(",")
+                .map(Number)
+                .filter(Boolean) ?? [];
+
+        const shouldUseWishlist =
+            wishlist.length > 0 && Math.random() < 0.05;
+
+        if (shouldUseWishlist) {
+            for (let attempt = 0; attempt < 5; attempt++) {
+                const animeId = wishlist[randomInt(0, wishlist.length - 1)];
+
+                const animeRes = await fetch(
+                    `https://api.jikan.moe/v4/anime/${animeId}`
+                );
+
+                if (!animeRes.ok) continue;
+
+                const animeJson = await animeRes.json();
+                const anime = animeJson.data;
+
+                if (!anime) continue;
+
+                const result = await getCharacterFromAnime(anime);
+
+                if (result) {
+                    return NextResponse.json({ data: result });
+                }
+            }
+        }
+
         for (let attempt = 0; attempt < 30; attempt++) {
             const page = randomInt(1, 40);
 
@@ -22,71 +123,11 @@ export async function GET() {
 
             const anime = animeList[randomInt(0, animeList.length - 1)];
 
-            const charactersRes = await fetch(
-                `https://api.jikan.moe/v4/anime/${anime.mal_id}/characters`
-            );
+            const result = await getCharacterFromAnime(anime);
 
-            if (!charactersRes.ok) continue;
-
-            const charactersJson = await charactersRes.json();
-
-            const characters = (charactersJson.data ?? []).filter((entry: any) => {
-                const imageUrl =
-                    entry.character?.images?.jpg?.image_url ||
-                    entry.character?.images?.webp?.image_url;
-
-                return (
-                    entry.character?.mal_id &&
-                    entry.character?.name &&
-                    imageUrl
-                );
-            });
-
-            if (characters.length === 0) continue;
-
-            const entry = characters[randomInt(0, characters.length - 1)];
-
-            let favorites =
-                entry.character?.favorites ??
-                entry.favorites ??
-                0;
-
-            try {
-                const characterRes = await fetch(
-                    `https://api.jikan.moe/v4/characters/${entry.character.mal_id}/full`
-                );
-
-                if (characterRes.ok) {
-                    const characterJson = await characterRes.json();
-
-                    favorites =
-                        characterJson.data?.favorites ??
-                        favorites;
-                }
-            } catch {
-                // keep fallback favorites
+            if (result) {
+                return NextResponse.json({ data: result });
             }
-
-            return NextResponse.json({
-                data: {
-                    anime: {
-                        mal_id: anime.mal_id,
-                        title: anime.title,
-                        title_english:
-                            anime.title_english ??
-                            anime.title,
-                        score: anime.score ?? 0,
-                        popularity: anime.popularity ?? 1000,
-                    },
-                    character: {
-                        mal_id: entry.character.mal_id,
-                        name: entry.character.name,
-                        images: entry.character.images,
-                        favorites,
-                        role: entry.role ?? "Supporting",
-                    },
-                },
-            });
         }
 
         return NextResponse.json(

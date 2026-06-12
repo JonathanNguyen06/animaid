@@ -173,7 +173,7 @@ export default function WishlistPage() {
                 </h1>
 
                 <p className="mt-3 text-purple-900/70">
-                    Track what you're watching, what you've finished, and what you plan to watch next.
+                    Characters from anime on your wishlist have a slightly increased chance of appearing in packs.
                 </p>
 
                 {animeList.length === 0 && (
