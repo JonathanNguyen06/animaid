@@ -1,11 +1,12 @@
-'use client'
+"use client";
 
-import React, {useEffect, useState} from 'react'
-import {useSearchParams} from "next/navigation";
+import React, { Suspense, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import SearchControls from "@/app/components/SearchControls";
 import Image from "next/image";
 import WishlistButton from "@/app/components/WishlistButton";
 import AnimeCharacters from "@/app/components/AnimeCharacters";
+import Loading from "@/app/components/Loading";
 
 type Genre = {
     mal_id: number;
@@ -27,7 +28,7 @@ type Anime = {
     genres?: Genre[];
 };
 
-const Page = () => {
+function AnimePageContent() {
     const searchParams = useSearchParams();
 
     const id = searchParams.get("id") ?? "";
@@ -72,46 +73,53 @@ const Page = () => {
 
             <section className="mt-10">
                 {loading && (
-                    <div className="mt-6 grid gap-6 rounded-3xl border border-purple-200 bg-white relative z-10 p-6 shadow-sm md:grid-cols-[220px_1fr]">
-                        {/* Poster */}
+                    <div className="relative z-10 mt-6 grid gap-6 rounded-3xl border border-purple-200 bg-white p-6 shadow-sm md:grid-cols-[220px_1fr]">
                         <div className="animate-pulse rounded-2xl bg-purple-100" style={{ height: 320 }} />
 
                         <div className="flex flex-col gap-0">
-                            {/* Title row + wishlist button */}
                             <div className="flex items-center justify-between">
-                                <div className="animate-pulse h-8 w-[55%] rounded-lg bg-purple-100" />
-                                <div className="animate-pulse h-10 w-10 rounded-xl bg-purple-100 shrink-0" />
+                                <div className="h-8 w-[55%] animate-pulse rounded-lg bg-purple-100" />
+                                <div className="h-10 w-10 shrink-0 animate-pulse rounded-xl bg-purple-100" />
                             </div>
 
-                            {/* English subtitle */}
-                            <div className="animate-pulse mt-2.5 h-4 w-[30%] rounded-md bg-purple-100" />
+                            <div className="mt-2.5 h-4 w-[30%] animate-pulse rounded-md bg-purple-100" />
 
-                            {/* Stat pills row 1 */}
                             <div className="mt-4 flex flex-wrap gap-2">
                                 {[60, 80, 50, 68, 74, 90].map((w, i) => (
-                                    <div key={i} className="animate-pulse h-7 rounded-full bg-purple-100" style={{ width: w }} />
+                                    <div
+                                        key={i}
+                                        className="h-7 animate-pulse rounded-full bg-purple-100"
+                                        style={{ width: w }}
+                                    />
                                 ))}
                             </div>
 
-                            {/* Genre pills row 2 */}
                             <div className="mt-3 flex flex-wrap gap-2">
                                 {[70, 58, 82].map((w, i) => (
-                                    <div key={i} className="animate-pulse h-7 rounded-full bg-purple-100" style={{ width: w }} />
+                                    <div
+                                        key={i}
+                                        className="h-7 animate-pulse rounded-full bg-purple-100"
+                                        style={{ width: w }}
+                                    />
                                 ))}
                             </div>
 
-                            {/* Synopsis */}
                             <div className="mt-6">
-                                <div className="animate-pulse h-5 w-24 rounded-md bg-purple-100" />
+                                <div className="h-5 w-24 animate-pulse rounded-md bg-purple-100" />
                                 <div className="mt-3 flex flex-col gap-2">
                                     {[100, 95, 98, 88, 92, 60].map((w, i) => (
-                                        <div key={i} className="animate-pulse h-3.5 rounded bg-purple-100" style={{ width: `${w}%` }} />
+                                        <div
+                                            key={i}
+                                            className="h-3.5 animate-pulse rounded bg-purple-100"
+                                            style={{ width: `${w}%` }}
+                                        />
                                     ))}
                                 </div>
                             </div>
                         </div>
                     </div>
                 )}
+
                 {error && (
                     <p className="mt-4 text-red-500">
                         {error}
@@ -120,7 +128,7 @@ const Page = () => {
 
                 {!loading && !error && anime && (
                     <>
-                        <div className="mt-6 grid gap-6 rounded-3xl border border-purple-200 bg-white relative z-10 p-6 shadow-sm md:grid-cols-[220px_1fr]">
+                        <div className="relative z-10 mt-6 grid gap-6 rounded-3xl border border-purple-200 bg-white p-6 shadow-sm md:grid-cols-[220px_1fr]">
                             <div className="overflow-hidden rounded-2xl bg-purple-100">
                                 {anime.images?.webp?.large_image_url && (
                                     <Image
@@ -134,9 +142,9 @@ const Page = () => {
                             </div>
 
                             <div>
-                                <h2 className="text-3xl font-bold text-purple-950 justify-between flex">
+                                <h2 className="flex justify-between text-3xl font-bold text-purple-950">
                                     {anime.title}
-                                    <WishlistButton anime={anime}/>
+                                    <WishlistButton anime={anime} />
                                 </h2>
 
                                 {anime.title_english && anime.title_english !== anime.title && (
@@ -200,6 +208,7 @@ const Page = () => {
                                     <h3 className="text-lg font-semibold text-purple-950">
                                         Synopsis
                                     </h3>
+
                                     <p className="mt-2 leading-7 text-purple-900/70">
                                         {anime.synopsis ?? "No synopsis available."}
                                     </p>
@@ -212,6 +221,13 @@ const Page = () => {
                 )}
             </section>
         </main>
-    )
+    );
 }
-export default Page
+
+export default function Page() {
+    return (
+        <Suspense fallback={<Loading />}>
+            <AnimePageContent />
+        </Suspense>
+    );
+}
