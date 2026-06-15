@@ -8,6 +8,7 @@ import { getPack, observeAuth, Pack, openPack } from "@/lib/firebase";
 import type { User } from "firebase/auth";
 import OpenPackButton from "@/app/components/OpenPackButton";
 import { motion } from "framer-motion";
+import PackOpeningAnimation from "@/app/components/PackOpeningAnimation";
 
 export default function PackPage() {
     const params = useParams();
@@ -21,6 +22,9 @@ export default function PackPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [openingAnimation, setOpeningAnimation] = useState(false);
+    const [burstAnimation, setBurstAnimation] = useState(false);
+    const [showRewardReveal, setShowRewardReveal] = useState(false);
+    const [revealedCards, setRevealedCards] = useState<number[]>([]);
 
     useEffect(() => {
         const unsubscribe = observeAuth((firebaseUser) => {
@@ -81,17 +85,32 @@ export default function PackPage() {
         return <Loading />;
     }
 
+    function revealCard(index: number) {
+        setRevealedCards((current) =>
+            current.includes(index) ? current : [...current, index]
+        );
+    }
+
     async function handleOpenPack() {
         if (!user || !pack) return;
 
         try {
             setOpening(true);
             setOpeningAnimation(true);
+            setBurstAnimation(false);
+            setShowRewardReveal(false);
             setError(null);
+            setRevealedCards([]);
 
-            await new Promise((resolve) => setTimeout(resolve, 2000));
+            // Let summon animation play while rewards load
+            await new Promise((resolve) => setTimeout(resolve, 1200));
 
             const openedRewards = await openPack(pack.id, user.uid);
+
+            // Rewards are ready now, so burst right before reveal
+            setBurstAnimation(true);
+
+            await new Promise((resolve) => setTimeout(resolve, 700));
 
             setRewards(openedRewards);
             setPack({
@@ -99,10 +118,15 @@ export default function PackPage() {
                 status: "opened",
                 rewards: openedRewards,
             });
+
+            setOpeningAnimation(false);
+            setBurstAnimation(false);
+            setShowRewardReveal(true);
         } catch (error: any) {
             setError(error?.message ?? "Failed to open pack.");
-        } finally {
             setOpeningAnimation(false);
+            setBurstAnimation(false);
+        } finally {
             setOpening(false);
         }
     }
@@ -178,15 +202,144 @@ export default function PackPage() {
 
     return (
         <main className="mx-auto flex min-h-[calc(100vh-130px)] max-w-3xl flex-col items-center justify-center px-4 py-10">
+            {openingAnimation && <PackOpeningAnimation burst={burstAnimation} />}
+
+            {showRewardReveal && rewards.length > 0 && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-purple-950/90 px-4 backdrop-blur-sm">
+                    <div className="absolute h-[700px] w-[700px] rounded-full bg-yellow-400/20 blur-3xl" />
+
+                    <div className="relative z-10 text-center">
+                        <p className="text-xs font-bold uppercase tracking-[0.4em] text-yellow-200/80">
+                            Summon Complete
+                        </p>
+
+                        <h2 className="mt-3 text-4xl font-bold text-white">
+                            New Characters
+                        </h2>
+
+                        <div className="mt-8 flex flex-wrap justify-center gap-6">
+                            {rewards.map((reward, index) => {
+                                const isRevealed = revealedCards.includes(index);
+
+                                return (
+                                    <motion.div
+                                        key={`${reward.characterId}-${index}`}
+                                        initial={{ opacity: 0, y: 40, scale: 0.85 }}
+                                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                                        transition={{
+                                            duration: 0.45,
+                                            delay: index * 0.25,
+                                            ease: "easeOut",
+                                        }}
+                                        className="w-[240px]"
+                                        style={{ perspective: 1000 }}
+                                    >
+                                        <motion.button
+                                            type="button"
+                                            onClick={() => revealCard(index)}
+                                            className="relative h-[420px] w-full cursor-pointer"
+                                            animate={{ rotateY: isRevealed ? 180 : 0 }}
+                                            transition={{
+                                                duration: 0.7,
+                                                ease: "easeInOut",
+                                            }}
+                                            style={{
+                                                transformStyle: "preserve-3d",
+                                            }}
+                                        >
+                                            <div
+                                                className="absolute inset-0 flex items-center justify-center overflow-hidden rounded-3xl border border-yellow-300 bg-gradient-to-br from-purple-700 via-purple-950 to-black shadow-2xl shadow-yellow-400/30"
+                                                style={{ backfaceVisibility: "hidden" }}
+                                            >
+                                                <div className="absolute h-72 w-72 rounded-full bg-yellow-400/20 blur-3xl" />
+                                                <div className="absolute inset-4 rounded-2xl border border-yellow-300/40" />
+
+                                                <img
+                                                    src="/icons/animaid-pack.png"
+                                                    alt="Anime Aid card back"
+                                                    className="relative z-10 h-32 w-32 object-contain drop-shadow-2xl"
+                                                />
+
+                                                <p className="absolute bottom-8 text-xs font-bold uppercase tracking-[0.3em] text-yellow-200/70">
+                                                    Tap to Reveal
+                                                </p>
+                                            </div>
+
+                                            <div
+                                                className={`absolute inset-0 overflow-hidden rounded-3xl border border-purple-200 shadow-2xl ${rarityGlow(reward.rarity)}`}
+                                                style={{
+                                                    backfaceVisibility: "hidden",
+                                                    transform: "rotateY(180deg)",
+                                                }}
+                                            >
+                                                {reward.imageUrl && (
+                                                    <img
+                                                        src={reward.imageUrl}
+                                                        alt={reward.name}
+                                                        className="h-full w-full object-cover"
+                                                    />
+                                                )}
+
+                                                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
+
+                                                <div className="absolute bottom-0 left-0 right-0 p-4 text-left">
+                                                    <span
+                                                        className={`inline-block rounded-full px-3 py-1 text-xs font-bold uppercase ${rarityClass(reward.rarity)}`}
+                                                    >
+                                                        {reward.rarity}
+                                                    </span>
+
+                                                    <h3 className="mt-3 text-xl font-bold text-white drop-shadow-lg">
+                                                        {reward.name}
+                                                    </h3>
+
+                                                    <p className="mt-1 text-sm text-white/80">
+                                                        From {reward.animeTitle ?? "Unknown Anime"}
+                                                    </p>
+
+                                                    <p
+                                                        className={`mt-2 text-sm font-semibold ${
+                                                            reward.rarity === "Mythic"
+                                                                ? "text-red-300"
+                                                                : reward.rarity === "Legendary"
+                                                                    ? "text-yellow-300"
+                                                                    : reward.rarity === "Epic"
+                                                                        ? "text-purple-300"
+                                                                        : reward.rarity === "Rare"
+                                                                            ? "text-blue-300"
+                                                                            : reward.rarity === "Uncommon"
+                                                                                ? "text-green-300"
+                                                                                : "text-white"
+                                                        }`}
+                                                    >
+                                                        Power: {reward.powerLevel}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </motion.button>
+                                    </motion.div>
+                                );
+                            })}
+                        </div>
+
+                        <button
+                            type="button"
+                            onClick={() => setShowRewardReveal(false)}
+                            className="mt-8 rounded-2xl bg-yellow-300 px-6 py-3 font-bold text-purple-950 transition hover:bg-yellow-200 hover:cursor-pointer"
+                        >
+                            Continue
+                        </button>
+                    </div>
+                </div>
+            )}
+
             <section className="w-full rounded-3xl border border-purple-200 bg-white relative z-10 p-8 text-center shadow-sm">
                 <p className="text-xs font-bold uppercase tracking-widest text-purple-900/50">
                     Character Pack
                 </p>
 
                 <h1 className="mt-3 text-4xl font-bold text-purple-950">
-                    {pack?.status === "opened"
-                        ? "Pack Opened"
-                        : "Your Pack Is Ready"}
+                    {pack?.status === "opened" ? "Pack Opened" : "Your Pack Is Ready"}
                 </h1>
 
                 {error && (
@@ -224,9 +377,7 @@ export default function PackPage() {
                                 Earned
                             </p>
 
-                            <p className="mt-1 text-purple-900">
-                                {pack.date}
-                            </p>
+                            <p className="mt-1 text-purple-900">{pack.date}</p>
                         </div>
 
                         {pack.status === "unopened" && (
@@ -242,7 +393,7 @@ export default function PackPage() {
                             </p>
                         )}
 
-                        {!openingAnimation && rewards.length > 0 && (
+                        {!openingAnimation && !showRewardReveal && rewards.length > 0 && (
                             <div className="relative z-10 mt-8 grid gap-4 sm:grid-cols-3">
                                 {rewards.map((reward, index) => (
                                     <motion.div
@@ -252,44 +403,10 @@ export default function PackPage() {
                                             opacity: 1,
                                             y: 0,
                                             scale: 1,
-
-                                            ...(reward.rarity === "Mythic" && {
-                                                boxShadow: [
-                                                    "0 0 0px rgba(239, 68, 68, 0.3)",
-                                                    "0 0 30px rgba(239, 68, 68, 0.75)",
-                                                    "0 0 0px rgba(239, 68, 68, 0.3)",
-                                                ],
-                                            }),
-
-                                            ...(reward.rarity === "Legendary" && {
-                                                boxShadow: [
-                                                    "0 0 0px rgba(250, 204, 21, 0.3)",
-                                                    "0 0 25px rgba(250, 204, 21, 0.65)",
-                                                    "0 0 0px rgba(250, 204, 21, 0.3)",
-                                                ],
-                                            }),
                                         }}
                                         transition={{
-                                            opacity: {
-                                                duration: 0.35,
-                                                delay: index * 0.18,
-                                            },
-                                            y: {
-                                                duration: 0.35,
-                                                delay: index * 0.18,
-                                            },
-                                            scale: {
-                                                duration: 0.35,
-                                                delay: index * 0.18,
-                                            },
-                                            boxShadow: {
-                                                duration: reward.rarity === "Mythic" ? 2 : 2.5,
-                                                repeat:
-                                                    reward.rarity === "Mythic" || reward.rarity === "Legendary"
-                                                        ? Infinity
-                                                        : 0,
-                                                ease: "easeInOut",
-                                            },
+                                            duration: 0.35,
+                                            delay: index * 0.18,
                                         }}
                                         className={`relative z-10 overflow-hidden rounded-3xl border border-purple-200 bg-white shadow-lg ${rarityGlow(reward.rarity)}`}
                                     >
@@ -302,11 +419,11 @@ export default function PackPage() {
                                         )}
 
                                         <div className="p-4 text-left">
-                                            <span
-                                                className={`rounded-full px-3 py-1 text-xs font-bold uppercase ${rarityClass(reward.rarity)}`}
-                                            >
-                                                {reward.rarity}
-                                            </span>
+                                        <span
+                                            className={`rounded-full px-3 py-1 text-xs font-bold uppercase ${rarityClass(reward.rarity)}`}
+                                        >
+                                            {reward.rarity}
+                                        </span>
 
                                             <h3 className="mt-3 font-bold text-purple-950">
                                                 {reward.name}
@@ -339,6 +456,5 @@ export default function PackPage() {
                 </div>
             </section>
         </main>
-
     );
 }

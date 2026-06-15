@@ -4,6 +4,34 @@ function randomInt(min: number, max: number) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
+function getValidCharacterImage(entry: any) {
+    const jpg = entry.character?.images?.jpg?.image_url;
+    const webp = entry.character?.images?.webp?.image_url;
+
+    const imageUrl = jpg || webp;
+
+    if (!imageUrl) return null;
+
+    const invalidImageParts = [
+        "questionmark",
+        "question_mark",
+        "no_image",
+        "noimage",
+        "placeholder",
+        "default",
+    ];
+
+    const lowerImageUrl = imageUrl.toLowerCase();
+
+    const isInvalid = invalidImageParts.some((part) =>
+        lowerImageUrl.includes(part)
+    );
+
+    if (isInvalid) return null;
+
+    return imageUrl;
+}
+
 async function getCharacterFromAnime(anime: any) {
     const charactersRes = await fetch(
         `https://api.jikan.moe/v4/anime/${anime.mal_id}/characters`
@@ -14,9 +42,7 @@ async function getCharacterFromAnime(anime: any) {
     const charactersJson = await charactersRes.json();
 
     const characters = (charactersJson.data ?? []).filter((entry: any) => {
-        const imageUrl =
-            entry.character?.images?.jpg?.image_url ||
-            entry.character?.images?.webp?.image_url;
+        const imageUrl = getValidCharacterImage(entry);
 
         return (
             entry.character?.mal_id &&
@@ -28,11 +54,11 @@ async function getCharacterFromAnime(anime: any) {
     if (characters.length === 0) return null;
 
     const entry = characters[randomInt(0, characters.length - 1)];
+    const imageUrl = getValidCharacterImage(entry);
 
-    let favorites =
-        entry.character?.favorites ??
-        entry.favorites ??
-        0;
+    if (!imageUrl) return null;
+
+    let favorites = entry.character?.favorites ?? entry.favorites ?? 0;
 
     try {
         const characterRes = await fetch(
@@ -42,9 +68,7 @@ async function getCharacterFromAnime(anime: any) {
         if (characterRes.ok) {
             const characterJson = await characterRes.json();
 
-            favorites =
-                characterJson.data?.favorites ??
-                favorites;
+            favorites = characterJson.data?.favorites ?? favorites;
         }
     } catch {
         // keep fallback favorites
@@ -54,16 +78,21 @@ async function getCharacterFromAnime(anime: any) {
         anime: {
             mal_id: anime.mal_id,
             title: anime.title,
-            title_english:
-                anime.title_english ??
-                anime.title,
+            title_english: anime.title_english ?? anime.title,
             score: anime.score ?? 0,
             popularity: anime.popularity ?? 5000,
         },
         character: {
             mal_id: entry.character.mal_id,
             name: entry.character.name,
-            images: entry.character.images,
+            images: {
+                jpg: {
+                    image_url: imageUrl,
+                },
+                webp: {
+                    image_url: imageUrl,
+                },
+            },
             favorites,
             role: entry.role ?? "Supporting",
         },
@@ -81,8 +110,7 @@ export async function GET(req: Request) {
                 .map(Number)
                 .filter(Boolean) ?? [];
 
-        const shouldUseWishlist =
-            wishlist.length > 0 && Math.random() < 0.05;
+        const shouldUseWishlist = wishlist.length > 0 && Math.random() < 0.05;
 
         if (shouldUseWishlist) {
             for (let attempt = 0; attempt < 5; attempt++) {
