@@ -71,7 +71,6 @@ async function getCharacterFromAnime(anime: any) {
             favorites = characterJson.data?.favorites ?? favorites;
         }
     } catch {
-        // keep fallback favorites
     }
 
     return {
@@ -135,7 +134,7 @@ export async function GET(req: Request) {
             }
         }
 
-        for (let attempt = 0; attempt < 30; attempt++) {
+        for (let attempt = 0; attempt < 100; attempt++) {
             const page = randomInt(1, 40);
 
             const topAnimeRes = await fetch(

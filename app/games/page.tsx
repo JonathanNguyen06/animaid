@@ -22,10 +22,10 @@ const games = [
         imageLink: "/game-images/higher-or-lower.jpg"
     },
     {
-        title: "Mystery Game",
-        description: "A new anime challenge mode will be revealed soon.",
-        href: "#",
-        status: "Coming Soon",
+        title: "Blind Draft",
+        description: "Create the best anime squad with random characters.",
+        href: "/games/draft",
+        status: "Available",
         imageLabel: "Mystery Game Image",
         imageLink: "/game-images/mystery.jpg"
     },
