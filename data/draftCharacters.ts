@@ -26,8 +26,8 @@ export type DraftPosition =
 
 export const positionWeights = {
     Captain: {
-        leadership: 0.60,
-        iq: 0.15,
+        leadership: 0.65,
+        iq: 0.10,
         power: 0.15,
         utility: 0.05,
         defense: 0.05,
@@ -379,7 +379,7 @@ export const draftCharacters: DraftCharacter[] = [
             power: 95,
             utility: 60,
             speed: 88,
-            iq: 45,
+            iq: 50,
             defense: 95,
         },
     },
@@ -2421,6 +2421,7 @@ export const draftCharacters: DraftCharacter[] = [
             defense: 62
         }
     },
+    // Hunter x Hunter
     {
         id: "gon-freecss",
         name: "Gon Freecss",
@@ -2701,6 +2702,7 @@ export const draftCharacters: DraftCharacter[] = [
             defense: 82
         }
     },
+    // Jujutsu Kaisen
     {
         id: "yuji-itadori",
         name: "Yuji Itadori",
@@ -2967,6 +2969,7 @@ export const draftCharacters: DraftCharacter[] = [
             defense: 65
         }
     },
+    // Misc.
     {
         id: "mob",
         name: "Shigeo Kageyama",
@@ -3107,6 +3110,7 @@ export const draftCharacters: DraftCharacter[] = [
             defense: 70
         }
     },
+    // 7 Deadly Sins
     {
         id: "meliodas",
         name: "Meliodas",
@@ -3303,6 +3307,7 @@ export const draftCharacters: DraftCharacter[] = [
             defense: 99
         }
     },
+    // Chainsaw Man
     {
         id: "denji",
         name: "Denji",
@@ -3443,6 +3448,7 @@ export const draftCharacters: DraftCharacter[] = [
             defense: 72
         }
     },
+    // Black Clover
     {
         id: "asta",
         name: "Asta",
@@ -3653,6 +3659,7 @@ export const draftCharacters: DraftCharacter[] = [
             defense: 78
         }
     },
+    // Fairy Tail
     {
         id: "natsu-dragneel",
         name: "Natsu Dragneel",
@@ -3933,6 +3940,7 @@ export const draftCharacters: DraftCharacter[] = [
             defense: 82
         }
     },
+    // Fate
     {
         id: "artoria-pendragon",
         name: "Saber",
@@ -3989,6 +3997,7 @@ export const draftCharacters: DraftCharacter[] = [
             defense: 72
         }
     },
+    // Fire Force
     {
         id: "shinra-kusakabe",
         name: "Shinra Kusakabe",
@@ -4199,6 +4208,7 @@ export const draftCharacters: DraftCharacter[] = [
             defense: 95
         }
     },
+    // Gintama
     {
         id: "gintoki-sakata",
         name: "Gintoki Sakata",
@@ -4241,6 +4251,7 @@ export const draftCharacters: DraftCharacter[] = [
             defense: 50
         }
     },
+    // Vinland Saga
     {
         id: "thorfinn",
         name: "Thorfinn",
@@ -4269,6 +4280,7 @@ export const draftCharacters: DraftCharacter[] = [
             defense: 72
         }
     },
+    // Solo Leveling
     {
         id: "sung-jinwoo",
         name: "Sung Jin-Woo",
@@ -4339,6 +4351,7 @@ export const draftCharacters: DraftCharacter[] = [
             defense: 92,
         },
     },
+    // Frieren
     {
         id: "frieren",
         name: "Frieren",
@@ -4393,6 +4406,189 @@ export const draftCharacters: DraftCharacter[] = [
             speed: 90,
             iq: 88,
             defense: 82,
+        },
+    },
+    // Jojo's Bizarre Adventures
+    {
+        id: "jotaro-kujo",
+        name: "Jotaro Kujo",
+        anime: "JoJo's Bizarre Adventure",
+        imageUrl: "/draft/jojo/jotaro.webp",
+        stats: {
+            leadership: 88,
+            power: 96,
+            utility: 92,
+            speed: 95,
+            iq: 92,
+            defense: 92,
+        },
+    },
+    {
+        id: "dio-brando",
+        name: "DIO",
+        anime: "JoJo's Bizarre Adventure",
+        imageUrl: "/draft/jojo/dio.jpg",
+        stats: {
+            leadership: 92,
+            power: 97,
+            utility: 95,
+            speed: 95,
+            iq: 88,
+            defense: 95,
+        },
+    },
+    {
+        id: "joseph-joestar",
+        name: "Joseph Joestar",
+        anime: "JoJo's Bizarre Adventure",
+        imageUrl: "/draft/jojo/joseph.jpg",
+        stats: {
+            leadership: 90,
+            power: 72,
+            utility: 95,
+            speed: 75,
+            iq: 99,
+            defense: 72,
+        },
+    },
+    {
+        id: "josuke-higashikata",
+        name: "Josuke Higashikata",
+        anime: "JoJo's Bizarre Adventure",
+        imageUrl: "/draft/jojo/josuke.webp",
+        stats: {
+            leadership: 85,
+            power: 88,
+            utility: 95,
+            speed: 82,
+            iq: 78,
+            defense: 90,
+        },
+    },
+    {
+        id: "giorno-giovanna",
+        name: "Giorno Giovanna",
+        anime: "JoJo's Bizarre Adventure",
+        imageUrl: "/draft/jojo/giorno.webp",
+        stats: {
+            leadership: 98,
+            power: 95,
+            utility: 99,
+            speed: 90,
+            iq: 95,
+            defense: 92,
+        },
+    },
+    {
+        id: "jolyne-cujoh",
+        name: "Jolyne Cujoh",
+        anime: "JoJo's Bizarre Adventure",
+        imageUrl: "/draft/jojo/jolyne.webp",
+        stats: {
+            leadership: 88,
+            power: 88,
+            utility: 92,
+            speed: 88,
+            iq: 85,
+            defense: 82,
+        },
+    },
+    {
+        id: "johnny-joestar",
+        name: "Johnny Joestar",
+        anime: "JoJo's Bizarre Adventure",
+        imageUrl: "/draft/jojo/johnny.webp",
+        stats: {
+            leadership: 82,
+            power: 98,
+            utility: 95,
+            speed: 82,
+            iq: 88,
+            defense: 85,
+        },
+    },
+    {
+        id: "gyro-zeppeli",
+        name: "Gyro Zeppeli",
+        anime: "JoJo's Bizarre Adventure",
+        imageUrl: "/draft/jojo/gyro.jpg",
+        stats: {
+            leadership: 92,
+            power: 88,
+            utility: 98,
+            speed: 82,
+            iq: 95,
+            defense: 82,
+        },
+    },
+    {
+        id: "kira-yoshikage",
+        name: "Yoshikage Kira",
+        anime: "JoJo's Bizarre Adventure",
+        imageUrl: "/draft/jojo/kira.avif",
+        stats: {
+            leadership: 45,
+            power: 92,
+            utility: 98,
+            speed: 82,
+            iq: 95,
+            defense: 82,
+        },
+    },
+    {
+        id: "diavolo",
+        name: "Diavolo",
+        anime: "JoJo's Bizarre Adventure",
+        imageUrl: "/draft/jojo/diavolo.jpg",
+        stats: {
+            leadership: 82,
+            power: 95,
+            utility: 98,
+            speed: 95,
+            iq: 90,
+            defense: 88,
+        },
+    },
+    {
+        id: "enrico-pucci",
+        name: "Enrico Pucci",
+        anime: "JoJo's Bizarre Adventure",
+        imageUrl: "/draft/jojo/enrico.jpg",
+        stats: {
+            leadership: 95,
+            power: 95,
+            utility: 99,
+            speed: 99,
+            iq: 95,
+            defense: 88,
+        },
+    },
+    {
+        id: "risotto-nero",
+        name: "Risotto Nero",
+        anime: "JoJo's Bizarre Adventure",
+        imageUrl: "/draft/jojo/risotto.png",
+        stats: {
+            leadership: 82,
+            power: 88,
+            utility: 98,
+            speed: 92,
+            iq: 88,
+            defense: 72,
+        },
+    },
+    {
+        id: "bruno-bucciarati",
+        name: "Bruno Bucciarati",
+        anime: "JoJo's Bizarre Adventure",
+        imageUrl: "/draft/jojo/bruno.jpg",
+        stats: {
+            leadership: 99,
+            power: 88,
+            utility: 95,
+            speed: 85,
+            iq: 90,
+            defense: 85,
         },
     },
 ];

@@ -89,6 +89,8 @@ export default function DraftPage() {
     const [picks, setPicks] = useState<DraftPick[]>([]);
     const [user, setUser] = useState<User | null>(null);
     const [highScore, setHighScore] = useState<DraftHighScore | null>(null);
+    const [rerollUsed, setRerollUsed] = useState(false);
+    const [isNewHighScore, setIsNewHighScore] = useState(false);
 
     const filledPositions = picks.map((pick) => pick.position);
     const draftComplete = picks.length === positions.length;
@@ -163,6 +165,7 @@ export default function DraftPage() {
                 };
 
                 await saveDraftHighScore(user.uid, newHighScore);
+                setIsNewHighScore(true);
 
                 setHighScore({
                     userId: user.uid,
@@ -189,6 +192,17 @@ export default function DraftPage() {
 
         setSelectedPosition(position);
         setHoveredPosition(null);
+    }
+
+    function rerollCharacter() {
+        if (rerollUsed || draftComplete || !currentCharacter) return;
+
+        setCurrentCharacter(
+            getRandomCharacter([...usedCharacterIds, currentCharacter.id])
+        );
+
+        setRerollUsed(true);
+        setSelectedPosition(null);
     }
 
     function confirmPick() {
@@ -222,6 +236,8 @@ export default function DraftPage() {
         setHoveredPosition(null);
         setSelectedPosition(null);
         setPicks([]);
+        setRerollUsed(false);
+        setIsNewHighScore(false);
     }
 
     return (
@@ -267,6 +283,15 @@ export default function DraftPage() {
                                     </p>
                                 </div>
                             </div>
+
+                            <button
+                                type="button"
+                                onClick={rerollCharacter}
+                                disabled={rerollUsed}
+                                className="mt-4 w-full rounded-2xl hover:cursor-pointer border border-yellow-300 bg-yellow-50 px-4 py-3 font-bold text-yellow-800 transition hover:bg-yellow-100 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                                {rerollUsed ? "Reroll Used" : "Reroll Character"}
+                            </button>
 
                             {selectedPosition && (
                                 <div className="mt-5 rounded-2xl border border-yellow-300 bg-yellow-50 p-4">
@@ -396,7 +421,18 @@ export default function DraftPage() {
                         </p>
 
                         {highScore && (
-                            <div className="mx-auto mt-6 max-w-md rounded-2xl border border-yellow-300 bg-yellow-50 p-4">
+                            <div
+                                className={`mx-auto mt-6 max-w-md rounded-2xl border p-5 transition ${
+                                    isNewHighScore
+                                        ? "animate-pulse border-yellow-400 bg-gradient-to-br from-yellow-50 via-white to-purple-50 shadow-[0_0_35px_rgba(250,204,21,0.75)]"
+                                        : "border-yellow-300 bg-yellow-50"
+                                }`}
+                            >
+                                {isNewHighScore && (
+                                    <p className="mb-2 text-sm font-black uppercase tracking-widest text-yellow-600">
+                                        ✨ New Record! ✨
+                                    </p>
+                                )}
                                 <p className="text-sm font-bold uppercase tracking-widest text-yellow-700">
                                     High Score
                                 </p>
