@@ -1,6 +1,6 @@
 "use client";
 
-import {useEffect, useMemo, useState} from "react";
+import { useEffect, useMemo, useState } from "react";
 import { draftCharacters, DraftCharacter, DraftPosition } from "@/data/draftCharacters";
 import { calculateDraftPower } from "@/data/draftLogic";
 import {
@@ -14,8 +14,10 @@ import { onAuthStateChanged, type User } from "firebase/auth";
 type DraftPick = {
     character: DraftCharacter;
     position: DraftPosition;
+    basePower: number;
     power: number;
     grade: string;
+    hasSynergy?: boolean;
 };
 
 const positions: DraftPosition[] = [
@@ -28,6 +30,17 @@ const positions: DraftPosition[] = [
     "Ace",
     "Vanguard",
 ];
+
+const positionIcons: Record<DraftPosition, string> = {
+    Captain: "👑",
+    "Vice Captain": "⚔️",
+    Support: "💚",
+    Scout: "👁️",
+    Strategist: "🧠",
+    Assassin: "🗡️",
+    Ace: "🔥",
+    Vanguard: "🛡️",
+};
 
 function getLetterGrade(score: number) {
     if (score >= 95) return "S+";
@@ -81,6 +94,27 @@ function getRandomCharacter(usedIds: string[]) {
     return available[Math.floor(Math.random() * available.length)];
 }
 
+function applySynergyBonuses(picks: DraftPick[]) {
+    const animeCounts = picks.reduce<Record<string, number>>((counts, pick) => {
+        counts[pick.character.anime] = (counts[pick.character.anime] ?? 0) + 1;
+        return counts;
+    }, {});
+
+    return picks.map((pick) => {
+        const sameAnimeCount = animeCounts[pick.character.anime] ?? 1;
+        const hasSynergy = sameAnimeCount >= 2;
+        const synergyBonus = hasSynergy ? Math.min(sameAnimeCount - 1, 3) : 0;
+        const power = Math.min(99, pick.basePower + synergyBonus);
+
+        return {
+            ...pick,
+            power,
+            grade: getLetterGrade(power),
+            hasSynergy,
+        };
+    });
+}
+
 export default function DraftPage() {
     const [usedCharacterIds, setUsedCharacterIds] = useState<string[]>([]);
     const [currentCharacter, setCurrentCharacter] = useState<DraftCharacter | null>(null);
@@ -108,17 +142,6 @@ export default function DraftPage() {
             (a, b) => positions.indexOf(a.position) - positions.indexOf(b.position)
         );
     }, [picks]);
-
-    const positionIcons: Record<DraftPosition, string> = {
-        Captain: "👑",
-        "Vice Captain": "⚔️",
-        Support: "💚",
-        Scout: "👁️",
-        Strategist: "🧠",
-        Assassin: "🗡️",
-        Ace: "🔥",
-        Vanguard: "🛡️",
-    };
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -182,9 +205,7 @@ export default function DraftPage() {
     }
 
     function handleDragStart(event: React.DragEvent) {
-        if (!currentCharacter) return;
-
-        event.dataTransfer.setData("text/plain", currentCharacter.id);
+        event.dataTransfer.setData("text/plain", currentCharacter!.id);
     }
 
     function handleDrop(position: DraftPosition) {
@@ -208,18 +229,19 @@ export default function DraftPage() {
     function confirmPick() {
         if (!selectedPosition || !currentCharacter) return;
 
-        const power = calculateDraftPower(currentCharacter, selectedPosition);
+        const basePower = calculateDraftPower(currentCharacter, selectedPosition);
 
         const newPick: DraftPick = {
             character: currentCharacter,
             position: selectedPosition,
-            power,
-            grade: getLetterGrade(power),
+            basePower,
+            power: basePower,
+            grade: getLetterGrade(basePower),
         };
 
         const newUsedIds = [...usedCharacterIds, currentCharacter.id];
 
-        setPicks((current) => [...current, newPick]);
+        setPicks((current) => applySynergyBonuses([...current, newPick]));
         setUsedCharacterIds(newUsedIds);
         setSelectedPosition(null);
 
@@ -229,10 +251,8 @@ export default function DraftPage() {
     }
 
     function restartDraft() {
-        const firstCharacter = getRandomCharacter([]);
-
         setUsedCharacterIds([]);
-        setCurrentCharacter(firstCharacter);
+        setCurrentCharacter(getRandomCharacter([]));
         setHoveredPosition(null);
         setSelectedPosition(null);
         setPicks([]);
@@ -242,7 +262,7 @@ export default function DraftPage() {
 
     return (
         <main className="mx-auto min-h-[calc(100vh-130px)] max-w-7xl px-4 py-10">
-            <section className="rounded-3xl border border-purple-200 bg-white relative z-10 p-8 shadow-sm">
+            <section className="relative z-10 rounded-3xl border border-purple-200 bg-white p-8 shadow-sm">
                 <p className="text-xs font-bold uppercase tracking-widest text-purple-900/50">
                     Anime Draft
                 </p>
@@ -270,7 +290,7 @@ export default function DraftPage() {
                                 <img
                                     src={currentCharacter.imageUrl}
                                     alt={currentCharacter.name}
-                                    className="h-80 w-full object-cover"
+                                    className="h-80 w-full object-cover object-[50%_20%]"
                                 />
 
                                 <div className="p-5">
@@ -288,7 +308,7 @@ export default function DraftPage() {
                                 type="button"
                                 onClick={rerollCharacter}
                                 disabled={rerollUsed}
-                                className="mt-4 w-full rounded-2xl hover:cursor-pointer border border-yellow-300 bg-yellow-50 px-4 py-3 font-bold text-yellow-800 transition hover:bg-yellow-100 disabled:cursor-not-allowed disabled:opacity-50"
+                                className="mt-4 w-full rounded-2xl border border-yellow-300 bg-yellow-50 px-4 py-3 font-bold text-yellow-800 transition hover:cursor-pointer hover:bg-yellow-100 disabled:cursor-not-allowed disabled:opacity-50"
                             >
                                 {rerollUsed ? "Reroll Used" : "Reroll Character"}
                             </button>
@@ -307,7 +327,7 @@ export default function DraftPage() {
                                         <button
                                             type="button"
                                             onClick={confirmPick}
-                                            className="rounded-xl bg-purple-900 px-4 py-2 font-bold text-white transition hover:bg-purple-800 hover:cursor-pointer"
+                                            className="rounded-xl bg-purple-900 px-4 py-2 font-bold text-white transition hover:cursor-pointer hover:bg-purple-800"
                                         >
                                             Confirm
                                         </button>
@@ -315,7 +335,7 @@ export default function DraftPage() {
                                         <button
                                             type="button"
                                             onClick={() => setSelectedPosition(null)}
-                                            className="rounded-xl border border-purple-200 px-4 py-2 font-bold text-purple-900 transition hover:bg-purple-50 hover:cursor-pointer"
+                                            className="rounded-xl border border-purple-200 px-4 py-2 font-bold text-purple-900 transition hover:cursor-pointer hover:bg-purple-50"
                                         >
                                             Cancel
                                         </button>
@@ -369,9 +389,11 @@ export default function DraftPage() {
 
                                             {pick && (
                                                 <div
-                                                    className={`mt-4 overflow-hidden rounded-2xl border-2 bg-white transition ${getGradeGlow(
-                                                        pick.grade
-                                                    )}`}
+                                                    className={`mt-4 overflow-hidden rounded-2xl border-2 bg-white transition ${
+                                                        pick.hasSynergy
+                                                            ? "border-pink-300 shadow-[0_0_24px_rgba(244,114,182,0.55)]"
+                                                            : getGradeGlow(pick.grade)
+                                                    }`}
                                                 >
                                                     <img
                                                         src={pick.character.imageUrl}
@@ -387,6 +409,12 @@ export default function DraftPage() {
                                                         <p className="text-sm text-purple-900/60">
                                                             {pick.character.anime}
                                                         </p>
+
+                                                        {pick.hasSynergy && (
+                                                            <p className="mt-2 text-xs font-black uppercase tracking-widest text-pink-500">
+                                                                Series Link
+                                                            </p>
+                                                        )}
 
                                                         <p className="mt-3 text-2xl font-black text-purple-900">
                                                             {pick.grade}
@@ -433,6 +461,7 @@ export default function DraftPage() {
                                         ✨ New Record! ✨
                                     </p>
                                 )}
+
                                 <p className="text-sm font-bold uppercase tracking-widest text-yellow-700">
                                     High Score
                                 </p>
@@ -451,9 +480,11 @@ export default function DraftPage() {
                             {sortedPicks.map((pick) => (
                                 <div
                                     key={pick.position}
-                                    className={`overflow-hidden rounded-3xl border-2 bg-purple-50 text-left transition ${getGradeGlow(
-                                        pick.grade
-                                    )}`}
+                                    className={`overflow-hidden rounded-3xl border-2 bg-purple-50 text-left transition ${
+                                        pick.hasSynergy
+                                            ? "border-pink-300 shadow-[0_0_28px_rgba(244,114,182,0.6)]"
+                                            : getGradeGlow(pick.grade)
+                                    }`}
                                 >
                                     <img
                                         src={pick.character.imageUrl}
@@ -474,6 +505,12 @@ export default function DraftPage() {
                                             {pick.character.anime}
                                         </p>
 
+                                        {pick.hasSynergy && (
+                                            <p className="mt-2 text-xs font-black uppercase tracking-widest text-pink-500">
+                                                Series Link
+                                            </p>
+                                        )}
+
                                         <div className="mt-4 flex items-center justify-between">
                                             <span className="text-2xl font-black text-purple-900">
                                                 {pick.grade}
@@ -491,7 +528,7 @@ export default function DraftPage() {
                         <button
                             type="button"
                             onClick={restartDraft}
-                            className="mt-8 rounded-2xl bg-purple-900 px-6 py-3 font-bold text-white transition hover:bg-purple-800 hover:cursor-pointer"
+                            className="mt-8 rounded-2xl bg-purple-900 px-6 py-3 font-bold text-white transition hover:cursor-pointer hover:bg-purple-800"
                         >
                             Start New Draft
                         </button>
@@ -500,4 +537,4 @@ export default function DraftPage() {
             </section>
         </main>
     );
-}
+};
