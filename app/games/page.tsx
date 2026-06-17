@@ -27,7 +27,7 @@ const games = [
         href: "/games/draft",
         status: "Available",
         imageLabel: "Mystery Game Image",
-        imageLink: "/game-images/mystery.jpg"
+        imageLink: "/game-images/draft.avif"
     },
 ];
 

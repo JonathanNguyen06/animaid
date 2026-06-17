@@ -77,9 +77,9 @@ export const positionWeights = {
     },
 
     Vanguard: {
-        defense: 0.4,
-        leadership: 0.2,
-        power: 0.2,
+        defense: 0.5,
+        leadership: 0.15,
+        power: 0.15,
         utility: 0.1,
         speed: 0.05,
         iq: 0.05,
@@ -358,7 +358,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "tobirama-senju",
         name: "Tobirama Senju",
         anime: "Naruto",
-        imageUrl: "/draft/naruto/tobirama.png",
+        imageUrl: "/draft/naruto/tobirama.webp",
         stats: {
             leadership: 86,
             power: 88,
@@ -2425,7 +2425,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "gon-freecss",
         name: "Gon Freecss",
         anime: "Hunter x Hunter",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/11/174517.webp",
+        imageUrl: "/draft/hxh/gon.webp",
         stats: {
             leadership: 85,
             power: 90,
@@ -2439,7 +2439,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "killua-zoldyck",
         name: "Killua Zoldyck",
         anime: "Hunter x Hunter",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/2/327920.webp",
+        imageUrl: "/draft/hxh/killua.jpg",
         stats: {
             leadership: 65,
             power: 88,
@@ -2453,7 +2453,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "kurapika",
         name: "Kurapika",
         anime: "Hunter x Hunter",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/3/549312.webp",
+        imageUrl: "/draft/hxh/kurapika.avif",
         stats: {
             leadership: 88,
             power: 85,
@@ -2467,7 +2467,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "leorio",
         name: "Leorio Paradinight",
         anime: "Hunter x Hunter",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/11/549311.webp",
+        imageUrl: "/draft/hxh/leorio.webp",
         stats: {
             leadership: 82,
             power: 55,
@@ -2481,7 +2481,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "hisoka",
         name: "Hisoka",
         anime: "Hunter x Hunter",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/9/531213.webp",
+        imageUrl: "/draft/hxh/hisoka.jpg",
         stats: {
             leadership: 40,
             power: 92,
@@ -2495,7 +2495,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "chrollo-lucilfer",
         name: "Chrollo Lucilfer",
         anime: "Hunter x Hunter",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/4/182387.webp",
+        imageUrl: "/draft/hxh/chrollo.jpg",
         stats: {
             leadership: 98,
             power: 90,
@@ -2509,7 +2509,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "isaac-netero",
         name: "Isaac Netero",
         anime: "Hunter x Hunter",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/7/257355.webp",
+        imageUrl: "/draft/hxh/netero.webp",
         stats: {
             leadership: 99,
             power: 97,
@@ -2523,7 +2523,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "meruem",
         name: "Meruem",
         anime: "Hunter x Hunter",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/6/243861.webp",
+        imageUrl: "/draft/hxh/mereum.jpg",
         stats: {
             leadership: 95,
             power: 97,
@@ -2537,7 +2537,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "neferpitou",
         name: "Neferpitou",
         anime: "Hunter x Hunter",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/12/253673.webp",
+        imageUrl: "/draft/hxh/neferpitou.webp",
         stats: {
             leadership: 65,
             power: 96,
@@ -2551,7 +2551,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "shaiapouf",
         name: "Shaiapouf",
         anime: "Hunter x Hunter",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/3/563303.webp",
+        imageUrl: "/draft/hxh/shaiapouf.webp",
         stats: {
             leadership: 82,
             power: 82,
@@ -2565,7 +2565,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "menthuthuyoupi",
         name: "Menthuthuyoupi",
         anime: "Hunter x Hunter",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/2/256781.webp",
+        imageUrl: "/draft/hxh/youpi.webp",
         stats: {
             leadership: 35,
             power: 98,
@@ -2579,7 +2579,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "biscuit-krueger",
         name: "Biscuit Krueger",
         anime: "Hunter x Hunter",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/5/194667.webp",
+        imageUrl: "/draft/hxh/bisky.webp",
         stats: {
             leadership: 88,
             power: 88,
@@ -2593,7 +2593,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "ging-freecss",
         name: "Ging Freecss",
         anime: "Hunter x Hunter",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/2/231795.webp",
+        imageUrl: "/draft/hxh/ging.webp",
         stats: {
             leadership: 78,
             power: 92,
@@ -2607,7 +2607,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "silva-zoldyck",
         name: "Silva Zoldyck",
         anime: "Hunter x Hunter",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/4/198609.webp",
+        imageUrl: "/draft/hxh/silva.webp",
         stats: {
             leadership: 82,
             power: 92,
@@ -2621,7 +2621,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "zeno-zoldyck",
         name: "Zeno Zoldyck",
         anime: "Hunter x Hunter",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/5/193007.webp",
+        imageUrl: "/draft/hxh/zeno.webp",
         stats: {
             leadership: 88,
             power: 88,
@@ -2635,7 +2635,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "illumi-zoldyck",
         name: "Illumi Zoldyck",
         anime: "Hunter x Hunter",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/8/174521.webp",
+        imageUrl: "/draft/hxh/illumi.jpg",
         stats: {
             leadership: 65,
             power: 88,
@@ -2663,7 +2663,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "feitan",
         name: "Feitan",
         anime: "Hunter x Hunter",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/10/174721.webp",
+        imageUrl: "/draft/hxh/feitan.jpg",
         stats: {
             leadership: 35,
             power: 90,
@@ -2677,7 +2677,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "machi",
         name: "Machi Komacine",
         anime: "Hunter x Hunter",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/4/182389.webp",
+        imageUrl: "/draft/hxh/machi.jpg",
         stats: {
             leadership: 55,
             power: 82,
@@ -2691,7 +2691,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "knuckle-bine",
         name: "Knuckle Bine",
         anime: "Hunter x Hunter",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/6/572043.webp",
+        imageUrl: "/draft/hxh/knuckle.jpg",
         stats: {
             leadership: 78,
             power: 82,
@@ -2705,7 +2705,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "yuji-itadori",
         name: "Yuji Itadori",
         anime: "Jujutsu Kaisen",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/6/467646.webp",
+        imageUrl: "/draft/jjk/yuji.jpg",
         stats: {
             leadership: 82,
             power: 90,
@@ -2719,7 +2719,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "megumi-fushiguro",
         name: "Megumi Fushiguro",
         anime: "Jujutsu Kaisen",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/12/621887.webp",
+        imageUrl: "/draft/jjk/megumi.webp",
         stats: {
             leadership: 78,
             power: 82,
@@ -2733,7 +2733,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "nobara-kugisaki",
         name: "Nobara Kugisaki",
         anime: "Jujutsu Kaisen",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/12/422313.webp",
+        imageUrl: "/draft/jjk/nobara.webp",
         stats: {
             leadership: 68,
             power: 75,
@@ -2747,13 +2747,13 @@ export const draftCharacters: DraftCharacter[] = [
         id: "satoru-gojo",
         name: "Satoru Gojo",
         anime: "Jujutsu Kaisen",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/15/422168.webp",
+        imageUrl: "/draft/jjk/gojo.jpg",
         stats: {
-            leadership: 95,
+            leadership: 97,
             power: 99,
             utility: 99,
             speed: 99,
-            iq: 95,
+            iq: 96,
             defense: 99
         }
     },
@@ -2761,12 +2761,12 @@ export const draftCharacters: DraftCharacter[] = [
         id: "ryomen-sukuna",
         name: "Ryomen Sukuna",
         anime: "Jujutsu Kaisen",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/6/431152.webp",
+        imageUrl: "/draft/jjk/sukuna.jpg",
         stats: {
             leadership: 75,
             power: 99,
             utility: 98,
-            speed: 98,
+            speed: 99,
             iq: 97,
             defense: 99
         }
@@ -2775,7 +2775,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "yuta-okkotsu",
         name: "Yuta Okkotsu",
         anime: "Jujutsu Kaisen",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/10/612174.webp",
+        imageUrl: "/draft/jjk/yuta.jpg",
         stats: {
             leadership: 80,
             power: 96,
@@ -2789,7 +2789,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "suguru-geto",
         name: "Suguru Geto",
         anime: "Jujutsu Kaisen",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/7/619361.webp",
+        imageUrl: "/draft/jjk/geto.png",
         stats: {
             leadership: 92,
             power: 90,
@@ -2803,7 +2803,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "toji-fushiguro",
         name: "Toji Fushiguro",
         anime: "Jujutsu Kaisen",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/2/517123.webp",
+        imageUrl: "/draft/jjk/toji.webp",
         stats: {
             leadership: 45,
             power: 94,
@@ -2817,7 +2817,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "maki-zenin",
         name: "Maki Zenin",
         anime: "Jujutsu Kaisen",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/15/423949.webp",
+        imageUrl: "/draft/jjk/maki.webp",
         stats: {
             leadership: 82,
             power: 94,
@@ -2831,7 +2831,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "kinji-hakari",
         name: "Kinji Hakari",
         anime: "Jujutsu Kaisen",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/8/621869.webp",
+        imageUrl: "/draft/jjk/hakari.avif",
         stats: {
             leadership: 45,
             power: 95,
@@ -2859,7 +2859,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "kento-nanami",
         name: "Kento Nanami",
         anime: "Jujutsu Kaisen",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/16/581424.webp",
+        imageUrl: "/draft/jjk/nanami.avif",
         stats: {
             leadership: 80,
             power: 82,
@@ -2873,7 +2873,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "mahito",
         name: "Mahito",
         anime: "Jujutsu Kaisen",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/5/446508.webp",
+        imageUrl: "/draft/jjk/mahito.webp",
         stats: {
             leadership: 25,
             power: 86,
@@ -2887,7 +2887,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "jogo",
         name: "Jogo",
         anime: "Jujutsu Kaisen",
-        imageUrl: "https://cdn.myanimelist.net/img/sp/icon/apple-touch-icon-256.png",
+        imageUrl: "/draft/jjk/jogo.webp",
         stats: {
             leadership: 45,
             power: 95,
@@ -2915,7 +2915,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "mei-mei",
         name: "Mei Mei",
         anime: "Jujutsu Kaisen",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/10/631628.webp",
+        imageUrl: "/draft/jjk/meimei.webp",
         stats: {
             leadership: 70,
             power: 78,
@@ -2929,7 +2929,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "utahime-iori",
         name: "Utahime Iori",
         anime: "Jujutsu Kaisen",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/3/435404.webp",
+        imageUrl: "/draft/jjk/utahime.jpeg",
         stats: {
             leadership: 82,
             power: 45,
@@ -2943,7 +2943,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "panda",
         name: "Panda",
         anime: "Jujutsu Kaisen",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/15/609267.webp",
+        imageUrl: "/draft/jjk/panda.jpg",
         stats: {
             leadership: 75,
             power: 75,
@@ -2957,7 +2957,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "toge-inumaki",
         name: "Toge Inumaki",
         anime: "Jujutsu Kaisen",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/4/521636.webp",
+        imageUrl: "/draft/jjk/inumaki.jpg",
         stats: {
             leadership: 60,
             power: 75,
@@ -2971,7 +2971,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "mob",
         name: "Shigeo Kageyama",
         anime: "Mob Psycho 100",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/6/343344.webp",
+        imageUrl: "/draft/misc/mob.jpg",
         stats: {
             leadership: 65,
             power: 98,
@@ -2985,7 +2985,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "kirito",
         name: "Kirito",
         anime: "Sword Art Online",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/15/542694.webp",
+        imageUrl: "/draft/misc/kirito.webp",
         stats: {
             leadership: 82,
             power: 90,
@@ -2999,7 +2999,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "ken-kaneki",
         name: "Ken Kaneki",
         anime: "Tokyo Ghoul",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/15/307255.webp",
+        imageUrl: "/draft/misc/kaneki.webp",
         stats: {
             leadership: 80,
             power: 92,
@@ -3013,7 +3013,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "lelouch-lamperouge",
         name: "Lelouch Lamperouge",
         anime: "Code Geass",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/8/406163.webp",
+        imageUrl: "/draft/misc/lelouch.jpg",
         stats: {
             leadership: 99,
             power: 15,
@@ -3027,7 +3027,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "korosensei",
         name: "Korosensei",
         anime: "Assassination Classroom",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/9/277325.webp",
+        imageUrl: "/draft/misc/korosensei.jpg",
         stats: {
             leadership: 98,
             power: 95,
@@ -3041,7 +3041,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "spike-spiegel",
         name: "Spike Spiegel",
         anime: "Cowboy Bebop",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/11/516853.webp",
+        imageUrl: "/draft/misc/spike.jpg",
         stats: {
             leadership: 70,
             power: 75,
@@ -3055,7 +3055,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "senku-ishigami",
         name: "Senku Ishigami",
         anime: "Dr. Stone",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/4/478454.webp",
+        imageUrl: "/draft/misc/senku.jpg",
         stats: {
             leadership: 92,
             power: 5,
@@ -3083,7 +3083,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "yusuke-urameshi",
         name: "Yusuke Urameshi",
         anime: "Yu Yu Hakusho",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/3/130535.webp",
+        imageUrl: "/draft/misc/yusuke.webp",
         stats: {
             leadership: 88,
             power: 95,
@@ -3097,7 +3097,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "kiyotaka-ayanokoji",
         name: "Kiyotaka Ayanokoji",
         anime: "Classroom of the Elite",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/4/539058.webp",
+        imageUrl: "/draft/misc/ayanokoji.png",
         stats: {
             leadership: 70,
             power: 83,
@@ -3111,7 +3111,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "meliodas",
         name: "Meliodas",
         anime: "Seven Deadly Sins",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/2/255447.webp",
+        imageUrl: "/draft/7ds/meliodas.webp",
         stats: {
             leadership: 92,
             power: 98,
@@ -3139,7 +3139,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "king",
         name: "King",
         anime: "Seven Deadly Sins",
-        imageUrl: "https://cdn.myanimelist.net/img/sp/icon/apple-touch-icon-256.png",
+        imageUrl: "/draft/7ds/king.jpg",
         stats: {
             leadership: 72,
             power: 90,
@@ -3167,13 +3167,13 @@ export const draftCharacters: DraftCharacter[] = [
         id: "gowther",
         name: "Gowther",
         anime: "Seven Deadly Sins",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/3/277118.webp",
+        imageUrl: "/draft/7ds/gowther.jpg",
         stats: {
             leadership: 70,
             power: 72,
-            utility: 99,
+            utility: 96,
             speed: 70,
-            iq: 98,
+            iq: 95,
             defense: 55
         }
     },
@@ -3181,13 +3181,13 @@ export const draftCharacters: DraftCharacter[] = [
         id: "merlin",
         name: "Merlin",
         anime: "Seven Deadly Sins",
-        imageUrl: "https://cdn.myanimelist.net/img/sp/icon/apple-touch-icon-256.png",
+        imageUrl: "/draft/7ds/jpg",
         stats: {
             leadership: 85,
             power: 90,
-            utility: 99,
+            utility: 98,
             speed: 78,
-            iq: 99,
+            iq: 98,
             defense: 72
         }
     },
@@ -3195,7 +3195,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "escanor",
         name: "Escanor",
         anime: "Seven Deadly Sins",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/14/372194.webp",
+        imageUrl: "/draft/7ds/escanor.jpg",
         stats: {
             leadership: 88,
             power: 99,
@@ -3209,7 +3209,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "elizabeth-liones",
         name: "Elizabeth Liones",
         anime: "Seven Deadly Sins",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/11/255449.webp",
+        imageUrl: "/draft/7ds/elizabeth.png",
         stats: {
             leadership: 82,
             power: 82,
@@ -3223,7 +3223,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "zeldris",
         name: "Zeldris",
         anime: "Seven Deadly Sins",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/7/400299.webp",
+        imageUrl: "/draft/7ds/zeldris.jpg",
         stats: {
             leadership: 88,
             power: 95,
@@ -3237,7 +3237,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "estarossa",
         name: "Estarossa",
         anime: "Seven Deadly Sins",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/13/462633.webp",
+        imageUrl: "/draft/7ds/estarossa.webp",
         stats: {
             leadership: 65,
             power: 94,
@@ -3251,7 +3251,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "mael",
         name: "Mael",
         anime: "Seven Deadly Sins",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/14/487569.webp",
+        imageUrl: "/draft/7ds/mael.webp",
         stats: {
             leadership: 85,
             power: 97,
@@ -3265,7 +3265,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "chandler",
         name: "Chandler",
         anime: "Seven Deadly Sins",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/15/398972.webp",
+        imageUrl: "/draft/7ds/chandler.webp",
         stats: {
             leadership: 72,
             power: 95,
@@ -3279,7 +3279,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "cusack",
         name: "Cusack",
         anime: "Seven Deadly Sins",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/15/398974.webp",
+        imageUrl: "/draft/7ds/cusack.webp",
         stats: {
             leadership: 78,
             power: 94,
@@ -3293,7 +3293,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "demon-king",
         name: "Demon King",
         anime: "Seven Deadly Sins",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/2/634381.webp",
+        imageUrl: "/draft/7ds/demonking.webp",
         stats: {
             leadership: 95,
             power: 99,
@@ -3307,7 +3307,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "denji",
         name: "Denji",
         anime: "Chainsaw Man",
-        imageUrl: "https://cdn.myanimelist.net/img/sp/icon/apple-touch-icon-256.png",
+        imageUrl: "/draft/chainsawman/denji.webp",
         stats: {
             leadership: 55,
             power: 92,
@@ -3321,10 +3321,10 @@ export const draftCharacters: DraftCharacter[] = [
         id: "makima",
         name: "Makima",
         anime: "Chainsaw Man",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/4/489561.webp",
+        imageUrl: "/draft/chainsawman/makima.webp",
         stats: {
             leadership: 95,
-            power: 95,
+            power: 97,
             utility: 98,
             speed: 82,
             iq: 98,
@@ -3335,7 +3335,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "aki-hayakawa",
         name: "Aki Hayakawa",
         anime: "Chainsaw Man",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/13/395003.webp",
+        imageUrl: "/draft/chainsawman/aki.webp",
         stats: {
             leadership: 88,
             power: 80,
@@ -3349,7 +3349,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "power",
         name: "Power",
         anime: "Chainsaw Man",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/7/494969.webp",
+        imageUrl: "/draft/chainsawman/power.webp",
         stats: {
             leadership: 35,
             power: 85,
@@ -3363,7 +3363,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "kishibe",
         name: "Kishibe",
         anime: "Chainsaw Man",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/3/488553.webp",
+        imageUrl: "/draft/chainsawman/kishibe.webp",
         stats: {
             leadership: 92,
             power: 82,
@@ -3377,7 +3377,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "reze",
         name: "Reze",
         anime: "Chainsaw Man",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/10/618421.webp",
+        imageUrl: "/draft/chainsawman/reze.jpg",
         stats: {
             leadership: 45,
             power: 90,
@@ -3391,7 +3391,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "quanxi",
         name: "Quanxi",
         anime: "Chainsaw Man",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/4/500501.webp",
+        imageUrl: "/draft/chainsawman/quanxi.png",
         stats: {
             leadership: 68,
             power: 92,
@@ -3405,7 +3405,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "angel-devil",
         name: "Angel Devil",
         anime: "Chainsaw Man",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/13/586726.webp",
+        imageUrl: "/draft/chainsawman/angel.jpg",
         stats: {
             leadership: 40,
             power: 82,
@@ -3419,7 +3419,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "kobeni",
         name: "Kobeni Higashiyama",
         anime: "Chainsaw Man",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/3/467961.webp",
+        imageUrl: "/draft/chainsawman/kobeni.webp",
         stats: {
             leadership: 25,
             power: 55,
@@ -3433,12 +3433,12 @@ export const draftCharacters: DraftCharacter[] = [
         id: "beam",
         name: "Beam",
         anime: "Chainsaw Man",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/13/609115.webp",
+        imageUrl: "/draft/chainsawman/beam.webp",
         stats: {
             leadership: 20,
             power: 75,
-            utility: 35,
-            speed: 82,
+            utility: 50,
+            speed: 85,
             iq: 20,
             defense: 72
         }
@@ -3447,21 +3447,21 @@ export const draftCharacters: DraftCharacter[] = [
         id: "asta",
         name: "Asta",
         anime: "Black Clover",
-        imageUrl: "https://cdn.myanimelist.net/img/sp/icon/apple-touch-icon-256.png",
+        imageUrl: "/draft/blackclover/asta.avif",
         stats: {
             leadership: 92,
-            power: 96,
+            power: 97,
             utility: 82,
             speed: 90,
             iq: 65,
-            defense: 92
+            defense: 95
         }
     },
     {
         id: "yuno",
         name: "Yuno",
         anime: "Black Clover",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/11/621111.webp",
+        imageUrl: "/draft/blackclover/yuno.webp",
         stats: {
             leadership: 88,
             power: 96,
@@ -3475,7 +3475,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "noelle-silva",
         name: "Noelle Silva",
         anime: "Black Clover",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/14/338844.webp",
+        imageUrl: "/draft/blackclover/noelle.jpeg",
         stats: {
             leadership: 82,
             power: 92,
@@ -3489,7 +3489,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "yami-sukehiro",
         name: "Yami Sukehiro",
         anime: "Black Clover",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/10/599705.webp",
+        imageUrl: "/draft/blackclover/yami.jpg",
         stats: {
             leadership: 98,
             power: 95,
@@ -3503,7 +3503,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "julius-novachrono",
         name: "Julius Novachrono",
         anime: "Black Clover",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/15/474453.webp",
+        imageUrl: "/draft/blackclover/julius.png",
         stats: {
             leadership: 99,
             power: 97,
@@ -3517,7 +3517,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "mereoleona-vermillion",
         name: "Mereoleona Vermillion",
         anime: "Black Clover",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/4/375601.webp",
+        imageUrl: "/draft/blackclover/mereoleona.webp",
         stats: {
             leadership: 90,
             power: 98,
@@ -3531,7 +3531,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "fuegoleon-vermillion",
         name: "Fuegoleon Vermillion",
         anime: "Black Clover",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/6/473479.webp",
+        imageUrl: "/draft/blackclover/fuegoleon.jpeg",
         stats: {
             leadership: 98,
             power: 92,
@@ -3545,7 +3545,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "nacht-faust",
         name: "Nacht Faust",
         anime: "Black Clover",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/3/476311.webp",
+        imageUrl: "/draft/blackclover/nacht.jpg",
         stats: {
             leadership: 82,
             power: 93,
@@ -3559,10 +3559,10 @@ export const draftCharacters: DraftCharacter[] = [
         id: "luck-voltia",
         name: "Luck Voltia",
         anime: "Black Clover",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/10/338847.webp",
+        imageUrl: "/draft/blackclover/luck.jpg",
         stats: {
             leadership: 45,
-            power: 88,
+            power: 90,
             utility: 50,
             speed: 98,
             iq: 60,
@@ -3573,7 +3573,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "finral-roulacase",
         name: "Finral Roulacase",
         anime: "Black Clover",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/9/338845.webp",
+        imageUrl: "/draft/blackclover/finral.jpg",
         stats: {
             leadership: 72,
             power: 35,
@@ -3587,7 +3587,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "vanessa-enoteca",
         name: "Vanessa Enoteca",
         anime: "Black Clover",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/14/338849.webp",
+        imageUrl: "/draft/blackclover/vanessa.jpg",
         stats: {
             leadership: 65,
             power: 55,
@@ -3601,13 +3601,13 @@ export const draftCharacters: DraftCharacter[] = [
         id: "charmy-pappitson",
         name: "Charmy Pappitson",
         anime: "Black Clover",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/15/338850.webp",
+        imageUrl: "/draft/blackclover/charmy.jpg",
         stats: {
             leadership: 35,
             power: 82,
             utility: 95,
             speed: 60,
-            iq: 45,
+            iq: 50,
             defense: 82
         }
     },
@@ -3615,7 +3615,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "william-vangeance",
         name: "William Vangeance",
         anime: "Black Clover",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/7/486270.webp",
+        imageUrl: "/draft/blackclover/william.jpg",
         stats: {
             leadership: 95,
             power: 88,
@@ -3629,7 +3629,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "dorothy-unsworth",
         name: "Dorothy Unsworth",
         anime: "Black Clover",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/7/405128.webp",
+        imageUrl: "/draft/blackclover/dorothy.jpg",
         stats: {
             leadership: 72,
             power: 90,
@@ -3643,7 +3643,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "patry",
         name: "Patry",
         anime: "Black Clover",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/3/560181.webp",
+        imageUrl: "/draft/blackclover/patry.jpg",
         stats: {
             leadership: 88,
             power: 92,
@@ -3657,7 +3657,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "natsu-dragneel",
         name: "Natsu Dragneel",
         anime: "Fairy Tail",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/15/594274.webp",
+        imageUrl: "/draft/fairytail/natsu.webp",
         stats: {
             leadership: 88,
             power: 96,
@@ -3671,7 +3671,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "lucy-heartfilia",
         name: "Lucy Heartfilia",
         anime: "Fairy Tail",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/7/67774.webp",
+        imageUrl: "/draft/fairytail/lucy.avif",
         stats: {
             leadership: 78,
             power: 75,
@@ -3685,7 +3685,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "gray-fullbuster",
         name: "Gray Fullbuster",
         anime: "Fairy Tail",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/11/278602.webp",
+        imageUrl: "/draft/fairytail/gray.jpg",
         stats: {
             leadership: 82,
             power: 90,
@@ -3699,7 +3699,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "erza-scarlet",
         name: "Erza Scarlet",
         anime: "Fairy Tail",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/12/492254.webp",
+        imageUrl: "/draft/fairytail/erza.webp",
         stats: {
             leadership: 98,
             power: 95,
@@ -3713,7 +3713,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "wendy-marvell",
         name: "Wendy Marvell",
         anime: "Fairy Tail",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/11/196497.webp",
+        imageUrl: "/draft/fairytail/wendy.webp",
         stats: {
             leadership: 72,
             power: 82,
@@ -3727,7 +3727,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "gajeel-redfox",
         name: "Gajeel Redfox",
         anime: "Fairy Tail",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/5/99350.webp",
+        imageUrl: "/draft/fairytail/gajeel.webp",
         stats: {
             leadership: 75,
             power: 90,
@@ -3741,10 +3741,10 @@ export const draftCharacters: DraftCharacter[] = [
         id: "laxus-dreyar",
         name: "Laxus Dreyar",
         anime: "Fairy Tail",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/15/294797.webp",
+        imageUrl: "/draft/fairytail/laxus.jpg",
         stats: {
             leadership: 92,
-            power: 97,
+            power: 95,
             utility: 70,
             speed: 88,
             iq: 75,
@@ -3755,7 +3755,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "mirajane-strauss",
         name: "Mirajane Strauss",
         anime: "Fairy Tail",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/15/196491.webp",
+        imageUrl: "/draft/fairytail/mirajane.webp",
         stats: {
             leadership: 85,
             power: 92,
@@ -3769,7 +3769,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "jellal-fernandes",
         name: "Jellal Fernandes",
         anime: "Fairy Tail",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/11/80782.webp",
+        imageUrl: "/draft/fairytail/jellal.webp",
         stats: {
             leadership: 88,
             power: 94,
@@ -3783,7 +3783,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "makarov-dreyar",
         name: "Makarov Dreyar",
         anime: "Fairy Tail",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/5/72475.webp",
+        imageUrl: "/draft/fairytail/makarov.webp",
         stats: {
             leadership: 99,
             power: 88,
@@ -3794,10 +3794,10 @@ export const draftCharacters: DraftCharacter[] = [
         }
     },
     {
-        id: "guildarts-clive",
-        name: "Guildarts Clive",
+        id: "gildarts-clive",
+        name: "Gildarts Clive",
         anime: "Fairy Tail",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/2/396127.webp",
+        imageUrl: "/draft/fairytail/clive.jpeg",
         stats: {
             leadership: 90,
             power: 99,
@@ -3811,7 +3811,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "zeref-dragneel",
         name: "Zeref Dragneel",
         anime: "Fairy Tail",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/11/512243.webp",
+        imageUrl: "/draft/fairytail/zeref.jpeg",
         stats: {
             leadership: 95,
             power: 99,
@@ -3825,7 +3825,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "acnologia",
         name: "Acnologia",
         anime: "Fairy Tail",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/12/255391.webp",
+        imageUrl: "/draft/fairytail/acnologia.webp",
         stats: {
             leadership: 55,
             power: 99,
@@ -3839,7 +3839,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "august",
         name: "August",
         anime: "Fairy Tail",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/7/517230.webp",
+        imageUrl: "/draft/fairytail/august.webp",
         stats: {
             leadership: 88,
             power: 98,
@@ -3853,7 +3853,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "irene-belserion",
         name: "Irene Belserion",
         anime: "Fairy Tail",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/2/384775.webp",
+        imageUrl: "/draft/fairytail/irene.webp",
         stats: {
             leadership: 90,
             power: 97,
@@ -3867,7 +3867,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "dimaria-yesta",
         name: "Dimaria Yesta",
         anime: "Fairy Tail",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/8/370630.webp",
+        imageUrl: "/draft/fairytail/dimaria.webp",
         stats: {
             leadership: 55,
             power: 92,
@@ -3881,7 +3881,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "ultear-milkovich",
         name: "Ultear Milkovich",
         anime: "Fairy Tail",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/2/189334.webp",
+        imageUrl: "/draft/fairytail/ultear.webp",
         stats: {
             leadership: 78,
             power: 88,
@@ -3895,7 +3895,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "cana-alberona",
         name: "Cana Alberona",
         anime: "Fairy Tail",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/10/107176.webp",
+        imageUrl: "/draft/fairytail/cana.webp",
         stats: {
             leadership: 72,
             power: 72,
@@ -3909,7 +3909,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "mavis-vermillion",
         name: "Mavis Vermillion",
         anime: "Fairy Tail",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/16/586073.webp",
+        imageUrl: "/draft/fairytail/mavis.webp",
         stats: {
             leadership: 99,
             power: 45,
@@ -3923,7 +3923,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "sting-eucliffe",
         name: "Sting Eucliffe",
         anime: "Fairy Tail",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/6/210003.webp",
+        imageUrl: "/draft/fairytail/sting.jpg",
         stats: {
             leadership: 82,
             power: 90,
@@ -3935,9 +3935,9 @@ export const draftCharacters: DraftCharacter[] = [
     },
     {
         id: "artoria-pendragon",
-        name: "Artoria Pendragon",
+        name: "Saber",
         anime: "Fate",
-        imageUrl: "https://cdn.myanimelist.net/img/sp/icon/apple-touch-icon-256.png",
+        imageUrl: "/draft/fate/saber.avif",
         stats: {
             leadership: 98,
             power: 95,
@@ -3951,7 +3951,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "shirou-emiya",
         name: "Shirou Emiya",
         anime: "Fate",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/13/173271.webp",
+        imageUrl: "/draft/fate/emiya.jpg",
         stats: {
             leadership: 85,
             power: 82,
@@ -3965,7 +3965,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "gilgamesh",
         name: "Gilgamesh",
         anime: "Fate",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/16/551049.webp",
+        imageUrl: "/draft/fate/gilgamesh.webp",
         stats: {
             leadership: 92,
             power: 95,
@@ -3979,7 +3979,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "kiritsugu-emiya",
         name: "Kiritsugu Emiya",
         anime: "Fate",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/4/474826.webp",
+        imageUrl: "/draft/fate/kiritsugu.png",
         stats: {
             leadership: 78,
             power: 82,
@@ -3993,7 +3993,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "shinra-kusakabe",
         name: "Shinra Kusakabe",
         anime: "Fire Force",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/8/462228.webp",
+        imageUrl: "/draft/fireforce/shinra.jpg",
         stats: {
             leadership: 82,
             power: 97,
@@ -4007,7 +4007,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "arthur-boyle",
         name: "Arthur Boyle",
         anime: "Fire Force",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/8/594733.webp",
+        imageUrl: "/draft/fireforce/arthur.png",
         stats: {
             leadership: 40,
             power: 97,
@@ -4021,7 +4021,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "benimaru-shinmon",
         name: "Benimaru Shinmon",
         anime: "Fire Force",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/5/397594.webp",
+        imageUrl: "/draft/fireforce/benimaru.jpg",
         stats: {
             leadership: 95,
             power: 99,
@@ -4035,7 +4035,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "joker",
         name: "Joker",
         anime: "Fire Force",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/14/612832.webp",
+        imageUrl: "/draft/fireforce/joker.jpg",
         stats: {
             leadership: 72,
             power: 92,
@@ -4049,7 +4049,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "sho-kusakabe",
         name: "Sho Kusakabe",
         anime: "Fire Force",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/6/576495.webp",
+        imageUrl: "/draft/fireforce/sho.jpg",
         stats: {
             leadership: 45,
             power: 95,
@@ -4063,7 +4063,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "akitaru-obi",
         name: "Akitaru Obi",
         anime: "Fire Force",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/5/384685.webp",
+        imageUrl: "/draft/fireforce/obi.webp",
         stats: {
             leadership: 99,
             power: 72,
@@ -4091,7 +4091,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "maki-oze",
         name: "Maki Oze",
         anime: "Fire Force",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/13/472215.webp",
+        imageUrl: "/draft/fireforce/maki.jpg",
         stats: {
             leadership: 82,
             power: 88,
@@ -4105,7 +4105,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "takehisa-hinawa",
         name: "Takehisa Hinawa",
         anime: "Fire Force",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/16/393747.webp",
+        imageUrl: "/draft/fireforce/hinawa.webp",
         stats: {
             leadership: 90,
             power: 85,
@@ -4133,7 +4133,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "haumea",
         name: "Haumea",
         anime: "Fire Force",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/7/587876.webp",
+        imageUrl: "/draft/fireforce/haumea.webp",
         stats: {
             leadership: 82,
             power: 90,
@@ -4161,7 +4161,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "leonard-burns",
         name: "Leonard Burns",
         anime: "Fire Force",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/13/387864.webp",
+        imageUrl: "/draft/fireforce/burns.webp",
         stats: {
             leadership: 95,
             power: 95,
@@ -4175,7 +4175,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "dragon",
         name: "Dragon",
         anime: "Fire Force",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/6/619453.webp",
+        imageUrl: "/draft/fireforce/dragon.webp",
         stats: {
             leadership: 45,
             power: 99,
@@ -4189,7 +4189,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "evangelist",
         name: "The Evangelist",
         anime: "Fire Force",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/4/635584.webp",
+        imageUrl: "/draft/fireforce/evangelist.webp",
         stats: {
             leadership: 99,
             power: 99,
@@ -4203,7 +4203,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "gintoki-sakata",
         name: "Gintoki Sakata",
         anime: "Gintama",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/15/241479.webp",
+        imageUrl: "/draft/gintama/gintoki.jpeg",
         stats: {
             leadership: 92,
             power: 88,
@@ -4231,7 +4231,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "shinpachi-shimura",
         name: "Shinpachi Shimura",
         anime: "Gintama",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/14/114081.webp",
+        imageUrl: "/draft/gintama/shinpachi.webp",
         stats: {
             leadership: 75,
             power: 50,
@@ -4245,7 +4245,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "thorfinn",
         name: "Thorfinn",
         anime: "Vinland Saga",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/9/309871.webp",
+        imageUrl: "/draft/vinlandsaga/thorfinn.jpg",
         stats: {
             leadership: 55,
             power: 82,
@@ -4259,7 +4259,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "askeladd",
         name: "Askeladd",
         anime: "Vinland Saga",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/14/401940.webp",
+        imageUrl: "/draft/vinlandsaga/askeladd.webp",
         stats: {
             leadership: 98,
             power: 78,
@@ -4268,5 +4268,131 @@ export const draftCharacters: DraftCharacter[] = [
             iq: 98,
             defense: 72
         }
-    }
+    },
+    {
+        id: "sung-jinwoo",
+        name: "Sung Jin-Woo",
+        anime: "Solo Leveling",
+        imageUrl: "/draft/sololeveling/jinwoo.png",
+        stats: {
+            leadership: 98,
+            power: 99,
+            utility: 99,
+            speed: 99,
+            iq: 92,
+            defense: 98,
+        },
+    },
+    {
+        id: "cha-haein",
+        name: "Cha Hae-In",
+        anime: "Solo Leveling",
+        imageUrl: "/draft/sololeveling/chahaein.webp",
+        stats: {
+            leadership: 75,
+            power: 88,
+            utility: 65,
+            speed: 90,
+            iq: 78,
+            defense: 80,
+        },
+    },
+    {
+        id: "go-gunhee",
+        name: "Go Gun-Hee",
+        anime: "Solo Leveling",
+        imageUrl: "/draft/sololeveling/gogunhee.webp",
+        stats: {
+            leadership: 95,
+            power: 82,
+            utility: 75,
+            speed: 40,
+            iq: 90,
+            defense: 72,
+        },
+    },
+    {
+        id: "beru",
+        name: "Beru",
+        anime: "Solo Leveling",
+        imageUrl: "/draft/sololeveling/beru.jpg",
+        stats: {
+            leadership: 70,
+            power: 95,
+            utility: 82,
+            speed: 95,
+            iq: 82,
+            defense: 90,
+        },
+    },
+    {
+        id: "igris",
+        name: "Igris",
+        anime: "Solo Leveling",
+        imageUrl: "/draft/sololeveling/igris.webp",
+        stats: {
+            leadership: 85,
+            power: 92,
+            utility: 70,
+            speed: 88,
+            iq: 80,
+            defense: 92,
+        },
+    },
+    {
+        id: "frieren",
+        name: "Frieren",
+        anime: "Frieren: Beyond Journey's End",
+        imageUrl: "/draft/frieren/frieren.webp",
+        stats: {
+            leadership: 75,
+            power: 97,
+            utility: 99,
+            speed: 88,
+            iq: 99,
+            defense: 88,
+        },
+    },
+    {
+        id: "fern",
+        name: "Fern",
+        anime: "Frieren: Beyond Journey's End",
+        imageUrl: "/draft/frieren/fern.png",
+        stats: {
+            leadership: 72,
+            power: 90,
+            utility: 88,
+            speed: 92,
+            iq: 88,
+            defense: 78,
+        },
+    },
+    {
+        id: "stark",
+        name: "Stark",
+        anime: "Frieren: Beyond Journey's End",
+        imageUrl: "/draft/frieren/stark.jpg",
+        stats: {
+            leadership: 68,
+            power: 88,
+            utility: 35,
+            speed: 72,
+            iq: 55,
+            defense: 95,
+        },
+    },
+    {
+        id: "himmel",
+        name: "Himmel",
+        anime: "Frieren: Beyond Journey's End",
+        imageUrl: "/draft/frieren/himmel.avif",
+        stats: {
+            leadership: 99,
+            power: 88,
+            utility: 75,
+            speed: 90,
+            iq: 88,
+            defense: 82,
+        },
+    },
 ];

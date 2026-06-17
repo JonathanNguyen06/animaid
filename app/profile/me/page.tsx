@@ -4,7 +4,13 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { db, getUserCharacters, observeAuth } from "@/lib/firebase";
+import {
+    db,
+    getUserCharacters,
+    observeAuth,
+    getDraftHighScore,
+    type DraftHighScore,
+} from "@/lib/firebase";
 import { collection, doc, getDoc, getDocs } from "firebase/firestore";
 
 type UserProfile = {
@@ -42,6 +48,8 @@ export default function MyProfilePage() {
     const [characters, setCharacters] = useState<OwnedCharacter[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [draftHighScore, setDraftHighScore] = useState<DraftHighScore | null>(null);
+    const [showDraftLineup, setShowDraftLineup] = useState(false);
 
     const totalCollectionPower = characters.reduce(
         (sum, character) => sum + character.powerLevel,
@@ -66,6 +74,8 @@ export default function MyProfilePage() {
                 }
 
                 setProfile(snapshot.data() as UserProfile);
+                const savedDraftHighScore = await getDraftHighScore(user.uid);
+                setDraftHighScore(savedDraftHighScore);
 
                 const wishlistSnapshot = await getDocs(
                     collection(db, "users", user.uid, "wishlist")
@@ -147,7 +157,7 @@ export default function MyProfilePage() {
                             Account Stats
                         </h2>
 
-                        <div className="mt-5 grid gap-4 sm:grid-cols-3">
+                        <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                             <div className="rounded-2xl border border-purple-200 bg-purple-50 p-5">
                                 <p className="text-xs font-bold uppercase tracking-widest text-purple-900/50">
                                     Collection Power
@@ -177,7 +187,86 @@ export default function MyProfilePage() {
                                     {profile.higherLowerBestStreak ?? 0}
                                 </p>
                             </div>
+
+                            <button
+                                type="button"
+                                onClick={() => setShowDraftLineup((current) => !current)}
+                                className="rounded-2xl border border-yellow-300 bg-yellow-50 p-5 text-left transition hover:bg-yellow-100 hover:shadow-sm hover:cursor-pointer"
+                            >
+                                <p className="text-xs font-bold uppercase tracking-widest text-yellow-700/70">
+                                    Best Draft
+                                </p>
+
+                                <p className="mt-2 text-3xl font-bold text-yellow-700">
+                                    {draftHighScore?.totalPower ?? 0}
+                                </p>
+
+                                <p className="mt-1 text-xs font-semibold text-yellow-700/70">
+                                    {draftHighScore
+                                        ? `${draftHighScore.grade} Draft • Avg ${draftHighScore.averagePower}`
+                                        : "No draft yet"}
+                                </p>
+
+                                {draftHighScore && (
+                                    <p className="mt-2 text-xs font-bold text-yellow-800">
+                                        Click to view lineup
+                                    </p>
+                                )}
+                            </button>
                         </div>
+
+                        {showDraftLineup && draftHighScore && (
+                            <div className="mt-6 rounded-3xl border border-yellow-300 bg-yellow-50 p-5">
+                                <p className="text-xs font-bold uppercase tracking-widest text-yellow-700/70">
+                                    High Score Lineup
+                                </p>
+
+                                <h3 className="mt-2 text-2xl font-bold text-purple-950">
+                                    {draftHighScore.grade} Draft • {draftHighScore.totalPower} Power
+                                </h3>
+
+                                <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                                    {draftHighScore.lineup.map((pick) => (
+                                        <div
+                                            key={pick.position}
+                                            className="overflow-hidden rounded-2xl border border-yellow-200 bg-white text-left shadow-sm"
+                                        >
+                                            {pick.character.imageUrl && (
+                                                <img
+                                                    src={pick.character.imageUrl}
+                                                    alt={pick.character.name}
+                                                    className="h-40 w-full object-cover"
+                                                />
+                                            )}
+
+                                            <div className="p-4">
+                                                <p className="text-xs font-bold uppercase tracking-widest text-yellow-700/70">
+                                                    {pick.position}
+                                                </p>
+
+                                                <h4 className="mt-2 line-clamp-1 font-bold text-purple-950">
+                                                    {pick.character.name}
+                                                </h4>
+
+                                                <p className="mt-1 line-clamp-1 text-xs text-purple-900/60">
+                                                    {pick.character.anime}
+                                                </p>
+
+                                                <div className="mt-3 flex items-center justify-between">
+                            <span className="text-xl font-black text-yellow-700">
+                                {pick.grade}
+                            </span>
+
+                                                    <span className="rounded-full bg-purple-900 px-3 py-1 text-xs font-bold text-white">
+                                {pick.power}
+                            </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </section>
 
                     <section className="relative z-10 mt-6 rounded-3xl border border-purple-200 bg-white p-6 shadow-sm">

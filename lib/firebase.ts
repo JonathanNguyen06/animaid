@@ -756,3 +756,57 @@ export async function exchangeCharactersForPack(params: {
 
     return packRef.id;
 }
+
+export type DraftHighScore = {
+    userId: string;
+    totalPower: number;
+    averagePower: number;
+    grade: string;
+    lineup: {
+        position: string;
+        power: number;
+        grade: string;
+        character: {
+            id: string;
+            name: string;
+            anime: string;
+            imageUrl: string;
+        };
+    }[];
+    updatedAt?: any;
+};
+
+export async function getDraftHighScore(userId: string) {
+    const highScoreRef = doc(
+        db,
+        "users",
+        userId,
+        "draftHighScores",
+        "blindDraft"
+    );
+
+    const snapshot = await getDoc(highScoreRef);
+
+    return snapshot.exists()
+        ? (snapshot.data() as DraftHighScore)
+        : null;
+}
+
+export async function saveDraftHighScore(
+    userId: string,
+    highScore: Omit<DraftHighScore, "userId" | "updatedAt">
+) {
+    const highScoreRef = doc(
+        db,
+        "users",
+        userId,
+        "draftHighScores",
+        "blindDraft"
+    );
+
+    await setDoc(highScoreRef, {
+        userId,
+        ...highScore,
+        updatedAt: serverTimestamp(),
+    });
+}

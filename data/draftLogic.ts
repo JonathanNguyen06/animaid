@@ -8,6 +8,7 @@ export const draftPositions: DraftPosition[] = [
     "Strategist",
     "Assassin",
     "Ace",
+    "Vanguard",
 ];
 
 const positionWeights: Record<DraftPosition, Partial<Record<keyof DraftCharacter["stats"], number>>> = {

@@ -3,6 +3,13 @@
 import {useEffect, useMemo, useState} from "react";
 import { draftCharacters, DraftCharacter, DraftPosition } from "@/data/draftCharacters";
 import { calculateDraftPower } from "@/data/draftLogic";
+import {
+    auth,
+    getDraftHighScore,
+    saveDraftHighScore,
+    type DraftHighScore,
+} from "@/lib/firebase";
+import { onAuthStateChanged, type User } from "firebase/auth";
 
 type DraftPick = {
     character: DraftCharacter;
@@ -80,6 +87,8 @@ export default function DraftPage() {
     const [hoveredPosition, setHoveredPosition] = useState<DraftPosition | null>(null);
     const [selectedPosition, setSelectedPosition] = useState<DraftPosition | null>(null);
     const [picks, setPicks] = useState<DraftPick[]>([]);
+    const [user, setUser] = useState<User | null>(null);
+    const [highScore, setHighScore] = useState<DraftHighScore | null>(null);
 
     const filledPositions = picks.map((pick) => pick.position);
     const draftComplete = picks.length === positions.length;
@@ -91,6 +100,12 @@ export default function DraftPage() {
     const averagePower = draftComplete
         ? Math.round(totalPower / positions.length)
         : 0;
+
+    const sortedPicks = useMemo(() => {
+        return [...picks].sort(
+            (a, b) => positions.indexOf(a.position) - positions.indexOf(b.position)
+        );
+    }, [picks]);
 
     const positionIcons: Record<DraftPosition, string> = {
         Captain: "👑",
@@ -104,8 +119,60 @@ export default function DraftPage() {
     };
 
     useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+            setUser(currentUser);
+
+            if (!currentUser) {
+                setHighScore(null);
+                return;
+            }
+
+            const savedHighScore = await getDraftHighScore(currentUser.uid);
+            setHighScore(savedHighScore);
+        });
+
+        return () => unsubscribe();
+    }, []);
+
+    useEffect(() => {
         setCurrentCharacter(getRandomCharacter([]));
     }, []);
+
+    useEffect(() => {
+        async function updateHighScore() {
+            if (!draftComplete || !user) return;
+
+            const draftGrade = getDraftGrade(averagePower);
+
+            if (!highScore || totalPower > highScore.totalPower) {
+                const newHighScore: Omit<DraftHighScore, "userId" | "updatedAt"> = {
+                    totalPower,
+                    averagePower,
+                    grade: draftGrade,
+                    lineup: sortedPicks.map((pick) => ({
+                        position: pick.position,
+                        power: pick.power,
+                        grade: pick.grade,
+                        character: {
+                            id: pick.character.id,
+                            name: pick.character.name,
+                            anime: pick.character.anime,
+                            imageUrl: pick.character.imageUrl ?? "",
+                        },
+                    })),
+                };
+
+                await saveDraftHighScore(user.uid, newHighScore);
+
+                setHighScore({
+                    userId: user.uid,
+                    ...newHighScore,
+                });
+            }
+        }
+
+        updateHighScore();
+    }, [draftComplete, user, totalPower, averagePower, highScore, sortedPicks]);
 
     if (!currentCharacter) {
         return null;
@@ -284,7 +351,7 @@ export default function DraftPage() {
                                                     <img
                                                         src={pick.character.imageUrl}
                                                         alt={pick.character.name}
-                                                        className="h-40 w-full object-cover"
+                                                        className="h-40 w-full object-cover object-[50%_20%]"
                                                     />
 
                                                     <div className="p-4">
@@ -328,13 +395,24 @@ export default function DraftPage() {
                             Average Rating: {averagePower}
                         </p>
 
+                        {highScore && (
+                            <div className="mx-auto mt-6 max-w-md rounded-2xl border border-yellow-300 bg-yellow-50 p-4">
+                                <p className="text-sm font-bold uppercase tracking-widest text-yellow-700">
+                                    High Score
+                                </p>
+
+                                <p className="mt-2 text-2xl font-black text-purple-950">
+                                    {highScore.totalPower}
+                                </p>
+
+                                <p className="text-sm font-semibold text-purple-900/60">
+                                    {highScore.grade} Draft • Average {highScore.averagePower}
+                                </p>
+                            </div>
+                        )}
+
                         <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                            {[...picks]
-                                .sort(
-                                    (a, b) =>
-                                        positions.indexOf(a.position) - positions.indexOf(b.position)
-                                )
-                                .map((pick) => (
+                            {sortedPicks.map((pick) => (
                                 <div
                                     key={pick.position}
                                     className={`overflow-hidden rounded-3xl border-2 bg-purple-50 text-left transition ${getGradeGlow(
@@ -344,7 +422,7 @@ export default function DraftPage() {
                                     <img
                                         src={pick.character.imageUrl}
                                         alt={pick.character.name}
-                                        className="h-56 w-full object-cover"
+                                        className="h-56 w-full object-cover object-[50%_20%]"
                                     />
 
                                     <div className="p-5">
