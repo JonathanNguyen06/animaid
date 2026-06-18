@@ -399,6 +399,7 @@ export default function DraftPage() {
                                                         src={pick.character.imageUrl}
                                                         alt={pick.character.name}
                                                         className="h-40 w-full object-cover object-[50%_20%]"
+                                                        draggable={false}
                                                     />
 
                                                     <div className="p-4">
