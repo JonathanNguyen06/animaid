@@ -115,16 +115,33 @@ function applySynergyBonuses(picks: DraftPick[]) {
     });
 }
 
+function DraftCardSkeleton() {
+    return (
+        <div className="overflow-hidden rounded-3xl border border-purple-200 bg-purple-50 shadow-lg">
+            <div className="h-80 w-full animate-pulse bg-purple-200/70" />
+
+            <div className="space-y-3 p-5">
+                <div className="h-7 w-3/4 animate-pulse rounded-full bg-purple-200" />
+                <div className="h-4 w-1/2 animate-pulse rounded-full bg-purple-100" />
+            </div>
+        </div>
+    );
+}
+
 export default function DraftPage() {
     const [usedCharacterIds, setUsedCharacterIds] = useState<string[]>([]);
     const [currentCharacter, setCurrentCharacter] = useState<DraftCharacter | null>(null);
     const [hoveredPosition, setHoveredPosition] = useState<DraftPosition | null>(null);
-    const [selectedPosition, setSelectedPosition] = useState<DraftPosition | null>(null);
     const [picks, setPicks] = useState<DraftPick[]>([]);
     const [user, setUser] = useState<User | null>(null);
     const [highScore, setHighScore] = useState<DraftHighScore | null>(null);
     const [rerollUsed, setRerollUsed] = useState(false);
     const [isNewHighScore, setIsNewHighScore] = useState(false);
+    const [isDraggingCard, setIsDraggingCard] = useState(false);
+    const [pendingPick, setPendingPick] = useState<{
+        character: DraftCharacter;
+        position: DraftPosition;
+    } | null>(null);
 
     const filledPositions = picks.map((pick) => pick.position);
     const draftComplete = picks.length === positions.length;
@@ -204,46 +221,82 @@ export default function DraftPage() {
         return null;
     }
 
-    function handleDragStart(event: React.DragEvent) {
-        event.dataTransfer.setData("text/plain", currentCharacter!.id);
+    function handleDragStart(event: React.DragEvent<HTMLDivElement>) {
+        if (pendingPick || !currentCharacter) return;
+
+        event.dataTransfer.setData("text/plain", currentCharacter.id);
+        event.dataTransfer.effectAllowed = "move";
+
+        setTimeout(() => {
+            setIsDraggingCard(true);
+        }, 0);
     }
 
-    function handleDrop(position: DraftPosition) {
-        if (filledPositions.includes(position) || draftComplete) return;
+    function handleDragEnd() {
+        setIsDraggingCard(false);
+    }
 
-        setSelectedPosition(position);
+    function handleDrop(event: React.DragEvent<HTMLDivElement>, position: DraftPosition) {
+        event.preventDefault();
+
+        const draggedCharacterId = event.dataTransfer.getData("text/plain");
+
+        if (
+            !draggedCharacterId ||
+            filledPositions.includes(position) ||
+            draftComplete ||
+            !currentCharacter
+        ) {
+            return;
+        }
+
+        setPendingPick({
+            character: currentCharacter,
+            position,
+        });
+
         setHoveredPosition(null);
+        setIsDraggingCard(false);
     }
 
     function rerollCharacter() {
-        if (rerollUsed || draftComplete || !currentCharacter) return;
+        if (rerollUsed || draftComplete || !currentCharacter || pendingPick) return;
 
         setCurrentCharacter(
             getRandomCharacter([...usedCharacterIds, currentCharacter.id])
         );
 
         setRerollUsed(true);
-        setSelectedPosition(null);
+    }
+
+    function cancelPendingPick() {
+        setPendingPick(null);
+        setHoveredPosition(null);
+        setIsDraggingCard(false);
     }
 
     function confirmPick() {
-        if (!selectedPosition || !currentCharacter) return;
+        if (!pendingPick) return;
 
-        const basePower = calculateDraftPower(currentCharacter, selectedPosition);
+        const basePower = calculateDraftPower(
+            pendingPick.character,
+            pendingPick.position
+        );
 
         const newPick: DraftPick = {
-            character: currentCharacter,
-            position: selectedPosition,
+            character: pendingPick.character,
+            position: pendingPick.position,
             basePower,
             power: basePower,
             grade: getLetterGrade(basePower),
         };
 
-        const newUsedIds = [...usedCharacterIds, currentCharacter.id];
+        const newUsedIds = [...usedCharacterIds, pendingPick.character.id];
 
         setPicks((current) => applySynergyBonuses([...current, newPick]));
         setUsedCharacterIds(newUsedIds);
-        setSelectedPosition(null);
+        setPendingPick(null);
+        setHoveredPosition(null);
 
         if (picks.length + 1 < positions.length) {
             setCurrentCharacter(getRandomCharacter(newUsedIds));
@@ -254,14 +307,15 @@ export default function DraftPage() {
         setUsedCharacterIds([]);
         setCurrentCharacter(getRandomCharacter([]));
         setHoveredPosition(null);
-        setSelectedPosition(null);
+        setPendingPick(null);
         setPicks([]);
         setRerollUsed(false);
         setIsNewHighScore(false);
+        setIsDraggingCard(false);
     }
 
     return (
-        <main className="mx-auto min-h-[calc(100vh-130px)] max-w-7xl px-4 py-10">
+        <main className="mx-auto min-h-[calc(100vh-130px)] max-w-[1600px] px-4 py-10">
             <section className="relative z-10 rounded-3xl border border-purple-200 bg-white p-8 shadow-sm">
                 <p className="text-xs font-bold uppercase tracking-widest text-purple-900/50">
                     Anime Draft
@@ -276,72 +330,48 @@ export default function DraftPage() {
                 </p>
 
                 {!draftComplete && (
-                    <div className="mt-8 grid gap-8 lg:grid-cols-[320px_1fr]">
+                    <div className="mt-8 grid gap-8 xl:grid-cols-[340px_1fr]">
                         <div>
                             <h2 className="mb-4 text-xl font-bold text-purple-950">
                                 Current Character
                             </h2>
 
-                            <div
-                                draggable
-                                onDragStart={handleDragStart}
-                                className="cursor-grab overflow-hidden rounded-3xl border border-purple-200 bg-purple-50 shadow-lg active:cursor-grabbing"
-                            >
-                                <img
-                                    src={currentCharacter.imageUrl}
-                                    alt={currentCharacter.name}
-                                    className="h-80 w-full object-cover object-[50%_20%]"
-                                />
+                            {isDraggingCard || pendingPick ? (
+                                <DraftCardSkeleton />
+                            ) : (
+                                <div
+                                    draggable
+                                    onDragStart={handleDragStart}
+                                    onDragEnd={handleDragEnd}
+                                    className="cursor-grab overflow-hidden rounded-3xl border border-purple-200 bg-purple-50 shadow-lg transition active:cursor-grabbing active:scale-95"
+                                >
+                                    <img
+                                        src={currentCharacter.imageUrl}
+                                        alt={currentCharacter.name}
+                                        draggable={false}
+                                        className="pointer-events-none h-80 w-full object-cover object-[50%_20%]"
+                                    />
 
-                                <div className="p-5">
-                                    <h3 className="text-2xl font-bold text-purple-950">
-                                        {currentCharacter.name}
-                                    </h3>
+                                    <div className="p-5">
+                                        <h3 className="text-2xl font-bold text-purple-950">
+                                            {currentCharacter.name}
+                                        </h3>
 
-                                    <p className="mt-1 text-sm font-medium text-purple-900/60">
-                                        {currentCharacter.anime}
-                                    </p>
+                                        <p className="mt-1 text-sm font-medium text-purple-900/60">
+                                            {currentCharacter.anime}
+                                        </p>
+                                    </div>
                                 </div>
-                            </div>
+                            )}
 
                             <button
                                 type="button"
                                 onClick={rerollCharacter}
-                                disabled={rerollUsed}
+                                disabled={rerollUsed || !!pendingPick}
                                 className="mt-4 w-full rounded-2xl border border-yellow-300 bg-yellow-50 px-4 py-3 font-bold text-yellow-800 transition hover:cursor-pointer hover:bg-yellow-100 disabled:cursor-not-allowed disabled:opacity-50"
                             >
                                 {rerollUsed ? "Reroll Used" : "Reroll Character"}
                             </button>
-
-                            {selectedPosition && (
-                                <div className="mt-5 rounded-2xl border border-yellow-300 bg-yellow-50 p-4">
-                                    <p className="font-semibold text-purple-950">
-                                        Place {currentCharacter.name} at{" "}
-                                        <span className="text-yellow-700">
-                                            {selectedPosition}
-                                        </span>
-                                        ?
-                                    </p>
-
-                                    <div className="mt-4 flex gap-3">
-                                        <button
-                                            type="button"
-                                            onClick={confirmPick}
-                                            className="rounded-xl bg-purple-900 px-4 py-2 font-bold text-white transition hover:cursor-pointer hover:bg-purple-800"
-                                        >
-                                            Confirm
-                                        </button>
-
-                                        <button
-                                            type="button"
-                                            onClick={() => setSelectedPosition(null)}
-                                            className="rounded-xl border border-purple-200 px-4 py-2 font-bold text-purple-900 transition hover:cursor-pointer hover:bg-purple-50"
-                                        >
-                                            Cancel
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
                         </div>
 
                         <div>
@@ -349,28 +379,33 @@ export default function DraftPage() {
                                 Team Positions
                             </h2>
 
-                            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                            <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-4">
                                 {positions.map((position) => {
                                     const pick = picks.find(
                                         (pick) => pick.position === position
                                     );
 
+                                    const pendingForThisPosition =
+                                        pendingPick?.position === position ? pendingPick : null;
+
                                     const isHovered = hoveredPosition === position;
-                                    const isSelected = selectedPosition === position;
 
                                     return (
                                         <div
                                             key={position}
                                             onDragOver={(event) => {
                                                 event.preventDefault();
-                                                if (!pick) setHoveredPosition(position);
+
+                                                if (!pick && !pendingPick) {
+                                                    setHoveredPosition(position);
+                                                }
                                             }}
                                             onDragLeave={() => setHoveredPosition(null)}
-                                            onDrop={() => handleDrop(position)}
-                                            className={`min-h-56 rounded-3xl border-2 border-dashed p-4 transition ${
+                                            onDrop={(event) => handleDrop(event, position)}
+                                            className={`min-h-[390px] rounded-3xl border-2 border-dashed p-4 transition ${
                                                 pick
                                                     ? "border-purple-200 bg-white"
-                                                    : isSelected
+                                                    : pendingForThisPosition
                                                         ? "border-yellow-400 bg-yellow-50"
                                                         : isHovered
                                                             ? "border-purple-500 bg-purple-100"
@@ -381,15 +416,60 @@ export default function DraftPage() {
                                                 {positionIcons[position]} {position}
                                             </p>
 
-                                            {!pick && (
+                                            {!pick && !pendingForThisPosition && (
                                                 <div className="mt-8 text-center text-sm font-semibold text-purple-900/50">
                                                     Drop character here
                                                 </div>
                                             )}
 
+                                            {!pick && pendingForThisPosition && (
+                                                <div className="relative mt-4 min-h-[320px] overflow-hidden rounded-2xl border-2 border-yellow-300 bg-black shadow-md">
+                                                    <img
+                                                        src={pendingForThisPosition.character.imageUrl}
+                                                        alt={pendingForThisPosition.character.name}
+                                                        draggable={false}
+                                                        className="pointer-events-none absolute inset-0 h-full w-full object-cover object-[50%_20%]"
+                                                    />
+
+                                                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/45 to-transparent" />
+
+                                                    <div className="absolute bottom-0 left-0 right-0 p-4 text-left">
+                                                        <p className="text-xs font-bold uppercase tracking-widest text-yellow-300">
+                                                            Confirm placement?
+                                                        </p>
+
+                                                        <h3 className="mt-2 text-xl font-black text-white drop-shadow">
+                                                            {pendingForThisPosition.character.name}
+                                                        </h3>
+
+                                                        <p className="text-sm font-medium text-white/75">
+                                                            {pendingForThisPosition.character.anime}
+                                                        </p>
+
+                                                        <div className="mt-4 flex flex-wrap gap-2">
+                                                            <button
+                                                                type="button"
+                                                                onClick={confirmPick}
+                                                                className="rounded-xl bg-yellow-300 px-4 py-2 text-sm font-black text-purple-950 transition hover:cursor-pointer hover:bg-yellow-200"
+                                                            >
+                                                                Confirm
+                                                            </button>
+
+                                                            <button
+                                                                type="button"
+                                                                onClick={cancelPendingPick}
+                                                                className="rounded-xl border border-white/30 bg-white/10 px-4 py-2 text-sm font-bold text-white backdrop-blur transition hover:cursor-pointer hover:bg-white/20"
+                                                            >
+                                                                Cancel
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+
                                             {pick && (
                                                 <div
-                                                    className={`mt-4 overflow-hidden rounded-2xl border-2 bg-white transition ${
+                                                    className={`relative mt-4 min-h-[320px] overflow-hidden rounded-2xl border-2 bg-black transition ${
                                                         pick.hasSynergy
                                                             ? "border-pink-300 shadow-[0_0_24px_rgba(244,114,182,0.55)]"
                                                             : getGradeGlow(pick.grade)
@@ -398,26 +478,28 @@ export default function DraftPage() {
                                                     <img
                                                         src={pick.character.imageUrl}
                                                         alt={pick.character.name}
-                                                        className="h-40 w-full object-cover object-[50%_20%]"
                                                         draggable={false}
+                                                        className="pointer-events-none absolute inset-0 h-full w-full object-cover object-[50%_20%]"
                                                     />
 
-                                                    <div className="p-4">
-                                                        <h3 className="font-bold text-purple-950">
-                                                            {pick.character.name}
-                                                        </h3>
+                                                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
 
-                                                        <p className="text-sm text-purple-900/60">
-                                                            {pick.character.anime}
-                                                        </p>
-
+                                                    <div className="absolute bottom-0 left-0 right-0 p-4 text-left">
                                                         {pick.hasSynergy && (
-                                                            <p className="mt-2 text-xs font-black uppercase tracking-widest text-pink-500">
+                                                            <p className="mb-2 text-xs font-black uppercase tracking-widest text-pink-300">
                                                                 Series Link
                                                             </p>
                                                         )}
 
-                                                        <p className="mt-3 text-2xl font-black text-purple-900">
+                                                        <h3 className="text-xl font-black text-white drop-shadow">
+                                                            {pick.character.name}
+                                                        </h3>
+
+                                                        <p className="text-sm font-medium text-white/75">
+                                                            {pick.character.anime}
+                                                        </p>
+
+                                                        <p className="mt-3 text-3xl font-black text-yellow-300 drop-shadow">
                                                             {pick.grade}
                                                         </p>
                                                     </div>
@@ -490,7 +572,8 @@ export default function DraftPage() {
                                     <img
                                         src={pick.character.imageUrl}
                                         alt={pick.character.name}
-                                        className="h-56 w-full object-cover object-[50%_20%]"
+                                        draggable={false}
+                                        className="pointer-events-none h-56 w-full object-cover object-[50%_20%]"
                                     />
 
                                     <div className="p-5">
@@ -538,4 +621,4 @@ export default function DraftPage() {
             </section>
         </main>
     );
-};
+}

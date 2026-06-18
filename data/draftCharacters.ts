@@ -2867,7 +2867,7 @@ export const draftCharacters: DraftCharacter[] = [
             power: 82,
             utility: 75,
             speed: 72,
-            iq: 92,
+            iq: 85,
             defense: 82
         }
     },
