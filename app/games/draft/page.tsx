@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { draftCharacters, DraftCharacter, DraftPosition } from "@/data/draftCharacters";
 import { calculateDraftPower } from "@/data/draftLogic";
 import {
@@ -143,6 +143,9 @@ export default function DraftPage() {
         position: DraftPosition;
     } | null>(null);
 
+    const droppedInSlotRef = useRef(false);
+    const dragSkeletonTimeoutRef = useRef<number | null>(null);
+
     const filledPositions = picks.map((pick) => pick.position);
     const draftComplete = picks.length === positions.length;
 
@@ -227,28 +230,33 @@ export default function DraftPage() {
         event.dataTransfer.setData("text/plain", currentCharacter.id);
         event.dataTransfer.effectAllowed = "move";
 
-        setTimeout(() => {
-            setIsDraggingCard(true);
-        }, 0);
+        setIsDraggingCard(true);
     }
 
     function handleDragEnd() {
         setIsDraggingCard(false);
+        setHoveredPosition(null);
     }
 
     function handleDrop(event: React.DragEvent<HTMLDivElement>, position: DraftPosition) {
         event.preventDefault();
+        event.stopPropagation();
 
-        const draggedCharacterId = event.dataTransfer.getData("text/plain");
+        if (dragSkeletonTimeoutRef.current !== null) {
+            window.clearTimeout(dragSkeletonTimeoutRef.current);
+            dragSkeletonTimeoutRef.current = null;
+        }
 
         if (
-            !draggedCharacterId ||
             filledPositions.includes(position) ||
             draftComplete ||
             !currentCharacter
         ) {
+            setIsDraggingCard(false);
             return;
         }
+
+        droppedInSlotRef.current = true;
 
         setPendingPick({
             character: currentCharacter,
@@ -336,15 +344,18 @@ export default function DraftPage() {
                                 Current Character
                             </h2>
 
-                            {isDraggingCard || pendingPick ? (
-                                <DraftCardSkeleton />
-                            ) : (
-                                <div
-                                    draggable
-                                    onDragStart={handleDragStart}
-                                    onDragEnd={handleDragEnd}
-                                    className="cursor-grab overflow-hidden rounded-3xl border border-purple-200 bg-purple-50 shadow-lg transition active:cursor-grabbing active:scale-95"
-                                >
+                            <div
+                                draggable={!pendingPick}
+                                onDragStart={handleDragStart}
+                                onDragEnd={handleDragEnd}
+                                className={`overflow-hidden rounded-3xl border border-purple-200 bg-purple-50 shadow-lg transition ${
+                                    pendingPick
+                                        ? "cursor-not-allowed opacity-40"
+                                        : isDraggingCard
+                                            ? "cursor-grabbing scale-95 opacity-40"
+                                            : "cursor-grab active:cursor-grabbing"
+                                }`}
+                            >
                                     <img
                                         src={currentCharacter.imageUrl}
                                         alt={currentCharacter.name}
@@ -362,7 +373,6 @@ export default function DraftPage() {
                                         </p>
                                     </div>
                                 </div>
-                            )}
 
                             <button
                                 type="button"
@@ -563,7 +573,7 @@ export default function DraftPage() {
                             {sortedPicks.map((pick) => (
                                 <div
                                     key={pick.position}
-                                    className={`overflow-hidden rounded-3xl border-2 bg-purple-50 text-left transition ${
+                                    className={`relative min-h-[360px] overflow-hidden rounded-3xl border-2 bg-black text-left transition ${
                                         pick.hasSynergy
                                             ? "border-pink-300 shadow-[0_0_28px_rgba(244,114,182,0.6)]"
                                             : getGradeGlow(pick.grade)
@@ -573,34 +583,36 @@ export default function DraftPage() {
                                         src={pick.character.imageUrl}
                                         alt={pick.character.name}
                                         draggable={false}
-                                        className="pointer-events-none h-56 w-full object-cover object-[50%_20%]"
+                                        className="pointer-events-none absolute inset-0 h-full w-full object-cover object-[50%_20%]"
                                     />
 
-                                    <div className="p-5">
-                                        <p className="text-xs font-bold uppercase tracking-widest text-purple-900/50">
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/45 to-transparent" />
+
+                                    <div className="absolute bottom-0 left-0 right-0 p-5">
+                                        <p className="text-xs font-bold uppercase tracking-widest text-purple-200">
                                             {positionIcons[pick.position]} {pick.position}
                                         </p>
 
-                                        <h3 className="mt-2 text-xl font-bold text-purple-950">
-                                            {pick.character.name}
-                                        </h3>
-
-                                        <p className="text-sm text-purple-900/60">
-                                            {pick.character.anime}
-                                        </p>
-
                                         {pick.hasSynergy && (
-                                            <p className="mt-2 text-xs font-black uppercase tracking-widest text-pink-500">
+                                            <p className="mt-2 text-xs font-black uppercase tracking-widest text-pink-300">
                                                 Series Link
                                             </p>
                                         )}
 
+                                        <h3 className="mt-2 text-xl font-black text-white drop-shadow">
+                                            {pick.character.name}
+                                        </h3>
+
+                                        <p className="text-sm font-medium text-white/75">
+                                            {pick.character.anime}
+                                        </p>
+
                                         <div className="mt-4 flex items-center justify-between">
-                                            <span className="text-2xl font-black text-purple-900">
+                                            <span className="text-3xl font-black text-yellow-300 drop-shadow">
                                                 {pick.grade}
                                             </span>
 
-                                            <span className="rounded-full bg-purple-900 px-3 py-1 text-sm font-bold text-white">
+                                            <span className="rounded-full bg-white/15 px-3 py-1 text-sm font-black text-white backdrop-blur">
                                                 {pick.power}
                                             </span>
                                         </div>
