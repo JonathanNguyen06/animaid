@@ -77,12 +77,10 @@ export const positionWeights = {
     },
 
     Vanguard: {
-        defense: 0.5,
+        defense: 0.60,
         leadership: 0.15,
         power: 0.15,
         utility: 0.1,
-        speed: 0.05,
-        iq: 0.05,
     }
 };
 
