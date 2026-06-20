@@ -78,33 +78,50 @@ function SearchPageContent() {
     }, [q, minEpisodes, maxEpisodes, type, genres]);
 
     return (
-        <main className="mx-auto max-w-6xl px-4 py-8">
+        <main className="relative z-10 mx-auto max-w-6xl px-4 py-8">
             <SearchControls />
 
-            <h1 className="mt-4 text-2xl font-bold">
-                {q ? `Results for "${q}"` : "Search"}
-            </h1>
+            <div className="mt-8 rounded-3xl border border-pink-500/20 bg-black/40 p-5 backdrop-blur-xl shadow-[0_0_25px_rgba(236,72,153,0.08)]">
+                <h1 className="text-2xl font-bold text-white">
+                    {q ? (
+                        <>
+                            Results for{" "}
+                            <span className="text-pink-300 drop-shadow-[0_0_8px_rgba(236,72,153,0.6)]">
+                            "{q}"
+                        </span>
+                        </>
+                    ) : (
+                        "Search"
+                    )}
+                </h1>
 
-            {error && <p className="mt-3 text-red-500">{error}</p>}
+                {error && (
+                    <p className="mt-3 text-sm font-medium text-pink-300">
+                        {error}
+                    </p>
+                )}
 
-            {!loading && !error && q && (
-                <p className="mt-2 text-sm opacity-70">
-                    {results.length} results
-                </p>
-            )}
+                {!loading && !error && q && (
+                    <p className="mt-2 text-sm text-purple-100/60">
+                        {results.length} results
+                    </p>
+                )}
 
-            {!loading && !error && q && results.length === 0 && (
-                <p className="mt-6 opacity-70">No results found.</p>
-            )}
+                {!loading && !error && q && results.length === 0 && (
+                    <p className="mt-6 text-purple-100/60">
+                        No results found.
+                    </p>
+                )}
 
-            <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
-                {loading
-                    ? Array.from({ length: 12 }).map((_, i) => (
-                        <AnimeCardSkeleton key={i} />
-                    ))
-                    : results.map((anime) => (
-                        <AnimeCard key={anime.mal_id} anime={anime} />
-                    ))}
+                <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+                    {loading
+                        ? Array.from({ length: 12 }).map((_, i) => (
+                            <AnimeCardSkeleton key={i} />
+                        ))
+                        : results.map((anime) => (
+                            <AnimeCard key={anime.mal_id} anime={anime} />
+                        ))}
+                </div>
             </div>
         </main>
     );

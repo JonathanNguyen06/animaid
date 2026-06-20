@@ -179,38 +179,57 @@ export default function FriendsPage() {
     }
 
     return (
-        <main className="mx-auto max-w-4xl px-4 py-8">
-            <div className="flex items-center justify-between">
-                <h1 className="text-3xl font-bold text-purple-950">
+        <main className="relative mx-auto max-w-4xl px-4 py-8 text-white">
+            <div className="pointer-events-none absolute inset-0 overflow-hidden">
+                <div className="absolute left-10 top-24 h-72 w-72 rounded-full bg-pink-500/10 blur-[120px]" />
+                <div className="absolute bottom-20 right-10 h-72 w-72 rounded-full bg-fuchsia-500/10 blur-[120px]" />
+            </div>
+
+            <div className="relative z-10 flex items-center justify-between">
+                <h1 className="text-3xl font-bold text-white">
                     Find Friends
                 </h1>
 
                 <button
                     type="button"
                     onClick={() => setShowRequests(!showRequests)}
-                    className="relative rounded-xl bg-purple-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-purple-800 cursor-pointer"
+                    className="
+                relative
+                cursor-pointer
+                rounded-xl
+                border border-pink-500/20
+                bg-black/40
+                px-4 py-2
+                text-sm font-semibold
+                text-pink-200
+                backdrop-blur-xl
+                transition
+                hover:border-pink-400/40
+                hover:bg-pink-500/10
+                shadow-[0_0_15px_rgba(236,72,153,0.12)]
+                "
                 >
                     {showRequests ? "Hide Requests" : "View Requests"}
 
                     {requestCount > 0 && (
-                        <span className="absolute -right-2 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[11px] font-bold leading-none text-white shadow-sm">
-                            {requestCount > 99 ? "99+" : requestCount}
-                        </span>
+                        <span className="absolute -right-2 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-pink-500 px-1.5 text-[11px] font-bold leading-none text-white shadow-lg">
+                        {requestCount > 99 ? "99+" : requestCount}
+                    </span>
                     )}
                 </button>
             </div>
 
             {showRequests && (
-                <div className="mt-4">
+                <div className="relative z-10 mt-4">
                     <FriendRequestsPanel />
                 </div>
             )}
 
-            <p className="mt-2 text-purple-900/70">
+            <p className="relative z-10 mt-2 text-purple-100/60">
                 Search for other Animaid users by username
             </p>
 
-            <div className="mt-6">
+            <div className="relative z-10 mt-6">
                 <SearchBar
                     query={search}
                     setQuery={setSearch}
@@ -222,32 +241,50 @@ export default function FriendsPage() {
             </div>
 
             {loading && (
-                <p className="mt-6 text-purple-900/70">
+                <p className="relative z-10 mt-6 text-purple-100/60">
                     Searching...
                 </p>
             )}
 
             {error && (
-                <p className="mt-6 text-red-500">
+                <p className="relative z-10 mt-6 text-red-400">
                     {error}
                 </p>
             )}
 
             {!loading && !error && users.length === 0 && search && (
-                <p className="mt-6 text-purple-900/70">
+                <p className="relative z-10 mt-6 text-purple-100/60">
                     No users found.
                 </p>
             )}
 
-            <div className="mt-6 flex flex-col gap-4">
+            <div className="relative z-10 mt-6 flex flex-col gap-4">
                 {users.map((user) => (
                     <Link
                         key={user.uid}
                         href={`/profile/${user.uid}`}
-                        className="flex items-center justify-between rounded-2xl border border-purple-200 bg-white p-4 shadow-sm transition hover:bg-purple-50 hover:shadow-md relative z-10"
+                        className="
+                    flex items-center justify-between
+                    rounded-3xl
+                    border border-pink-500/20
+                    bg-black/40
+                    p-4
+                    backdrop-blur-xl
+                    transition
+                    hover:border-pink-400/40
+                    hover:bg-pink-500/10
+                    hover:shadow-[0_0_25px_rgba(236,72,153,0.15)]
+                    "
                     >
                         <div className="flex items-center gap-3">
-                            <div className="relative h-12 w-12 overflow-hidden rounded-xl bg-purple-100">
+                            <div
+                                className="
+                            relative h-12 w-12 overflow-hidden
+                            rounded-xl
+                            border border-pink-500/20
+                            bg-black/50
+                            "
+                            >
                                 {user.photoURL ? (
                                     <Image
                                         src={user.photoURL}
@@ -256,18 +293,20 @@ export default function FriendsPage() {
                                         className="object-cover"
                                     />
                                 ) : (
-                                    <div className="flex h-full w-full items-center justify-center font-bold text-purple-300">
+                                    <div className="flex h-full w-full items-center justify-center font-bold text-pink-300">
                                         {user.username?.[0]?.toUpperCase() ?? "?"}
                                     </div>
                                 )}
                             </div>
 
                             <div>
-                                <h2 className="font-semibold text-purple-950">
-                                    {user.displayName || user.username || "Unnamed user"}
+                                <h2 className="font-semibold text-white">
+                                    {user.displayName ||
+                                        user.username ||
+                                        "Unnamed user"}
                                 </h2>
 
-                                <p className="text-sm text-purple-900/60">
+                                <p className="text-sm text-purple-100/50">
                                     @{user.username}
                                 </p>
                             </div>
@@ -285,19 +324,30 @@ export default function FriendsPage() {
                 ))}
             </div>
 
-            <section className="mt-6 rounded-2xl border border-purple-200 bg-white p-4 shadow-sm z-10 relative">
-                <h2 className="text-xl font-semibold text-purple-950">
+            <section
+                className="
+            relative z-10
+            mt-8
+            rounded-3xl
+            border border-pink-500/20
+            bg-black/40
+            p-6
+            backdrop-blur-xl
+            shadow-[0_0_25px_rgba(236,72,153,0.08)]
+            "
+            >
+                <h2 className="text-xl font-semibold text-white">
                     Your Friends
                 </h2>
 
                 {friendsLoading && (
-                    <p className="mt-3 text-purple-900/70">
+                    <p className="mt-3 text-purple-100/60">
                         Loading friends...
                     </p>
                 )}
 
                 {!friendsLoading && friends.length === 0 && (
-                    <p className="mt-3 text-purple-900/70">
+                    <p className="mt-3 text-purple-100/60">
                         You have no friends yet.
                     </p>
                 )}
@@ -307,10 +357,25 @@ export default function FriendsPage() {
                         <Link
                             href={`/profile/${friend.uid}`}
                             key={friend.uid}
-                            className="rounded-xl border border-purple-100 bg-white p-3 transition hover:bg-purple-50"
+                            className="
+                        rounded-2xl
+                        border border-pink-500/20
+                        bg-white/[0.03]
+                        p-3
+                        transition
+                        hover:border-pink-400/40
+                        hover:bg-pink-500/10
+                        "
                         >
                             <div className="flex items-center gap-3">
-                                <div className="relative h-12 w-12 overflow-hidden rounded-xl bg-purple-100">
+                                <div
+                                    className="
+                                relative h-12 w-12 overflow-hidden
+                                rounded-xl
+                                border border-pink-500/20
+                                bg-black/50
+                                "
+                                >
                                     {friend.photoURL ? (
                                         <Image
                                             src={friend.photoURL}
@@ -319,14 +384,14 @@ export default function FriendsPage() {
                                             className="object-cover"
                                         />
                                     ) : (
-                                        <div className="flex h-full w-full items-center justify-center font-bold text-purple-300">
+                                        <div className="flex h-full w-full items-center justify-center font-bold text-pink-300">
                                             {friend.username?.[0]?.toUpperCase() ?? "?"}
                                         </div>
                                     )}
                                 </div>
 
                                 <div>
-                                    <p className="font-medium text-purple-950">
+                                    <p className="font-medium text-white">
                                         @{friend.username || "unknown user"}
                                     </p>
                                 </div>

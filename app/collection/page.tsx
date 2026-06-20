@@ -223,38 +223,72 @@ export default function CollectionPage() {
 
     return (
         <main className="mx-auto min-h-[calc(100vh-130px)] max-w-6xl px-4 py-10">
-            <section className="relative z-10 rounded-3xl border border-purple-200 bg-white p-8 shadow-sm">
-                <p className="text-xs font-bold uppercase tracking-widest text-purple-900/50">
+            <section
+                className="
+                    relative z-10
+                    rounded-3xl
+                    border border-pink-500/20
+                    bg-black/40
+                    p-8
+                    backdrop-blur-xl
+                    shadow-[0_0_25px_rgba(236,72,153,0.08)]
+                "
+            >
+                <p className="text-xs font-bold uppercase tracking-widest text-pink-300/60">
                     Collection
                 </p>
 
                 <div className="mt-3 flex items-start justify-between gap-4">
-                    <h1 className="text-4xl font-bold text-purple-950">
+                    <h1 className="text-4xl font-bold text-white">
                         Your Characters
                     </h1>
 
                     <button
                         type="button"
                         onClick={() => setShowPowerInfo(true)}
-                        className="mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-purple-200 bg-purple-50 text-sm font-bold text-purple-900 transition hover:bg-purple-100 hover:cursor-pointer"
+                        className="
+                            mt-1
+                            flex h-9 w-9 shrink-0 items-center justify-center
+                            rounded-full
+                            border border-pink-500/20
+                            bg-black/40
+                            text-sm font-bold
+                            text-pink-200
+                            backdrop-blur-xl
+                            transition
+                            hover:bg-pink-500/10
+                            hover:border-pink-400/40
+                            hover:shadow-[0_0_15px_rgba(236,72,153,0.15)]
+                            hover:cursor-pointer
+                            "
                         aria-label="Power information"
                     >
                         ?
                     </button>
                 </div>
 
-                <p className="mt-3 text-purple-900/70">
+                <p className="mt-3 text-purple-100/70">
                     View the characters you have earned from packs.
                 </p>
 
                 {user && characters.length > 0 && (
-                    <div className="mt-5 inline-flex rounded-2xl border border-purple-200 bg-purple-50 px-5 py-3 shadow-sm">
+                    <div
+                        className="
+                            mt-5 inline-flex
+                            rounded-3xl
+                            border border-pink-500/20
+                            bg-pink-500/10
+                            px-5 py-3
+                            backdrop-blur-xl
+                            shadow-[0_0_20px_rgba(236,72,153,0.12)]
+                        "
+                    >
                         <div>
-                            <p className="text-xs font-bold uppercase tracking-widest text-purple-900/50">
+                            <p className="text-xs font-bold uppercase tracking-widest text-pink-300/60">
                                 Total Collection Power
                             </p>
 
-                            <p className="mt-1 text-2xl font-bold text-purple-950">
+                            <p className="mt-1 text-2xl font-bold text-white">
                                 {totalPower.toLocaleString()}
                             </p>
                         </div>
@@ -270,8 +304,8 @@ export default function CollectionPage() {
                         }}
                         className={`rounded-2xl px-5 py-3 text-sm font-bold transition hover:cursor-pointer ${
                             exchangeMode
-                                ? "bg-red-100 text-red-700 hover:bg-red-200"
-                                : "bg-purple-900 text-white hover:bg-purple-800"
+                                ? "bg-pink-500/15 text-pink-200 border border-pink-500/20 hover:bg-pink-500/20"
+                                : "bg-red-500/15 text-red-300 border border-red-500/20 hover:bg-red-500/25"
                         }`}
                     >
                         {exchangeMode ? "Cancel Exchange" : "Exchange Characters"}
@@ -281,7 +315,7 @@ export default function CollectionPage() {
                 </div>
 
                 {exchangeMode && (
-                    <div className="mt-5 rounded-2xl border border-yellow-200 bg-yellow-50 p-4 text-sm text-yellow-800">
+                    <div className="mt-5 rounded-2xl border border-yellow-500/20 bg-yellow-500/10 text-yellow-200 backdrop-blur-xl bg-yellow-50 p-4 text-sm">
                         {selectedCharacters.length === 0 ? (
                             <p>
                                 Select characters of the same rarity to exchange for 1 character pack.
@@ -304,7 +338,7 @@ export default function CollectionPage() {
                 )}
 
                 {user && characters.length === 0 && (
-                    <div className="mt-8 rounded-2xl border border-purple-200 bg-purple-50 p-6 text-purple-900/70">
+                    <div className="mt-8 rounded-2xl border border-pink-500/20 bg-black/30 text-purple-100/70 backdrop-blur-xl p-6 text-purple-900/70">
                         You do not have any characters yet.
                     </div>
                 )}
@@ -321,9 +355,9 @@ export default function CollectionPage() {
                                     }
                                 }}
                                 disabled={exchangeMode && !canSelectCharacter(character) && !selectedCharacters.some((selected) => selected.id === character.id)}
-                                className={`relative z-10 overflow-hidden rounded-3xl border hover:cursor-pointer bg-white text-left shadow-sm transition hover:-translate-y-1 hover:shadow-md ${
+                                className={`relative z-10 overflow-hidden rounded-3xl border hover:cursor-pointer bg-black/50 border-pink-500/20 backdrop-blur-xl text-left shadow-sm transition hover:-translate-y-1 hover:shadow-md ${
                                     selectedCharacters.some((selected) => selected.id === character.id)
-                                        ? "border-yellow-400 ring-4 ring-yellow-200"
+                                        ? "border-pink-400 ring-4 ring-pink-500/30 shadow-[0_0_30px_rgba(236,72,153,0.25)]"
                                         : "border-purple-200"
                                 } ${
                                     exchangeMode && character.rarity === "Mythic"
@@ -346,11 +380,11 @@ export default function CollectionPage() {
                                         {character.rarity}
                                     </span>
 
-                                    <h2 className="mt-3 font-bold text-purple-950">
+                                    <h2 className="mt-3 font-bold text-white">
                                         {character.name}
                                     </h2>
 
-                                    <p className="mt-1 text-sm text-purple-900/60">
+                                    <p className="mt-1 text-sm text-purple-100/60">
                                         {character.animeTitle ?? "Unknown Anime"}
                                     </p>
 
@@ -360,7 +394,7 @@ export default function CollectionPage() {
                                         Power: {character.powerLevel}
                                     </p>
 
-                                    <p className="mt-1 text-xs text-purple-900/50">
+                                    <p className="mt-1 text-xs text-purple-100/50">
                                         {character.role} • {character.favorites} favorites
                                     </p>
                                 </div>
@@ -370,9 +404,9 @@ export default function CollectionPage() {
                 )}
 
                 {exchangeMode && selectedCharacters.length > 0 && (
-                    <div className="sticky bottom-4 z-20 mt-6 rounded-3xl border border-purple-200 bg-white p-4 shadow-xl">
+                    <div className="sticky bottom-4 z-20 mt-6 rounded-3xl border border-pink-500/20 bg-black/80 backdrop-blur-xl shadow-[0_0_25px_rgba(236,72,153,0.15)] p-4 shadow-xl">
                         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                            <p className="font-semibold text-purple-950">
+                            <p className="font-semibold text-white">
                                 {selectedCharacters.length} /{" "}
                                 {exchangeRequirement(selectedCharacters[0].rarity)} selected
                             </p>
@@ -384,7 +418,20 @@ export default function CollectionPage() {
                                     selectedCharacters.length !==
                                     exchangeRequirement(selectedCharacters[0].rarity)
                                 }
-                                className="rounded-2xl bg-purple-900 px-5 py-3 font-bold text-white transition hover:bg-purple-800 hover:cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                                className="
+                                    rounded-2xl
+                                    border border-pink-500/20
+                                    bg-pink-500/10
+                                    px-5 py-3
+                                    font-bold
+                                    text-pink-200
+                                    transition
+                                    hover:bg-pink-500/20
+                                    hover:border-pink-400/40
+                                    hover:shadow-[0_0_20px_rgba(236,72,153,0.2)]
+                                    disabled:opacity-50
+                                    disabled:cursor-not-allowed
+                                    "
                             >
                                 Exchange for Pack
                             </button>
@@ -394,23 +441,34 @@ export default function CollectionPage() {
             </section>
 
             {showPowerInfo && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4">
-                    <div className="relative z-10 w-full max-w-lg rounded-3xl border border-purple-200 bg-white p-6 shadow-xl">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
+                    <div
+                        className="
+                            relative z-10
+                            w-full max-w-lg
+                            rounded-3xl
+                            border border-pink-500/20
+                            bg-black/90
+                            p-6
+                            backdrop-blur-xl
+                            shadow-[0_0_35px_rgba(236,72,153,0.15)]
+                        "
+                    >
                         <div className="flex items-start justify-between gap-4">
-                            <h2 className="text-2xl font-bold text-purple-950">
+                            <h2 className="text-2xl font-bold text-white">
                                 Power Levels
                             </h2>
 
                             <button
                                 type="button"
                                 onClick={() => setShowPowerInfo(false)}
-                                className="text-purple-400 transition hover:text-purple-900 hover:cursor-pointer"
+                                className="text-pink-300 hover:text-pink-100 transition hover:cursor-pointer"
                             >
                                 ✕
                             </button>
                         </div>
 
-                        <div className="mt-5 space-y-4 text-sm leading-6 text-purple-900/70">
+                        <div className="mt-5 space-y-4 text-sm leading-6 text-purple-100/70">
                             <p>
                                 Every character has a Power Level that represents their overall value and rarity.
                             </p>
@@ -455,7 +513,7 @@ export default function CollectionPage() {
                                 </div>
                             </div>
 
-                            <p className="text-xs text-purple-900/50">
+                            <p className="text-xs text-purple-100/70">
                                 The exact formula is intentionally hidden to encourage discovery and collecting.
                             </p>
                         </div>

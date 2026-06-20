@@ -61,19 +61,20 @@ export default function GenreToggleGrid({ genreOptions, value, setValue }: Props
     return (
         <div className="w-full flex flex-col items-center">
             <div className="mb-2 flex items-center justify-between w-full max-w-fit space-x-2">
-                <span className="text-sm font-medium text-purple-900/70">
+                <span className="text-sm font-medium text-purple-100/70">
                     Genre
                     {value.length > 0 && (
-                        <span className="ml-2 inline-flex items-center rounded-full bg-purple-900 px-2 py-0.5 text-xs font-semibold text-white">
+                        <span className="ml-2 inline-flex items-center rounded-full border border-pink-500/30 bg-pink-500/15 px-2 py-0.5 text-xs font-semibold text-pink-300">
                             {value.length}
                         </span>
                     )}
                 </span>
+
                 {value.length > 0 && (
                     <button
                         type="button"
                         onClick={clearAll}
-                        className="text-xs text-purple-400 hover:text-purple-700 transition-colors cursor-pointer"
+                        className="cursor-pointer text-xs text-pink-300/60 transition-colors hover:text-pink-300"
                     >
                         Clear all
                     </button>
@@ -92,12 +93,26 @@ export default function GenreToggleGrid({ genreOptions, value, setValue }: Props
                             onClick={() => toggle(genre)}
                             className={`
                                 inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-xs font-semibold
-                                transition-all duration-150 cursor-pointer select-none
+                                transition-all duration-200 cursor-pointer select-none
                                 active:scale-95
-                                ${isSelected
-                                ? 'border-purple-900 bg-purple-900 text-white shadow-sm shadow-purple-300'
-                                : 'border-purple-200 bg-white text-purple-800 hover:border-purple-400 hover:bg-purple-50'
-                            }
+                                backdrop-blur-md
+                                ${
+                                    isSelected
+                                        ? `
+                                            border-pink-500/60
+                                            bg-pink-500/15
+                                            text-pink-200
+                                            shadow-[0_0_15px_rgba(236,72,153,0.35)]
+                                          `
+                                    : `
+                                            border-pink-500/20
+                                            bg-white/5
+                                            text-purple-100/80
+                                            hover:border-pink-500/40
+                                            hover:bg-pink-500/10
+                                            hover:text-pink-200
+                                          `
+                                }
                             `}
                         >
                             {icon && <span className="text-[11px] leading-none">{icon}</span>}
@@ -111,13 +126,21 @@ export default function GenreToggleGrid({ genreOptions, value, setValue }: Props
                     <button
                         type="button"
                         onClick={() => setExpanded((v) => !v)}
-                        className="inline-flex items-center gap-1 rounded-full border border-dashed border-purple-300 bg-transparent px-3 py-1.5 text-xs font-semibold text-purple-500 transition hover:border-purple-500 hover:text-purple-700 cursor-pointer"
+                        className="inline-flex items-center gap-1 rounded-full
+                            border border-dashed border-pink-500/30
+                            bg-white/5
+                            px-3 py-1.5
+                            text-xs font-semibold
+                            text-pink-300/70
+                            transition-all
+                            hover:border-pink-500/60
+                            hover:bg-pink-500/10
+                            hover:text-pink-300
+                            cursor-pointer
+                        "
+
                     >
-                        {expanded ? (
-                            <>Show less</>
-                        ) : (
-                            <>+{hiddenCount} more</>
-                        )}
+                        {expanded ? <>Show less</> : <>+{hiddenCount} more</>}
                     </button>
                 )}
             </div>

@@ -90,20 +90,21 @@ const Navbar = () => {
     };
 
     return (
-        <header className="sticky top-0 z-40 border-b border-purple-100/60 bg-white/80 backdrop-blur-md">
+        <header className="sticky top-0 z-40 border-b border-pink-500/20 bg-black/30 backdrop-blur-xl shadow-[0_0_25px_rgba(236,72,153,0.15)]">
+            <div className="absolute inset-0 bg-gradient-to-r from-pink-500/5 via-purple-500/5 to-blue-500/5 pointer-events-none" />
             <div className="mx-auto flex h-30 max-w-6xl items-center justify-between px-4 sm:px-6">
                 <a href="/" className="flex items-center gap-2">
-                    <Image src={"/icons/animaid_logo.png"} alt={"AnimAid"} width={150} height={150}/>
+                    <Image src={"/icons/animaid.png"} alt={"AnimAid"} width={150} height={150}/>
                 </a>
                 <nav className="flex items-center gap-7 text-base font-medium">
                     {!authLoading && username && (
                         <>
-                            <Link href="/games" className="text-purple-900/80 hover:text-purple-900">
+                            <Link href="/games" className="text-purple-100/70 transition-all hover:text-pink-300 hover:drop-shadow-[0_0_8px_rgba(236,72,153,0.8)]">
                                 Games
                             </Link>
                             <Link
                                 href="/packs"
-                                className="relative text-purple-900/80 hover:text-purple-900"
+                                className="text-purple-100/70 transition-all hover:text-pink-300 hover:drop-shadow-[0_0_8px_rgba(236,72,153,0.8)]"
                             >
                                 Packs
 
@@ -113,22 +114,32 @@ const Navbar = () => {
                             </span>
                                 )}
                             </Link>
-                            <Link href="/collection" className="text-purple-900/80 hover:text-purple-900">
+                            <Link href="/collection" className="text-purple-100/70 transition-all hover:text-pink-300 hover:drop-shadow-[0_0_8px_rgba(236,72,153,0.8)]">
                                 Collection
                             </Link>
-                            <Link href="/friends" className="text-purple-900/80 hover:text-purple-900">
+                            <Link href="/friends" className="text-purple-100/70 transition-all hover:text-pink-300 hover:drop-shadow-[0_0_8px_rgba(236,72,153,0.8)]">
                                 Friends
                             </Link>
-                            <Link href="/wishlist" className="text-purple-900/80 hover:text-purple-900">
+                            <Link href="/wishlist" className="text-purple-100/70 transition-all hover:text-pink-300 hover:drop-shadow-[0_0_8px_rgba(236,72,153,0.8)]">
                                 Wishlist
                             </Link>
                             <div className="relative" ref={menuRef}>
                                 <button
                                     type="button"
                                     onClick={() => setOpen((v) => !v)}
-                                    className="inline-flex items-center gap-2 rounded-full cursor-pointer border border-purple-200 px-3 py-1.5 text-purple-900/80 hover:text-purple-900 hover:border-purple-300"
+                                    className="inline-flex items-center gap-2 rounded-full cursor-pointer
+                                                border border-pink-500/30
+                                                bg-white/5
+                                                px-3 py-1.5
+                                                text-purple-100/80
+                                                backdrop-blur-md
+                                                transition-all
+                                                hover:border-pink-400/60
+                                                hover:bg-pink-500/10
+                                                hover:shadow-[0_0_15px_rgba(236,72,153,0.35)]"
                                 >
-                                    <div className="relative h-7 w-7 overflow-hidden rounded-full border border-purple-300/80 shadow-sm bg-purple-200 shrink-0">
+                                    <div className="relative h-7 w-7 overflow-hidden rounded-full border border-pink-400/50 bg-black/50
+                                                    shadow-[0_0_12px_rgba(236,72,153,0.45)] shrink-0">
                                         {photoURL ? (
                                             <Image
                                                 src={photoURL}
@@ -145,17 +156,43 @@ const Navbar = () => {
                                     <span className="hidden sm:inline">{username}</span>
                                 </button>
                                 {open && (
-                                    <div className="absolute right-0 mt-2 w-44 overflow-hidden rounded-md border border-purple-200/70 bg-white shadow-lg">
+                                    <div
+                                        className="
+                                            absolute right-0 mt-3 w-48 overflow-hidden
+                                            rounded-2xl
+                                            border border-pink-500/20
+                                            bg-black/80
+                                            backdrop-blur-xl
+                                            shadow-[0_0_25px_rgba(236,72,153,0.18)]
+                                            "
+                                    >
                                         <Link
                                             href="/profile/me"
-                                            className="block px-4 py-2 text-sm text-purple-900/80 hover:bg-purple-50 hover:text-purple-900 cursor-pointer"
+                                            onClick={() => setOpen(false)}
+                                            className="
+                                                block px-4 py-3
+                                                text-sm font-semibold
+                                                text-purple-100/75
+                                                transition
+                                                hover:bg-pink-500/10
+                                                hover:text-pink-200
+                                                "
                                         >
                                             Profile
                                         </Link>
+
                                         <button
                                             type="button"
                                             onClick={onLogout}
-                                            className="block w-full px-4 py-2 text-left text-sm text-purple-900/80 hover:bg-purple-50 hover:text-purple-900 cursor-pointer"
+                                            className="
+                                                block w-full px-4 py-3
+                                                text-left text-sm font-semibold
+                                                text-purple-100/75
+                                                transition
+                                                hover:bg-red-500/10
+                                                hover:text-red-300
+                                                cursor-pointer
+                                                "
                                         >
                                             Log out
                                         </button>
@@ -171,7 +208,17 @@ const Navbar = () => {
                     {!authLoading && !username && (
                         <a
                             href="/login"
-                            className="rounded-md bg-purple-600 px-4 py-2 text-white hover:bg-purple-700 cursor-pointer"
+                            className="
+                                        rounded-lg
+                                        bg-gradient-to-r
+                                        from-pink-500
+                                        to-purple-600
+                                        px-4 py-2
+                                        text-white
+                                        transition-all
+                                        hover:scale-105
+                                        hover:shadow-[0_0_20px_rgba(236,72,153,0.6)]
+                                        "
                         >
                             Log in
                         </a>

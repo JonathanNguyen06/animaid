@@ -3197,7 +3197,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "ban",
         name: "Ban",
         anime: "Seven Deadly Sins",
-        imageUrl: "/draft/7ds/ban.webp",
+        imageUrl: "/draft/7ds/ban.jpg",
         stats: {
             leadership: 78,
             power: 92,
@@ -4707,7 +4707,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "takemichi-hanagaki",
         name: "Takemichi Hanagaki",
         anime: "Tokyo Revengers",
-        imageUrl: "/draft/tokyorevengers/takemichi.jpg",
+        imageUrl: "/draft/tokyorevengers/takemichi.webp",
         stats: {
             leadership: 90,
             power: 35,

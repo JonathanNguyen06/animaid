@@ -211,41 +211,56 @@ export default function CharacterHigherLowerPage() {
     }
 
     return (
-        <main className="mx-auto min-h-[calc(100vh-130px)] max-w-7xl px-4 py-10">
+        <main className="relative mx-auto min-h-[calc(100vh-130px)] max-w-7xl px-4 py-10 text-white">
+            <div className="pointer-events-none absolute inset-0 overflow-hidden">
+                <div className="absolute left-10 top-24 h-72 w-72 rounded-full bg-pink-500/10 blur-[120px]" />
+                <div className="absolute bottom-20 right-10 h-72 w-72 rounded-full bg-fuchsia-500/10 blur-[120px]" />
+            </div>
+
             <section className="relative z-10 mb-8 text-center">
-                <p className="text-xs font-bold uppercase tracking-widest text-purple-900/50">
+                <p className="text-xs font-bold uppercase tracking-widest text-pink-300/60">
                     Higher or Lower
                 </p>
 
-                <h1 className="mt-3 text-5xl font-bold text-purple-950">
+                <h1 className="mt-3 text-5xl font-bold text-white">
                     Character Popularity
                 </h1>
 
-                <p className="mx-auto mt-3 max-w-2xl text-purple-900/70">
+                <p className="mx-auto mt-3 max-w-2xl text-purple-100/70">
                     Choose which character has more favorites on MAL.
                 </p>
 
-                <div className="mt-5 inline-flex rounded-2xl border border-purple-200 bg-white px-5 py-3 text-xl font-bold text-purple-950 shadow-sm">
+                <div className="mt-5 inline-flex rounded-2xl border border-pink-500/20 bg-pink-500/10 px-5 py-3 text-xl font-bold text-pink-200 shadow-[0_0_20px_rgba(236,72,153,0.12)] backdrop-blur-xl">
                     Streak: {streak}
                 </div>
             </section>
 
             {error && (
-                <p className="relative z-10 mx-auto mb-6 max-w-xl rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-center text-red-700">
+                <p className="relative z-10 mx-auto mb-6 max-w-xl rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-center text-red-300 backdrop-blur-xl">
                     {error}
                 </p>
             )}
 
             {nextMilestone && (
-                <div className="relative z-10 mx-auto mb-6 max-w-xl rounded-3xl border border-green-200 bg-green-50 p-5 text-center shadow-sm">
-                    <p className="font-semibold text-green-800">
+                <div className="relative z-10 mx-auto mb-6 max-w-xl rounded-3xl border border-green-400/20 bg-green-500/10 p-5 text-center shadow-[0_0_20px_rgba(16,185,129,0.12)] backdrop-blur-xl">
+                    <p className="font-semibold text-green-200">
                         You reached a {nextMilestone} streak! Claim your pack reward.
                     </p>
 
                     <button
                         type="button"
                         onClick={() => handleClaimPack(nextMilestone)}
-                        className="mt-4 rounded-2xl bg-green-700 px-5 py-3 font-semibold text-white transition hover:bg-green-800 hover:cursor-pointer"
+                        className="
+                    mt-4 rounded-2xl
+                    border border-green-400/20
+                    bg-green-500/10
+                    px-5 py-3
+                    font-semibold
+                    text-green-200
+                    transition
+                    hover:bg-green-500/20
+                    hover:cursor-pointer
+                    "
                     >
                         Claim Pack
                     </button>
@@ -261,7 +276,15 @@ export default function CharacterHigherLowerPage() {
                 ) : (
                     <>
                         {leftCharacter && (
-                            <div className="relative z-10 min-h-[560px] w-full overflow-hidden rounded-3xl border border-purple-200 bg-white text-left shadow-sm">
+                            <div
+                                className="
+                            relative z-10 min-h-[560px] w-full overflow-hidden
+                            rounded-3xl
+                            border border-pink-500/20
+                            bg-black/40
+                            shadow-[0_0_25px_rgba(236,72,153,0.08)]
+                            "
+                            >
                                 <Image
                                     src={leftCharacter.imageUrl}
                                     alt={leftCharacter.name}
@@ -269,10 +292,10 @@ export default function CharacterHigherLowerPage() {
                                     className="object-cover object-[center_20%]"
                                 />
 
-                                <div className="absolute inset-0 bg-gradient-to-t from-purple-950/90 via-purple-950/35 to-transparent" />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
 
                                 <div className="relative z-10 flex h-full flex-col justify-end p-8">
-                                    <p className="text-xs font-bold uppercase tracking-widest text-white/60">
+                                    <p className="text-xs font-bold uppercase tracking-widest text-pink-200/60">
                                         Current Character
                                     </p>
 
@@ -281,12 +304,12 @@ export default function CharacterHigherLowerPage() {
                                     </h2>
 
                                     {leftCharacter.animeTitle && (
-                                        <p className="mt-2 text-sm font-semibold text-white/70">
+                                        <p className="mt-2 text-sm font-semibold text-purple-100/70">
                                             From {leftCharacter.animeTitle}
                                         </p>
                                     )}
 
-                                    <div className="mt-4 inline-flex w-fit rounded-2xl border border-white/20 bg-white/20 px-4 py-2 text-sm font-bold text-white backdrop-blur-sm">
+                                    <div className="mt-4 inline-flex w-fit rounded-2xl border border-pink-500/20 bg-pink-500/10 px-4 py-2 text-sm font-bold text-pink-200 backdrop-blur-sm">
                                         Favorites: {leftCharacter.favorites}
                                     </div>
                                 </div>
@@ -294,7 +317,15 @@ export default function CharacterHigherLowerPage() {
                         )}
 
                         {rightCharacter && (
-                            <div className="relative z-10 min-h-[560px] w-full overflow-hidden rounded-3xl border border-purple-200 bg-white text-left shadow-sm">
+                            <div
+                                className="
+                            relative z-10 min-h-[560px] w-full overflow-hidden
+                            rounded-3xl
+                            border border-pink-500/20
+                            bg-black/40
+                            shadow-[0_0_25px_rgba(236,72,153,0.08)]
+                            "
+                            >
                                 <Image
                                     src={rightCharacter.imageUrl}
                                     alt={rightCharacter.name}
@@ -302,10 +333,10 @@ export default function CharacterHigherLowerPage() {
                                     className="object-cover object-[center_20%]"
                                 />
 
-                                <div className="absolute inset-0 bg-gradient-to-t from-purple-950/90 via-purple-950/35 to-transparent" />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
 
                                 <div className="relative z-10 flex h-full flex-col justify-end p-8">
-                                    <p className="text-xs font-bold uppercase tracking-widest text-white/60">
+                                    <p className="text-xs font-bold uppercase tracking-widest text-pink-200/60">
                                         New Character
                                     </p>
 
@@ -314,16 +345,16 @@ export default function CharacterHigherLowerPage() {
                                     </h2>
 
                                     {rightCharacter.animeTitle && (
-                                        <p className="mt-2 text-sm font-semibold text-white/70">
+                                        <p className="mt-2 text-sm font-semibold text-purple-100/70">
                                             From {rightCharacter.animeTitle}
                                         </p>
                                     )}
 
                                     {revealing ? (
                                         <div className="mt-4 flex flex-wrap items-center gap-2">
-                                <span className="rounded-2xl border border-white/20 bg-white/20 px-4 py-2 text-sm font-bold text-white backdrop-blur-sm">
-                                    Favorites: {rightCharacter.favorites}
-                                </span>
+                                        <span className="rounded-2xl border border-pink-500/20 bg-pink-500/10 px-4 py-2 text-sm font-bold text-pink-200 backdrop-blur-sm">
+                                            Favorites: {rightCharacter.favorites}
+                                        </span>
                                         </div>
                                     ) : (
                                         <div className="mt-6 grid w-full grid-cols-2 gap-3">
@@ -331,7 +362,20 @@ export default function CharacterHigherLowerPage() {
                                                 type="button"
                                                 onClick={() => handleGuess("higher")}
                                                 disabled={guessing}
-                                                className="rounded-2xl border border-green-200/40 bg-green-400/20 px-5 py-3 font-bold text-white shadow-sm backdrop-blur-sm transition hover:bg-green-400/30 hover:cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
+                                                className="
+                                            rounded-2xl
+                                            border border-green-400/20
+                                            bg-green-500/10
+                                            px-5 py-3
+                                            font-bold
+                                            text-green-200
+                                            backdrop-blur-sm
+                                            transition
+                                            hover:bg-green-500/20
+                                            hover:cursor-pointer
+                                            disabled:cursor-not-allowed
+                                            disabled:opacity-60
+                                            "
                                             >
                                                 Higher
                                             </button>
@@ -340,7 +384,20 @@ export default function CharacterHigherLowerPage() {
                                                 type="button"
                                                 onClick={() => handleGuess("lower")}
                                                 disabled={guessing}
-                                                className="rounded-2xl border border-red-200/40 bg-red-400/20 px-5 py-3 font-bold text-white shadow-sm backdrop-blur-sm transition hover:bg-red-400/30 hover:cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
+                                                className="
+                                            rounded-2xl
+                                            border border-red-400/20
+                                            bg-red-500/10
+                                            px-5 py-3
+                                            font-bold
+                                            text-red-200
+                                            backdrop-blur-sm
+                                            transition
+                                            hover:bg-red-500/20
+                                            hover:cursor-pointer
+                                            disabled:cursor-not-allowed
+                                            disabled:opacity-60
+                                            "
                                             >
                                                 Lower
                                             </button>
@@ -358,7 +415,17 @@ export default function CharacterHigherLowerPage() {
                     <button
                         type="button"
                         onClick={loadGame}
-                        className="rounded-2xl bg-purple-900 px-5 py-3 font-semibold text-white transition hover:bg-purple-800 hover:cursor-pointer"
+                        className="
+                    rounded-2xl
+                    border border-pink-500/20
+                    bg-pink-500/10
+                    px-5 py-3
+                    font-semibold
+                    text-pink-200
+                    transition
+                    hover:bg-pink-500/20
+                    hover:cursor-pointer
+                    "
                     >
                         Play Again
                     </button>
@@ -368,7 +435,7 @@ export default function CharacterHigherLowerPage() {
             <div className="relative z-10 mt-8 text-center">
                 <Link
                     href="/games/higher-lower"
-                    className="text-sm font-medium text-purple-900/60 transition hover:text-purple-900"
+                    className="text-sm font-medium text-pink-300/70 transition hover:text-pink-200"
                 >
                     Back to modes
                 </Link>

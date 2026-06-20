@@ -42,17 +42,19 @@ const TrendingAnime = () => {
     }, [])
 
     return (
-        <div className="mb-6 grid sm:grid-cols-3 md:grid-cols-6 gap-2">
-            {loading
-                ? Array.from({ length: 6 }).map((_, i) => (
-                    <AnimeCardSkeleton key={i} />
-                ))
-                : results.map((anime) => (
-                    <AnimeCard key={anime.mal_id} anime={anime} />
-                ))
-            }
-        </div>
-    )
+        <section className="relative z-10 mb-10 w-full rounded-3xl border border-pink-500/20 bg-black/30 p-4 backdrop-blur-xl shadow-[0_0_25px_rgba(236,72,153,0.08)]">
+            <div className="grid gap-3 sm:grid-cols-3 md:grid-cols-6">
+                {loading
+                    ? Array.from({ length: 6 }).map((_, i) => (
+                        <AnimeCardSkeleton key={i} />
+                    ))
+                    : results.map((anime) => (
+                        <AnimeCard key={anime.mal_id} anime={anime} />
+                    ))
+                }
+            </div>
+        </section>
+    );
 }
 
 export default TrendingAnime

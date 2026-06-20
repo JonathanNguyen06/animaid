@@ -20,6 +20,11 @@ type DraftPick = {
     hasSynergy?: boolean;
 };
 
+type PowerBurst = {
+    id: number;
+    amount: number;
+};
+
 const positions: DraftPosition[] = [
     "Captain",
     "Vice Captain",
@@ -128,6 +133,75 @@ function DraftCardSkeleton() {
     );
 }
 
+function TeamPowerCounter({
+                              totalPower,
+                              bursts,
+                          }: {
+    totalPower: number;
+    bursts: PowerBurst[];
+}) {
+    return (
+        <div className="relative mt-5 overflow-hidden rounded-3xl border border-purple-200 bg-gradient-to-br from-purple-950 via-purple-900 to-black p-5 text-white shadow-[0_0_25px_rgba(126,34,206,0.35)]">
+            <div className="absolute -right-10 -top-10 h-28 w-28 rounded-full bg-yellow-300/20 blur-2xl" />
+            <div className="absolute -bottom-10 -left-10 h-28 w-28 rounded-full bg-fuchsia-400/20 blur-2xl" />
+
+            {bursts.map((burst) => (
+                <span
+                    key={burst.id}
+                    className="pointer-events-none absolute right-6 top-6 z-20 text-3xl font-black text-yellow-300 drop-shadow-[0_0_12px_rgba(250,204,21,0.9)]"
+                    style={{
+                        animation: "powerBurst 1s ease-out forwards",
+                    }}
+                >
+                    +{burst.amount}
+                </span>
+            ))}
+
+            <div className="relative z-10">
+                <p className="text-xs font-black uppercase tracking-[0.25em] text-purple-200">
+                    Team Power
+                </p>
+
+                <div className="mt-3 flex items-end gap-3">
+                    <p className="text-6xl font-black leading-none text-yellow-300 drop-shadow-[0_0_18px_rgba(250,204,21,0.55)]">
+                        {totalPower}
+                    </p>
+
+                    <p className="pb-2 text-xs font-bold uppercase tracking-widest text-white/50">
+                        Total
+                    </p>
+                </div>
+
+                <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/10">
+                    <div
+                        className="h-full rounded-full bg-gradient-to-r from-yellow-300 via-fuchsia-300 to-purple-300 transition-all duration-500"
+                        style={{
+                            width: `${Math.min((totalPower / 800) * 100, 100)}%`,
+                        }}
+                    />
+                </div>
+            </div>
+
+            <style>{`
+                @keyframes powerBurst {
+                    0% {
+                        opacity: 0;
+                        transform: translateY(12px) scale(0.6);
+                    }
+                    20% {
+                        opacity: 1;
+                        transform: translateY(-12px) scale(1.25);
+                    }
+                    100% {
+                        opacity: 0;
+                        transform: translateY(-70px) scale(0.85);
+                    }
+                }
+            `}</style>
+        </div>
+    );
+}
+
 export default function DraftPage() {
     const [usedCharacterIds, setUsedCharacterIds] = useState<string[]>([]);
     const [currentCharacter, setCurrentCharacter] = useState<DraftCharacter | null>(null);
@@ -142,6 +216,8 @@ export default function DraftPage() {
         character: DraftCharacter;
         position: DraftPosition;
     } | null>(null);
+    const [powerBursts, setPowerBursts] = useState<PowerBurst[]>([]);
+    const [lastPowerIncrease, setLastPowerIncrease] = useState(0);
 
     const droppedInSlotRef = useRef(false);
     const dragSkeletonTimeoutRef = useRef<number | null>(null);
@@ -286,6 +362,8 @@ export default function DraftPage() {
     function confirmPick() {
         if (!pendingPick) return;
 
+        const previousTotal = picks.reduce((total, pick) => total + pick.power, 0);
+
         const basePower = calculateDraftPower(
             pendingPick.character,
             pendingPick.position
@@ -299,12 +377,33 @@ export default function DraftPage() {
             grade: getLetterGrade(basePower),
         };
 
+        const updatedPicks = applySynergyBonuses([...picks, newPick]);
+        const newTotal = updatedPicks.reduce((total, pick) => total + pick.power, 0);
+        const increase = newTotal - previousTotal;
+
         const newUsedIds = [...usedCharacterIds, pendingPick.character.id];
 
-        setPicks((current) => applySynergyBonuses([...current, newPick]));
+        setPicks(updatedPicks);
         setUsedCharacterIds(newUsedIds);
         setPendingPick(null);
         setHoveredPosition(null);
+        setLastPowerIncrease(increase);
+
+        const burstId = Date.now();
+
+        setPowerBursts((current) => [
+            ...current,
+            {
+                id: burstId,
+                amount: increase,
+            },
+        ]);
+
+        window.setTimeout(() => {
+            setPowerBursts((current) =>
+                current.filter((burst) => burst.id !== burstId)
+            );
+        }, 1000);
 
         if (picks.length + 1 < positions.length) {
             setCurrentCharacter(getRandomCharacter(newUsedIds));
@@ -320,27 +419,44 @@ export default function DraftPage() {
         setRerollUsed(false);
         setIsNewHighScore(false);
         setIsDraggingCard(false);
+        setPowerBursts([]);
+        setLastPowerIncrease(0);
     }
 
     return (
         <main className="mx-auto min-h-[calc(100vh-130px)] max-w-[1600px] px-4 py-10">
-            <section className="relative z-10 rounded-3xl border border-purple-200 bg-white p-8 shadow-sm">
-                <p className="text-xs font-bold uppercase tracking-widest text-purple-900/50">
+            <div className="pointer-events-none fixed inset-0 overflow-hidden">
+                <div className="absolute left-0 top-0 h-[500px] w-[500px] rounded-full bg-pink-500/10 blur-[150px]" />
+                <div className="absolute right-0 top-0 h-[500px] w-[500px] rounded-full bg-purple-500/10 blur-[150px]" />
+                <div className="absolute bottom-0 left-1/2 h-[400px] w-[400px] -translate-x-1/2 rounded-full bg-fuchsia-500/10 blur-[120px]" />
+            </div>
+            <section
+                className="
+                    relative z-10
+                    rounded-3xl
+                    border border-pink-500/20
+                    bg-black/40
+                    p-8
+                    backdrop-blur-xl
+                    shadow-[0_0_25px_rgba(236,72,153,0.08)]
+                "
+            >
+                <p className="text-xs font-bold uppercase tracking-widest text-pink-300/60">
                     Anime Draft
                 </p>
 
-                <h1 className="mt-3 text-4xl font-bold text-purple-950">
+                <h1 className="mt-3 text-5xl font-black text-white">
                     Blind Character Draft
                 </h1>
 
-                <p className="mt-3 text-purple-900/70">
+                <p className="mt-3 text-purple-100/70">
                     Drag the character into a position. Once confirmed, that slot is locked.
                 </p>
 
                 {!draftComplete && (
                     <div className="mt-8 grid gap-8 xl:grid-cols-[340px_1fr]">
                         <div>
-                            <h2 className="mb-4 text-xl font-bold text-purple-950">
+                            <h2 className="mb-4 text-xl font-bold text-white">
                                 Current Character
                             </h2>
 
@@ -348,7 +464,7 @@ export default function DraftPage() {
                                 draggable={!pendingPick}
                                 onDragStart={handleDragStart}
                                 onDragEnd={handleDragEnd}
-                                className={`overflow-hidden rounded-3xl border border-purple-200 bg-purple-50 shadow-lg transition ${
+                                className={`relative min-h-[420px] overflow-hidden rounded-3xl border border-pink-500/30 bg-black transition shadow-[0_0_30px_rgba(236,72,153,0.18)] ${
                                     pendingPick
                                         ? "cursor-not-allowed opacity-40"
                                         : isDraggingCard
@@ -356,36 +472,80 @@ export default function DraftPage() {
                                             : "cursor-grab active:cursor-grabbing"
                                 }`}
                             >
-                                    <img
-                                        src={currentCharacter.imageUrl}
-                                        alt={currentCharacter.name}
-                                        draggable={false}
-                                        className="pointer-events-none h-80 w-full object-cover object-[50%_20%]"
-                                    />
+                                <img
+                                    src={currentCharacter.imageUrl}
+                                    alt={currentCharacter.name}
+                                    draggable={false}
+                                    className="pointer-events-none absolute inset-0 h-full w-full object-cover object-[50%_20%]"
+                                />
 
-                                    <div className="p-5">
-                                        <h3 className="text-2xl font-bold text-purple-950">
-                                            {currentCharacter.name}
-                                        </h3>
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
 
-                                        <p className="mt-1 text-sm font-medium text-purple-900/60">
-                                            {currentCharacter.anime}
-                                        </p>
-                                    </div>
+                                <div className="absolute bottom-0 left-0 right-0 p-5">
+                                    <p className="text-xs font-bold uppercase tracking-widest text-purple-300">
+                                        Drag to Position
+                                    </p>
+
+                                    <h3 className="mt-2 text-3xl font-black text-white drop-shadow">
+                                        {currentCharacter.name}
+                                    </h3>
+
+                                    <p className="text-base font-medium text-white/75">
+                                        {currentCharacter.anime}
+                                    </p>
                                 </div>
+                            </div>
 
                             <button
                                 type="button"
                                 onClick={rerollCharacter}
                                 disabled={rerollUsed || !!pendingPick}
-                                className="mt-4 w-full rounded-2xl border border-yellow-300 bg-yellow-50 px-4 py-3 font-bold text-yellow-800 transition hover:cursor-pointer hover:bg-yellow-100 disabled:cursor-not-allowed disabled:opacity-50"
+                                className={`group relative mt-4 w-full overflow-hidden rounded-3xl border px-5 py-4 transition-all duration-300 hover:cursor-pointer ${
+                                    rerollUsed
+                                        ? "cursor-not-allowed border-zinc-300 bg-zinc-100 text-zinc-500 opacity-70"
+                                        : "border-yellow-400 bg-gradient-to-br from-yellow-300 via-amber-300 to-yellow-500 text-purple-950 shadow-[0_0_18px_rgba(250,204,21,0.45)] hover:-translate-y-1 hover:shadow-[0_0_30px_rgba(250,204,21,0.75)]"
+                                }`}
                             >
-                                {rerollUsed ? "Reroll Used" : "Reroll Character"}
+                                {!rerollUsed && (
+                                    <>
+                                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent opacity-0 transition group-hover:opacity-100" />
+                                        <div className="absolute -right-6 -top-6 h-16 w-16 rounded-full bg-white/20 blur-xl" />
+                                    </>
+                                )}
+
+                                <div className="relative z-10 flex items-center justify-center gap-3">
+                                    <span className="text-xl">
+                                        {rerollUsed ? "✓" : "🎲"}
+                                    </span>
+
+                                    <div className="text-left">
+                                        <p className="text-sm font-black uppercase tracking-widest">
+                                            {rerollUsed ? "Reroll Used" : "Fate Rewrite"}
+                                        </p>
+
+                                        <p
+                                            className={`text-xs ${
+                                                rerollUsed
+                                                    ? "text-zinc-500"
+                                                    : "text-purple-950/70"
+                                            }`}
+                                        >
+                                            {rerollUsed
+                                                ? "No rerolls remaining"
+                                                : "One chance to redraw"}
+                                        </p>
+                                    </div>
+                                </div>
                             </button>
+
+                            <TeamPowerCounter
+                                totalPower={totalPower}
+                                bursts={powerBursts}
+                            />
                         </div>
 
                         <div>
-                            <h2 className="mb-4 text-xl font-bold text-purple-950">
+                            <h2 className="mb-4 text-xl font-bold text-white">
                                 Team Positions
                             </h2>
 
@@ -414,20 +574,20 @@ export default function DraftPage() {
                                             onDrop={(event) => handleDrop(event, position)}
                                             className={`min-h-[390px] rounded-3xl border-2 border-dashed p-4 transition ${
                                                 pick
-                                                    ? "border-purple-200 bg-white"
+                                                    ? "border-pink-500/30 bg-black/40 backdrop-blur-xl"
                                                     : pendingForThisPosition
-                                                        ? "border-yellow-400 bg-yellow-50"
+                                                        ? "border-yellow-400 bg-yellow-500/10 shadow-[0_0_25px_rgba(250,204,21,0.25)]"
                                                         : isHovered
-                                                            ? "border-purple-500 bg-purple-100"
-                                                            : "border-purple-200 bg-purple-50"
+                                                            ? "border-pink-400 bg-pink-500/10 shadow-[0_0_25px_rgba(236,72,153,0.25)]"
+                                                            : "border-pink-500/20 bg-black/20"
                                             }`}
                                         >
-                                            <p className="text-sm font-bold uppercase tracking-widest text-purple-900/50">
+                                            <p className="text-sm font-bold uppercase tracking-widest text-pink-300/60">
                                                 {positionIcons[position]} {position}
                                             </p>
 
                                             {!pick && !pendingForThisPosition && (
-                                                <div className="mt-8 text-center text-sm font-semibold text-purple-900/50">
+                                                <div className="mt-8 text-center text-sm font-semibold text-pink-300/60">
                                                     Drop character here
                                                 </div>
                                             )}
@@ -525,47 +685,140 @@ export default function DraftPage() {
 
                 {draftComplete && (
                     <div className="mt-10 text-center">
-                        <p className="text-sm font-bold uppercase tracking-widest text-purple-900/50">
-                            Draft Complete
-                        </p>
+                        <div className="relative mx-auto max-w-5xl overflow-hidden rounded-[2rem] border border-pink-500/30 bg-gradient-to-br from-purple-950 via-purple-900 to-black p-8 text-white shadow-[0_0_60px_rgba(236,72,153,0.30)]">
+                            <div className="absolute -right-20 -top-20 h-52 w-52 rounded-full bg-yellow-300/20 blur-3xl" />
+                            <div className="absolute -bottom-20 -left-20 h-52 w-52 rounded-full bg-fuchsia-400/20 blur-3xl" />
 
-                        <h2 className="mt-3 text-5xl font-black text-purple-950">
-                            {getDraftGrade(averagePower)} Draft
-                        </h2>
+                            <div className="relative z-10">
+                                <p className="text-xs font-black uppercase tracking-[0.45em] text-yellow-300">
+                                    Draft Complete
+                                </p>
 
-                        <p className="mt-3 text-xl font-bold text-purple-900">
-                            Total Power: {totalPower}
-                        </p>
+                                <h2 className="mt-4 text-5xl font-black text-white drop-shadow md:text-6xl">
+                                    {getDraftGrade(averagePower)} Draft
+                                </h2>
 
-                        <p className="mt-1 text-purple-900/60">
-                            Average Rating: {averagePower}
-                        </p>
+                                <div className="mt-8 grid gap-4 md:grid-cols-3">
+                                    <div className="rounded-3xl border border-white/10 bg-white/10 p-5 backdrop-blur">
+                                        <p className="text-xs font-black uppercase tracking-widest text-purple-200">
+                                            Total Power
+                                        </p>
+
+                                        <p className="mt-2 text-5xl font-black text-yellow-300 drop-shadow-[0_0_18px_rgba(250,204,21,0.65)]">
+                                            {totalPower}
+                                        </p>
+                                    </div>
+
+                                    <div className="rounded-3xl border border-white/10 bg-white/10 p-5 backdrop-blur">
+                                        <p className="text-xs font-black uppercase tracking-widest text-purple-200">
+                                            Average Power
+                                        </p>
+
+                                        <p className="mt-2 text-5xl font-black text-white">
+                                            {averagePower}
+                                        </p>
+                                    </div>
+
+                                    <div className="rounded-3xl border border-white/10 bg-white/10 p-5 backdrop-blur">
+                                        <p className="text-xs font-black uppercase tracking-widest text-purple-200">
+                                            Grade
+                                        </p>
+
+                                        <p className="mt-2 text-5xl font-black text-fuchsia-300 drop-shadow-[0_0_18px_rgba(217,70,239,0.65)]">
+                                            {getDraftGrade(averagePower)}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
 
                         {highScore && (
                             <div
-                                className={`mx-auto mt-6 max-w-md rounded-2xl border p-5 transition ${
+                                className={`mx-auto mt-6 max-w-3xl overflow-hidden rounded-3xl border p-5 transition ${
                                     isNewHighScore
-                                        ? "animate-pulse border-yellow-400 bg-gradient-to-br from-yellow-50 via-white to-purple-50 shadow-[0_0_35px_rgba(250,204,21,0.75)]"
-                                        : "border-yellow-300 bg-yellow-50"
+                                        ? "animate-pulse border-yellow-300 bg-gradient-to-br from-yellow-300 via-amber-200 to-purple-200 shadow-[0_0_40px_rgba(250,204,21,0.85)]"
+                                        : "border-purple-300 bg-gradient-to-br from-purple-950 via-purple-900 to-black shadow-[0_0_25px_rgba(126,34,206,0.35)]"
                                 }`}
                             >
-                                {isNewHighScore && (
-                                    <p className="mb-2 text-sm font-black uppercase tracking-widest text-yellow-600">
-                                        ✨ New Record! ✨
-                                    </p>
-                                )}
+                                <div className="flex flex-col gap-4 text-center text-white sm:flex-row sm:items-center sm:justify-between">
+                                    <div className="text-left">
+                                        <p
+                                            className={`text-xs font-black uppercase tracking-[0.3em] ${
+                                                isNewHighScore ? "text-purple-950" : "text-yellow-300"
+                                            }`}
+                                        >
+                                            {isNewHighScore ? "✨ New Record ✨" : "High Score"}
+                                        </p>
 
-                                <p className="text-sm font-bold uppercase tracking-widest text-yellow-700">
-                                    High Score
-                                </p>
+                                        <p
+                                            className={`mt-1 text-sm font-semibold ${
+                                                isNewHighScore ? "text-purple-900" : "text-white/60"
+                                            }`}
+                                        >
+                                            Best saved draft
+                                        </p>
+                                    </div>
 
-                                <p className="mt-2 text-2xl font-black text-purple-950">
-                                    {highScore.totalPower}
-                                </p>
+                                    <div className="flex items-center justify-center gap-5">
+                                        <div>
+                                            <p
+                                                className={`text-4xl font-black ${
+                                                    isNewHighScore ? "text-purple-950" : "text-yellow-300"
+                                                }`}
+                                            >
+                                                {highScore.totalPower}
+                                            </p>
 
-                                <p className="text-sm font-semibold text-purple-900/60">
-                                    {highScore.grade} Draft • Average {highScore.averagePower}
-                                </p>
+                                            <p
+                                                className={`text-xs font-bold uppercase ${
+                                                    isNewHighScore ? "text-purple-900" : "text-white/50"
+                                                }`}
+                                            >
+                                                Total
+                                            </p>
+                                        </div>
+
+                                        <div className="h-12 w-px bg-white/20" />
+
+                                        <div>
+                                            <p
+                                                className={`text-4xl font-black ${
+                                                    isNewHighScore ? "text-purple-950" : "text-white"
+                                                }`}
+                                            >
+                                                {highScore.averagePower}
+                                            </p>
+
+                                            <p
+                                                className={`text-xs font-bold uppercase ${
+                                                    isNewHighScore ? "text-purple-900" : "text-white/50"
+                                                }`}
+                                            >
+                                                Avg
+                                            </p>
+                                        </div>
+
+                                        <div className="h-12 w-px bg-white/20" />
+
+                                        <div>
+                                            <p
+                                                className={`text-4xl font-black ${
+                                                    isNewHighScore ? "text-purple-950" : "text-fuchsia-300"
+                                                }`}
+                                            >
+                                                {highScore.grade}
+                                            </p>
+
+                                            <p
+                                                className={`text-xs font-bold uppercase ${
+                                                    isNewHighScore ? "text-purple-900" : "text-white/50"
+                                                }`}
+                                            >
+                                                Grade
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         )}
 
@@ -624,7 +877,25 @@ export default function DraftPage() {
                         <button
                             type="button"
                             onClick={restartDraft}
-                            className="mt-8 rounded-2xl bg-purple-900 px-6 py-3 font-bold text-white transition hover:cursor-pointer hover:bg-purple-800"
+                            className="
+                            mt-8
+                            rounded-2xl
+                            border border-pink-500/30
+                            bg-gradient-to-r
+                            from-pink-600
+                            via-fuchsia-600
+                            to-purple-700
+                            px-8
+                            py-4
+                            font-black
+                            text-white
+                            shadow-[0_0_30px_rgba(236,72,153,0.35)]
+                            transition-all
+                            duration-300
+                            hover:-translate-y-1
+                            hover:shadow-[0_0_45px_rgba(236,72,153,0.65)]
+                            hover:cursor-pointer
+                            "
                         >
                             Start New Draft
                         </button>

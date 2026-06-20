@@ -100,7 +100,7 @@ export default function WishlistButton({ anime }: Props) {
             <button
                 type="button"
                 disabled
-                className="flex h-10 w-10 items-center justify-center rounded-xl border border-purple-200 bg-white text-purple-300 shadow-sm"
+                className="flex h-10 w-10 items-center justify-center rounded-xl border border-pink-500/20 bg-white/10 text-pink-300/40 shadow-[0_0_18px_rgba(236,72,153,0.08)] backdrop-blur-xl"
                 aria-label="Checking wishlist"
             />
         );
@@ -111,7 +111,11 @@ export default function WishlistButton({ anime }: Props) {
             <button
                 type="button"
                 onClick={handleClick}
-                className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border border-purple-200 bg-white text-purple-900 shadow-sm transition hover:bg-purple-50"
+                className={`flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border backdrop-blur-xl transition hover:scale-105 ${
+                    added
+                        ? "border-pink-400/40 bg-pink-500/20 text-pink-100 shadow-[0_0_20px_rgba(236,72,153,0.25)] hover:bg-pink-500/30"
+                        : "border-pink-500/20 bg-white/10 text-pink-200 shadow-[0_0_18px_rgba(236,72,153,0.08)] hover:border-pink-400/40 hover:bg-pink-500/15"
+                }`}
                 aria-label={added ? "Remove from wishlist" : "Add to wishlist"}
             >
                 {added ? (

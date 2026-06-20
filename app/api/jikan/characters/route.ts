@@ -1,64 +1,51 @@
 import { NextResponse } from "next/server";
 
-function randomInt(min: number, max: number) {
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-}
+export async function GET(req: Request) {
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get("id");
 
-export async function GET() {
+    if (!id) {
+        return NextResponse.json(
+            { error: "Missing anime id" },
+            { status: 400 }
+        );
+    }
+
     try {
-        const page = randomInt(1, 20);
-
         const res = await fetch(
-            `https://api.jikan.moe/v4/top/characters?page=${page}&limit=25`
+            `https://api.jikan.moe/v4/anime/${id}/characters`
         );
 
         if (!res.ok) {
             return NextResponse.json(
-                { error: "Failed to load top characters." },
+                { error: "Failed to load characters" },
                 { status: 500 }
             );
         }
 
         const json = await res.json();
-        const characters = (json.data ?? []).filter((character: any) => {
-            const imageUrl =
-                character.images?.jpg?.image_url ||
-                character.images?.webp?.image_url;
 
-            return character.mal_id && character.name && imageUrl;
-        });
+        const characters = (json.data ?? [])
+            .map((item: any) => ({
+                mal_id: item.character?.mal_id,
+                name: item.character?.name,
+                role: item.role,
+                image_url:
+                    item.character?.images?.webp?.image_url ||
+                    item.character?.images?.jpg?.image_url ||
+                    null,
+            }))
+            .filter((character: any) =>
+                character.mal_id &&
+                character.name &&
+                character.image_url
+            )
+            .slice(0, 15);
 
-        if (characters.length === 0) {
-            return NextResponse.json(
-                { error: "Could not find a valid character." },
-                { status: 404 }
-            );
-        }
-
-        const character = characters[randomInt(0, characters.length - 1)];
-
-        const imageUrl =
-            character.images?.jpg?.image_url ||
-            character.images?.webp?.image_url;
-
-        return NextResponse.json({
-            data: {
-                mal_id: character.mal_id,
-                name: character.name,
-                imageUrl,
-                favorites: character.favorites ?? 0,
-                animeId: character.anime?.mal_id ?? 0,
-                animeTitle:
-                    character.anime?.title_english ||
-                    character.anime?.title ||
-                    "Unknown Anime",
-            },
-        });
-    } catch (error) {
-        console.error("Higher/lower character error:", error);
-
+        return NextResponse.json({ data: characters });
+    } catch {
         return NextResponse.json(
-            { error: "Failed to load character." },
+            { error: "Failed to load characters" },
             { status: 500 }
         );
     }

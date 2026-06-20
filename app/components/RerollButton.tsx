@@ -9,48 +9,88 @@ type Props = {
 
 const RerollButton = ({ onClick, rolling = false }: Props) => {
     return (
-        <Button
-            variant="contained"
-            onClick={onClick}
-            disabled={rolling}
-            sx={{
-                backgroundColor: "#581c87",
-                "&:hover": {
-                    backgroundColor: "#6b21a8",
-                },
-                "&.Mui-disabled": {
-                    backgroundColor: "#581c87",
-                    opacity: 0.8,
-                },
-                borderRadius: "0.75rem",
-                textTransform: "none",
-                minWidth: "120px",
-                gap: "8px",
-            }}
-        >
-            <Dices
-                style={{
-                    animation: rolling ? "spin 0.6s linear infinite" : "none",
-                }}
-            />
-            <span
-                style={{
-                    fontFamily: "var(--font-josefin), ui-sans-serif, system-ui",
-                    fontWeight: 600,
-                    fontSize: "0.875rem",
+        <>
+            <Button
+                variant="contained"
+                onClick={onClick}
+                disabled={rolling}
+                sx={{
+                    background:
+                        "linear-gradient(135deg, #ec4899 0%, #a855f7 100%)",
+
                     color: "white",
+
+                    border: "1px solid rgba(236,72,153,0.35)",
+
+                    borderRadius: "16px",
+
+                    minWidth: "180px",
+                    height: "56px",
+
+                    textTransform: "none",
+
+                    fontFamily:
+                        "var(--font-josefin), ui-sans-serif, system-ui",
+
+                    fontWeight: 700,
+
+                    fontSize: "0.95rem",
+
+                    gap: "10px",
+
+                    boxShadow:
+                        "0 0 25px rgba(236,72,153,0.25)",
+
+                    transition: "all 0.2s ease",
+
+                    "&:hover": {
+                        background:
+                            "linear-gradient(135deg, #f472b6 0%, #c084fc 100%)",
+
+                        transform: "translateY(-2px)",
+
+                        boxShadow:
+                            "0 0 35px rgba(236,72,153,0.45)",
+                    },
+
+                    "&:active": {
+                        transform: "translateY(0px) scale(0.97)",
+                    },
+
+                    "&.Mui-disabled": {
+                        background:
+                            "linear-gradient(135deg, #ec4899 0%, #a855f7 100%)",
+
+                        opacity: 0.6,
+
+                        color: "white",
+                    },
                 }}
             >
-                {rolling ? "Rolling..." : "Roll"}
-            </span>
-            <style>{`
-                @keyframes spin {
-                    from { transform: rotate(0deg); }
-                    to { transform: rotate(360deg); }
+                <Dices
+                    size={20}
+                    style={{
+                        animation: rolling
+                            ? "animaidDiceSpin 0.7s linear infinite"
+                            : "none",
+                    }}
+                />
+
+                {rolling ? "Rolling..." : "Roll Anime"}
+            </Button>
+
+            <style jsx>{`
+                @keyframes animaidDiceSpin {
+                    from {
+                        transform: rotate(0deg);
+                    }
+                    to {
+                        transform: rotate(360deg);
+                    }
                 }
             `}</style>
-        </Button>
-    )
-}
+        </>
+    );
+};
 
-export default RerollButton
+export default RerollButton;

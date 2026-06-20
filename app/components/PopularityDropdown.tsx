@@ -1,6 +1,6 @@
 "use client";
 
-import { Listbox, ListboxButton, ListboxOption, ListboxOptions } from "@headlessui/react";
+import { useEffect, useRef, useState } from "react";
 
 type Props = {
     value: string;
@@ -16,107 +16,89 @@ const options = [
 ];
 
 const PopularityDropdown = ({ value, setValue }: Props) => {
+    const [open, setOpen] = useState(false);
+    const dropdownRef = useRef<HTMLDivElement | null>(null);
+
     const selected =
-        options.find((option) => option.value === value) ??
-        options[0];
+        options.find((option) => option.value === value) ?? options[0];
+
+    useEffect(() => {
+        function handleClickOutside(e: MouseEvent) {
+            if (
+                dropdownRef.current &&
+                !dropdownRef.current.contains(e.target as Node)
+            ) {
+                setOpen(false);
+            }
+        }
+
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
 
     return (
-        <div className="w-full">
-            <label className="mb-2 block text-sm font-medium text-purple-900/70">
+        <div className="w-full" ref={dropdownRef}>
+            <label className="mb-2 block text-sm font-medium text-pink-100/80">
                 Popularity
             </label>
 
-            <Listbox value={value} onChange={setValue}>
-                <div className="relative">
-                    <ListboxButton
-                        className="
-                            w-full
-                            cursor-pointer
-                            rounded-2xl
-                            border
-                            border-purple-200
-                            bg-white
-                            px-4
-                            py-3
-                            text-left
-                            text-purple-950
-                            shadow-sm
-                            transition
-                            hover:border-purple-300
-                            focus:outline-none
-                            focus:ring-2
-                            focus:ring-purple-200
-                        "
-                    >
-                        <div className="flex items-center justify-between">
-                            <span>{selected.label}</span>
+            <div className="relative">
+                <button
+                    type="button"
+                    onClick={() => setOpen((current) => !current)}
+                    className="w-full cursor-pointer rounded-2xl border border-pink-500/20 bg-white/10 px-4 py-3 text-left text-white shadow-[0_0_18px_rgba(236,72,153,0.08)] backdrop-blur-xl transition hover:border-pink-400/40 hover:bg-white/15 focus:outline-none focus:ring-2 focus:ring-pink-500/30"
+                >
+                    <div className="flex items-center justify-between">
+                        <span>{selected.label}</span>
 
-                            <svg
-                                className="h-5 w-5 text-purple-500"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                            >
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M19 9l-7 7-7-7"
-                                />
-                            </svg>
-                        </div>
-                    </ListboxButton>
+                        <svg
+                            className={`h-5 w-5 text-pink-300/70 transition ${
+                                open ? "rotate-180" : ""
+                            }`}
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M19 9l-7 7-7-7"
+                            />
+                        </svg>
+                    </div>
+                </button>
 
-                    <ListboxOptions
-                        anchor="bottom"
-                        className="
-                            z-50
-                            mt-2
-                            w-[var(--button-width)]
-                            rounded-2xl
-                            border
-                            border-purple-200
-                            bg-white
-                            p-2
-                            shadow-lg
-                            focus:outline-none
-                        "
-                    >
-                        {options.map((option) => (
-                            <ListboxOption
-                                key={option.value}
-                                value={option.value}
-                                className={({ focus }) =>
-                                    `
-                                    cursor-pointer
-                                    rounded-xl
-                                    px-4
-                                    py-2
-                                    transition
-                                    ${
-                                        focus
-                                            ? "bg-purple-100 text-purple-950"
-                                            : "text-purple-900"
-                                    }
-                                `
-                                }
-                            >
-                                {({ selected }) => (
-                                    <div className="flex items-center justify-between">
-                                        <span>{option.label}</span>
+                {open && (
+                    <div className="absolute left-0 top-full z-50 mt-2 w-full overflow-hidden rounded-2xl border border-pink-500/20 bg-black/95 p-2 shadow-[0_0_25px_rgba(236,72,153,0.14)] backdrop-blur-xl">
+                        {options.map((option) => {
+                            const isSelected = option.value === value;
 
-                                        {selected && (
-                                            <span className="text-purple-700">
-                                                ✓
-                                            </span>
-                                        )}
-                                    </div>
-                                )}
-                            </ListboxOption>
-                        ))}
-                    </ListboxOptions>
-                </div>
-            </Listbox>
+                            return (
+                                <button
+                                    key={option.value}
+                                    type="button"
+                                    onClick={() => {
+                                        setValue(option.value);
+                                        setOpen(false);
+                                    }}
+                                    className={`flex w-full cursor-pointer items-center justify-between rounded-xl px-4 py-2 text-left transition ${
+                                        isSelected
+                                            ? "bg-pink-500/15 text-pink-100"
+                                            : "text-purple-100/70 hover:bg-pink-500/10 hover:text-pink-100"
+                                    }`}
+                                >
+                                    <span>{option.label}</span>
+
+                                    {isSelected && (
+                                        <span className="text-pink-300">✓</span>
+                                    )}
+                                </button>
+                            );
+                        })}
+                    </div>
+                )}
+            </div>
         </div>
     );
 };

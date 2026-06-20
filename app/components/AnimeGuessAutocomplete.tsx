@@ -59,11 +59,49 @@ export default function AnimeGuessAutocomplete({ value, setValue }: Props) {
             loading={loading}
             getOptionLabel={(option) => option.title_english || option.title}
             isOptionEqualToValue={(option, value) => option.mal_id === value.mal_id}
+            noOptionsText="No anime found"
+            loadingText="Searching..."
             fullWidth
             slotProps={{
                 paper: {
                     className:
-                        "relative z-10 mt-2 rounded-2xl border border-purple-200 bg-white p-2 shadow-lg",
+                        "relative z-10 mt-2 overflow-hidden rounded-2xl border border-pink-500/20 bg-black/90 shadow-[0_0_25px_rgba(236,72,153,0.18)] backdrop-blur-xl",
+                    sx: {
+                        backgroundColor: "#0b0b0f !important",
+                        color: "#ffffff",
+
+                        "& .MuiAutocomplete-listbox": {
+                            padding: "8px",
+                            backgroundColor: "#0b0b0f",
+                        },
+                        "& .MuiAutocomplete-noOptions": {
+                            color: "#ffffff",
+                        },
+
+                        "& .MuiAutocomplete-loading": {
+                            color: "#ffffff",
+                        },
+
+                        "& .MuiAutocomplete-option": {
+                            backgroundColor: "#0b0b0f",
+                            color: "#ffffff",
+                            borderRadius: "12px",
+                            marginBottom: "4px",
+                        },
+
+                        "& .MuiAutocomplete-option:hover": {
+                            backgroundColor: "rgba(236,72,153,0.10)",
+                        },
+
+                        "& .MuiAutocomplete-option.Mui-focused": {
+                            backgroundColor: "rgba(236,72,153,0.10)",
+                        },
+
+                        "& .MuiAutocomplete-option[aria-selected='true']": {
+                            backgroundColor: "rgba(236,72,153,0.16)",
+                            color: "#fbcfe8",
+                        },
+                    },
                 },
             }}
             renderOption={(props, option) => {
@@ -73,16 +111,52 @@ export default function AnimeGuessAutocomplete({ value, setValue }: Props) {
                     <li
                         key={key}
                         {...optionProps}
-                        className="cursor-pointer rounded-xl px-4 py-3 text-left text-sm text-purple-900 transition hover:bg-purple-50"
+                        className="
+                    cursor-pointer
+                    rounded-xl
+                    px-4 py-3
+                    transition
+                    hover:bg-pink-500/10
+                    "
                     >
-                        <div>
-                            <p className="font-semibold text-purple-950">
+                        <div className="w-full">
+                            <p className="font-semibold text-white">
                                 {option.title_english || option.title}
                             </p>
 
-                            <p className="mt-1 text-xs text-purple-900/50">
-                                {[option.type, option.year].filter(Boolean).join(" • ")}
-                            </p>
+                            <div className="mt-2 flex flex-wrap gap-2">
+                                {option.type && (
+                                    <span
+                                        className="
+                                    rounded-full
+                                    border border-pink-500/20
+                                    bg-pink-500/10
+                                    px-2 py-0.5
+                                    text-xs
+                                    font-medium
+                                    text-pink-200
+                                    "
+                                    >
+                                    {option.type}
+                                </span>
+                                )}
+
+                                {option.year && (
+                                    <span
+                                        className="
+                                    rounded-full
+                                    border border-purple-300/20
+                                    bg-white/[0.04]
+                                    px-2 py-0.5
+                                    text-xs
+                                    font-medium
+                                    text-purple-100/60
+                                    "
+                                    >
+                                    {option.year}
+                                </span>
+                                )}
+                            </div>
                         </div>
                     </li>
                 );
@@ -95,29 +169,53 @@ export default function AnimeGuessAutocomplete({ value, setValue }: Props) {
                     sx={{
                         "& .MuiOutlinedInput-root": {
                             borderRadius: "1rem",
-                            backgroundColor: "white",
-                            boxShadow: "0 1px 2px rgb(0 0 0 / 0.05)",
-                            color: "#2e1065",
+                            backgroundColor: "rgba(0,0,0,0.4)",
+                            backdropFilter: "blur(16px)",
+                            color: "#ffffff",
+                            boxShadow: "0 0 15px rgba(236,72,153,0.08)",
+
                             "& fieldset": {
-                                borderColor: "#e9d5ff",
+                                borderColor: "rgba(236,72,153,0.2)",
                             },
+
                             "&:hover fieldset": {
-                                borderColor: "#d8b4fe",
+                                borderColor: "rgba(244,114,182,0.4)",
                             },
+
                             "&.Mui-focused fieldset": {
-                                borderColor: "#c084fc",
+                                borderColor: "rgba(244,114,182,0.55)",
                                 borderWidth: "1px",
                             },
+
                         },
-                        "& .MuiInputLabel-root": {
-                            color: "rgb(88 28 135 / 0.65)",
+
+                        "& .MuiInputBase-input": {
+                            color: "#ffffff",
                         },
-                        "& .MuiInputLabel-root.Mui-focused": {
-                            color: "#581c87",
-                        },
+
                         "& .MuiInputBase-input::placeholder": {
-                            color: "rgb(88 28 135 / 0.4)",
+                            color: "rgba(243,232,255,0.4)",
                             opacity: 1,
+                        },
+
+                        "& .MuiInputLabel-root": {
+                            color: "rgba(243,232,255,0.6)",
+                        },
+
+                        "& .MuiInputLabel-root.Mui-focused": {
+                            color: "#f9a8d4",
+                        },
+
+                        "& .MuiAutocomplete-popupIndicator": {
+                            color: "#f9a8d4",
+                        },
+
+                        "& .MuiAutocomplete-clearIndicator": {
+                            color: "#f9a8d4",
+                        },
+
+                        "& .MuiCircularProgress-root": {
+                            color: "#f9a8d4",
                         },
                     }}
                 />

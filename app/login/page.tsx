@@ -73,71 +73,124 @@ export default function LoginPage() {
       setShowing(true);
   }
 
-  return (
-    <main className="mx-auto flex min-h-[80vh] max-w-md flex-col items-center justify-center px-4">
-      <Link href="/" className="mb-6">
-        <Image src="/icons/animaid_logo.png" alt="AnimAid" width={160} height={160} />
-      </Link>
+    return (
+        <main className="relative mx-auto flex min-h-[80vh] max-w-md flex-col items-center justify-center overflow-hidden px-4 py-10 text-white">
+            <div className="pointer-events-none absolute inset-0 overflow-hidden">
+                <div className="absolute left-[-80px] top-20 h-72 w-72 rounded-full bg-pink-500/10 blur-[120px]" />
+                <div className="absolute right-[-80px] top-60 h-72 w-72 rounded-full bg-fuchsia-500/10 blur-[120px]" />
+                <div className="absolute bottom-10 left-1/2 h-72 w-72 -translate-x-1/2 rounded-full bg-purple-500/10 blur-[120px]" />
+            </div>
 
-      <h1 className="mb-4 text-2xl font-semibold text-purple-900">Welcome back</h1>
-      <p className="mb-6 text-purple-900/70">Sign in to continue</p>
+            <Link href="/" className="relative z-10 mb-6 transition hover:scale-105">
+                <Image
+                    src="/icons/animaid.png"
+                    alt="AnimAid"
+                    width={160}
+                    height={160}
+                    className="drop-shadow-[0_0_28px_rgba(236,72,153,0.35)]"
+                />
+            </Link>
 
-      <form onSubmit={onSubmit} className="w-full space-y-4 rounded-xl border border-purple-200/60 bg-white relative z-10 p-6 shadow-sm">
-        {error && (
-          <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>
-        )}
-        <div className="space-y-1">
-          <label className="text-sm text-purple-900/80" htmlFor="email">Email</label>
-          <input
-            id="email"
-            type="email"
-            className="w-full rounded-md border border-purple-200 px-3 py-2 outline-none focus:border-purple-400"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            autoComplete="email"
-          />
-        </div>
-          <div className="space-y-1">
-              <label className="text-sm text-purple-900/80" htmlFor="password">Password</label>
-              <div className={"flex items-center justify-center w-full rounded-md border border-purple-200 px-3 py-1 outline-none focus-within:border-purple-400"}>
-                  <input
-                      id="password"
-                      type={showing ? "text" : "password"}
-                      className="w-full focus:outline-none"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                      autoComplete="new-password"
-                  />
-                  {showing ?
-                      <EyeSlashIcon height={35} width={35} onClick={() => setShowing(false)} className="cursor-pointer"/>
-                      :
-                      <EyeIcon height={35} width={35} onClick={() => setShowing(true)} className="cursor-pointer" />}
+            <section className="relative z-10 mb-6 text-center">
+                <p className="text-xs font-bold uppercase tracking-widest text-pink-300/60">
+                    Welcome Back
+                </p>
 
-              </div>
-          </div>
-        <button
-          type="submit"
-          disabled={loading}
-          className="mt-2 w-full cursor-pointer rounded-md bg-purple-600 px-4 py-2 font-medium text-white hover:bg-purple-700 disabled:opacity-60"
-        >
-          {loading ? "Signing in..." : "Sign in"}
-        </button>
-        <button
-          type="button"
-          onClick={onGoogle}
-          disabled={loading}
-          className="w-full cursor-pointer rounded-md border border-purple-300 bg-white px-4 py-2 font-medium text-purple-800 hover:bg-purple-50 disabled:opacity-60"
-        >
-          Continue with Google
-        </button>
-      </form>
+                <h1 className="mt-3 text-4xl font-bold text-white drop-shadow-[0_0_18px_rgba(236,72,153,0.25)]">
+                    Sign in to Animaid
+                </h1>
 
-      <p className="mt-4 text-sm text-purple-900/80">
-        Don&apos;t have an account?{" "}
-        <Link href="/signup" className="text-purple-700 hover:underline">Sign up</Link>
-      </p>
-    </main>
-  );
+                <p className="mt-3 text-purple-100/70">
+                    Continue your anime collection and games.
+                </p>
+            </section>
+
+            <form
+                onSubmit={onSubmit}
+                className="relative z-10 w-full space-y-4 rounded-3xl border border-pink-500/20 bg-black/40 p-6 shadow-[0_0_25px_rgba(236,72,153,0.08)] backdrop-blur-xl"
+            >
+                {error && (
+                    <div className="rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm font-medium text-red-300 backdrop-blur-xl">
+                        {error}
+                    </div>
+                )}
+
+                <div className="space-y-1">
+                    <label className="text-sm font-medium text-pink-100/80 " htmlFor="email">
+                        Email
+                    </label>
+                    <input
+                        id="email"
+                        type="email"
+                        className="w-full rounded-2xl border mt-3 border-pink-500/20 bg-white/10 px-4 py-3 text-white outline-none backdrop-blur-xl placeholder:text-white/30 focus:border-pink-400/50 focus:shadow-[0_0_18px_rgba(236,72,153,0.14)]"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                        autoComplete="email"
+                    />
+                </div>
+
+                <div className="space-y-1">
+                    <label className="text-sm font-medium text-pink-100/80" htmlFor="password">
+                        Password
+                    </label>
+
+                    <div className="flex w-full items-center mt-3 rounded-2xl border border-pink-500/20 bg-white/10 px-4 py-2 text-white backdrop-blur-xl focus-within:border-pink-400/50 focus-within:shadow-[0_0_18px_rgba(236,72,153,0.14)]">
+                        <input
+                            id="password"
+                            type={showing ? "text" : "password"}
+                            className="w-full bg-transparent py-1 outline-none placeholder:text-white/30"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            required
+                            autoComplete="current-password"
+                        />
+
+                        {showing ? (
+                            <EyeSlashIcon
+                                height={28}
+                                width={28}
+                                onClick={() => setShowing(false)}
+                                className="cursor-pointer text-pink-200/70 transition hover:text-pink-200"
+                            />
+                        ) : (
+                            <EyeIcon
+                                height={28}
+                                width={28}
+                                onClick={() => setShowing(true)}
+                                className="cursor-pointer text-pink-200/70 transition hover:text-pink-200"
+                            />
+                        )}
+                    </div>
+                </div>
+
+                <button
+                    type="submit"
+                    disabled={loading}
+                    className="mt-2 w-full cursor-pointer rounded-2xl border border-pink-500/30 bg-pink-500/10 px-4 py-3 font-bold text-pink-100 backdrop-blur-xl transition hover:bg-pink-500/20 hover:shadow-[0_0_24px_rgba(236,72,153,0.18)] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                    {loading ? "Signing in..." : "Sign in"}
+                </button>
+
+                <button
+                    type="button"
+                    onClick={onGoogle}
+                    disabled={loading}
+                    className="w-full cursor-pointer rounded-2xl border border-white/15 bg-white/10 px-4 py-3 font-bold text-white backdrop-blur-xl transition hover:bg-white/15 hover:shadow-[0_0_24px_rgba(255,255,255,0.08)] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                    Continue with Google
+                </button>
+            </form>
+
+            <p className="relative z-10 mt-4 text-sm text-purple-100/70">
+                Don&apos;t have an account?{" "}
+                <Link
+                    href="/signup"
+                    className="font-semibold text-pink-300/80 transition hover:text-pink-200 hover:underline"
+                >
+                    Sign up
+                </Link>
+            </p>
+        </main>
+    );
 }

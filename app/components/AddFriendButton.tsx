@@ -129,13 +129,25 @@ export default function AddFriendButton({ targetUser }: Props) {
             type="button"
             disabled={checkingStatus || loading || sent || isFriend}
             onClick={handleAddFriend}
-            className={`rounded-xl px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:cursor-pointer ${
+            className={`
+            rounded-xl
+            border
+            px-4 py-2
+            text-sm font-semibold
+            backdrop-blur-xl
+            shadow-[0_0_15px_rgba(236,72,153,0.12)]
+            transition
+            hover:cursor-pointer
+            disabled:cursor-not-allowed
+            disabled:opacity-70
+            ${
                 isFriend
-                    ? "bg-green-700"
+                    ? "border-emerald-400/30 bg-emerald-500/10 text-emerald-200 shadow-[0_0_18px_rgba(16,185,129,0.12)]"
                     : sent
-                        ? "bg-green-600"
-                        : "bg-purple-900 hover:bg-purple-800"
-            } disabled:cursor-not-allowed disabled:opacity-70`}
+                        ? "border-pink-400/30 bg-pink-500/10 text-pink-200 shadow-[0_0_18px_rgba(236,72,153,0.14)]"
+                        : "border-pink-500/20 bg-black/40 text-pink-200 hover:border-pink-400/40 hover:bg-pink-500/10 hover:shadow-[0_0_22px_rgba(236,72,153,0.18)]"
+            }
+        `}
         >
             {error
                 ? "Failed"

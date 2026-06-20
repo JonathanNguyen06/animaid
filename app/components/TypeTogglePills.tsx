@@ -20,25 +20,47 @@ const TYPES = [
 const TypeTogglePills = ({ value, setValue }: Props) => {
     return (
         <div className="w-full flex flex-col items-center">
-            <p className="mb-2 text-sm font-medium text-purple-900/70">Type</p>
+            <p className="mb-2 text-sm font-medium text-purple-100/70">
+                Type
+            </p>
+
             <div className="flex flex-wrap justify-center gap-2">
                 {TYPES.map((type) => {
                     const isSelected = value === type.value;
+
                     return (
                         <button
                             key={type.value}
                             type="button"
                             onClick={() => setValue(type.value)}
                             className={`
-                                inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-xs font-semibold
-                                transition-all duration-150 cursor-pointer select-none active:scale-95
-                                ${isSelected
-                                ? 'border-purple-900 bg-purple-900 text-white shadow-sm shadow-purple-300'
-                                : 'border-purple-200 bg-white text-purple-800 hover:border-purple-400 hover:bg-purple-50'
+                        inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-xs font-semibold
+                        transition-all duration-200 cursor-pointer select-none
+                        active:scale-95
+                        backdrop-blur-md
+                        ${
+                                isSelected
+                                    ? `
+                                    border-pink-500/60
+                                    bg-pink-500/15
+                                    text-pink-200
+                                    shadow-[0_0_15px_rgba(236,72,153,0.35)]
+                                  `
+                                    : `
+                                    border-pink-500/20
+                                    bg-white/5
+                                    text-purple-100/80
+                                    hover:border-pink-500/40
+                                    hover:bg-pink-500/10
+                                    hover:text-pink-200
+                                  `
                             }
-                            `}
+                    `}
                         >
-                            <span className="text-[11px] leading-none">{type.icon}</span>
+                    <span className="text-[11px] leading-none">
+                        {type.icon}
+                    </span>
+
                             {type.label}
                         </button>
                     );

@@ -139,24 +139,36 @@ export default function ProfilePage() {
     }, [uid]);
 
     return (
-        <main className="mx-auto max-w-5xl px-4 py-8">
+        <main className="relative mx-auto max-w-5xl px-4 py-8 text-white">
+            <div className="pointer-events-none absolute inset-0 overflow-hidden">
+                <div className="absolute left-10 top-24 h-72 w-72 rounded-full bg-pink-500/10 blur-[120px]" />
+                <div className="absolute bottom-20 right-10 h-72 w-72 rounded-full bg-fuchsia-500/10 blur-[120px]" />
+            </div>
+
             {loading && (
-                <p className="text-purple-900/70">
-                    Loading profile...
-                </p>
+                <section className="relative z-10 rounded-3xl border border-pink-500/20 bg-black/40 p-6 shadow-[0_0_25px_rgba(236,72,153,0.08)] backdrop-blur-xl">
+                    <div className="flex flex-col gap-6 sm:flex-row sm:items-center">
+                        <div className="h-28 w-28 animate-pulse rounded-3xl border border-pink-500/20 bg-pink-500/10" />
+
+                        <div className="flex-1">
+                            <div className="h-3 w-24 animate-pulse rounded-full bg-pink-500/10" />
+                            <div className="mt-4 h-7 w-48 animate-pulse rounded-full bg-pink-500/10" />
+                        </div>
+                    </div>
+                </section>
             )}
 
             {error && (
-                <p className="text-red-500">
+                <p className="relative z-10 text-red-300">
                     {error}
                 </p>
             )}
 
             {!loading && !error && profile && (
                 <>
-                    <section className="relative z-10 rounded-3xl border border-purple-200 bg-white p-6 shadow-sm">
+                    <section className="relative z-10 rounded-3xl border border-pink-500/20 bg-black/40 p-6 shadow-[0_0_25px_rgba(236,72,153,0.08)] backdrop-blur-xl">
                         <div className="flex flex-col gap-6 sm:flex-row sm:items-center">
-                            <div className="relative h-28 w-28 overflow-hidden rounded-3xl border border-purple-200 bg-purple-100 shadow-sm">
+                            <div className="relative h-28 w-28 overflow-hidden rounded-3xl border border-pink-500/20 bg-black/50 shadow-[0_0_20px_rgba(236,72,153,0.15)]">
                                 {profile.photoURL ? (
                                     <Image
                                         src={profile.photoURL}
@@ -165,7 +177,7 @@ export default function ProfilePage() {
                                         className="object-cover"
                                     />
                                 ) : (
-                                    <div className="flex h-full w-full items-center justify-center text-3xl font-bold text-purple-300">
+                                    <div className="flex h-full w-full items-center justify-center text-3xl font-bold text-pink-300">
                                         {profile.username?.[0]?.toUpperCase() ?? "?"}
                                     </div>
                                 )}
@@ -173,11 +185,11 @@ export default function ProfilePage() {
 
                             <div className="flex flex-1 items-center justify-between gap-4">
                                 <div>
-                                    <p className="text-xs font-bold uppercase tracking-widest text-purple-900/50">
-                                        username
+                                    <p className="text-xs font-bold uppercase tracking-widest text-pink-300/60">
+                                        Username
                                     </p>
 
-                                    <h2 className="mt-2 text-2xl font-semibold text-purple-950">
+                                    <h2 className="mt-2 text-2xl font-semibold text-white">
                                         @{profile.username}
                                     </h2>
                                 </div>
@@ -195,67 +207,69 @@ export default function ProfilePage() {
                         </div>
                     </section>
 
-                    <section className="relative z-10 mt-6 rounded-3xl border border-purple-200 bg-white p-6 shadow-sm">
-                        <p className="text-xs font-bold uppercase tracking-widest text-purple-900/50">
+                    <section className="relative z-10 mt-6 rounded-3xl border border-pink-500/20 bg-black/40 p-6 shadow-[0_0_25px_rgba(236,72,153,0.08)] backdrop-blur-xl">
+                        <p className="text-xs font-bold uppercase tracking-widest text-pink-300/60">
                             Statistics
                         </p>
 
-                        <h2 className="mt-2 text-2xl font-bold text-purple-950">
+                        <h2 className="mt-2 text-2xl font-bold text-white">
                             Account Stats
                         </h2>
 
                         <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                            <div className="rounded-2xl border border-purple-200 bg-purple-50 p-5">
-                                <p className="text-xs font-bold uppercase tracking-widest text-purple-900/50">
+                            <div className="rounded-2xl border border-pink-500/20 bg-white/[0.03] p-5 backdrop-blur-xl">
+                                <p className="text-xs font-bold uppercase tracking-widest text-pink-300/60">
                                     Collection Power
                                 </p>
 
-                                <p className="mt-2 text-3xl font-bold text-purple-950">
+                                <p className="mt-2 text-3xl font-bold text-white">
                                     {totalCollectionPower.toLocaleString()}
                                 </p>
                             </div>
 
-                            <div className="rounded-2xl border border-orange-200 bg-orange-50 p-5">
-                                <p className="text-xs font-bold uppercase tracking-widest text-orange-700/60">
+                            <div className="rounded-2xl border border-orange-400/20 bg-orange-500/10 p-5 shadow-[0_0_18px_rgba(251,146,60,0.10)] backdrop-blur-xl">
+                                <p className="text-xs font-bold uppercase tracking-widest text-orange-200/60">
                                     Daily Streak
                                 </p>
 
-                                <p className="mt-2 text-3xl font-bold text-orange-700">
+                                <p className="mt-2 text-3xl font-bold text-orange-200">
                                     🔥 {profile.dailyStreak ?? 0}
                                 </p>
                             </div>
 
-                            <div className="rounded-2xl border border-green-200 bg-green-50 p-5">
-                                <p className="text-xs font-bold uppercase tracking-widest text-green-700/60">
+                            <div className="rounded-2xl border border-emerald-400/20 bg-emerald-500/10 p-5 shadow-[0_0_18px_rgba(16,185,129,0.10)] backdrop-blur-xl">
+                                <p className="text-xs font-bold uppercase tracking-widest text-emerald-200/60">
                                     Best Higher / Lower
                                 </p>
 
-                                <p className="mt-2 text-3xl font-bold text-green-700">
+                                <p className="mt-2 text-3xl font-bold text-emerald-200">
                                     {profile.higherLowerBestStreak ?? 0}
                                 </p>
                             </div>
 
                             <button
                                 type="button"
-                                onClick={() => setShowDraftLineup((current) => !current)}
-                                className="rounded-2xl border border-yellow-300 bg-yellow-50 p-5 text-left transition hover:bg-yellow-100 hover:shadow-sm hover:cursor-pointer"
+                                onClick={() =>
+                                    setShowDraftLineup((current) => !current)
+                                }
+                                className="rounded-2xl border border-yellow-400/20 bg-yellow-500/10 p-5 text-left shadow-[0_0_18px_rgba(250,204,21,0.10)] backdrop-blur-xl transition hover:border-yellow-300/40 hover:bg-yellow-500/20 hover:cursor-pointer"
                             >
-                                <p className="text-xs font-bold uppercase tracking-widest text-yellow-700/70">
+                                <p className="text-xs font-bold uppercase tracking-widest text-yellow-200/60">
                                     Best Draft
                                 </p>
 
-                                <p className="mt-2 text-3xl font-bold text-yellow-700">
+                                <p className="mt-2 text-3xl font-bold text-yellow-200">
                                     {draftHighScore?.totalPower ?? 0}
                                 </p>
 
-                                <p className="mt-1 text-xs font-semibold text-yellow-700/70">
+                                <p className="mt-1 text-xs font-semibold text-yellow-100/60">
                                     {draftHighScore
                                         ? `${draftHighScore.grade} Draft • Avg ${draftHighScore.averagePower}`
                                         : "No draft yet"}
                                 </p>
 
                                 {draftHighScore && (
-                                    <p className="mt-2 text-xs font-bold text-yellow-800">
+                                    <p className="mt-2 text-xs font-bold text-yellow-100">
                                         Click to view lineup
                                     </p>
                                 )}
@@ -263,50 +277,51 @@ export default function ProfilePage() {
                         </div>
 
                         {showDraftLineup && draftHighScore && (
-                            <div className="mt-6 rounded-3xl border border-yellow-300 bg-yellow-50 p-5">
-                                <p className="text-xs font-bold uppercase tracking-widest text-yellow-700/70">
+                            <div className="mt-6 rounded-3xl border border-yellow-400/20 bg-yellow-500/10 p-5 shadow-[0_0_20px_rgba(250,204,21,0.12)] backdrop-blur-xl">
+                                <p className="text-xs font-bold uppercase tracking-widest text-yellow-200/60">
                                     High Score Lineup
                                 </p>
 
-                                <h3 className="mt-2 text-2xl font-bold text-purple-950">
-                                    {draftHighScore.grade} Draft • {draftHighScore.totalPower} Power
+                                <h3 className="mt-2 text-2xl font-bold text-white">
+                                    {draftHighScore.grade} Draft •{" "}
+                                    {draftHighScore.totalPower} Power
                                 </h3>
 
                                 <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                                     {draftHighScore.lineup.map((pick) => (
                                         <div
                                             key={pick.position}
-                                            className="overflow-hidden rounded-2xl border border-yellow-200 bg-white text-left shadow-sm"
+                                            className="overflow-hidden rounded-2xl border border-yellow-400/20 bg-black/40 text-left shadow-[0_0_16px_rgba(250,204,21,0.10)] backdrop-blur-xl"
                                         >
                                             {pick.character.imageUrl && (
                                                 <img
                                                     src={pick.character.imageUrl}
                                                     alt={pick.character.name}
-                                                    className="h-40 w-full object-cover"
+                                                    className="h-40 w-full object-cover object-[center_5%]"
                                                 />
                                             )}
 
                                             <div className="p-4">
-                                                <p className="text-xs font-bold uppercase tracking-widest text-yellow-700/70">
+                                                <p className="text-xs font-bold uppercase tracking-widest text-yellow-200/60">
                                                     {pick.position}
                                                 </p>
 
-                                                <h4 className="mt-2 line-clamp-1 font-bold text-purple-950">
+                                                <h4 className="mt-2 line-clamp-1 font-bold text-white">
                                                     {pick.character.name}
                                                 </h4>
 
-                                                <p className="mt-1 line-clamp-1 text-xs text-purple-900/60">
+                                                <p className="mt-1 line-clamp-1 text-xs text-purple-100/60">
                                                     {pick.character.anime}
                                                 </p>
 
                                                 <div className="mt-3 flex items-center justify-between">
-                            <span className="text-xl font-black text-yellow-700">
-                                {pick.grade}
-                            </span>
+                                                <span className="text-xl font-black text-yellow-200">
+                                                    {pick.grade}
+                                                </span>
 
-                                                    <span className="rounded-full bg-purple-900 px-3 py-1 text-xs font-bold text-white">
-                                {pick.power}
-                            </span>
+                                                    <span className="rounded-full border border-pink-500/20 bg-pink-500/10 px-3 py-1 text-xs font-bold text-pink-200">
+                                                    {pick.power}
+                                                </span>
                                                 </div>
                                             </div>
                                         </div>
@@ -316,19 +331,19 @@ export default function ProfilePage() {
                         )}
                     </section>
 
-                    <section className="relative z-10 mt-6 rounded-3xl border border-purple-200 bg-white p-6 shadow-sm">
+                    <section className="relative z-10 mt-6 rounded-3xl border border-pink-500/20 bg-black/40 p-6 shadow-[0_0_25px_rgba(236,72,153,0.08)] backdrop-blur-xl">
                         <div>
-                            <p className="text-xs font-bold uppercase tracking-widest text-purple-900/50">
+                            <p className="text-xs font-bold uppercase tracking-widest text-pink-300/60">
                                 Collection
                             </p>
 
-                            <h2 className="mt-2 text-2xl font-bold text-purple-950">
+                            <h2 className="mt-2 text-2xl font-bold text-white">
                                 Character Collection
                             </h2>
                         </div>
 
                         {characters.length === 0 ? (
-                            <p className="mt-5 rounded-2xl border border-purple-200 bg-purple-50 p-4 text-purple-900/70">
+                            <p className="mt-5 rounded-2xl border border-pink-500/20 bg-white/[0.03] p-4 text-purple-100/70">
                                 This user has not collected any characters yet.
                             </p>
                         ) : (
@@ -337,30 +352,31 @@ export default function ProfilePage() {
                                     <Link
                                         key={character.id}
                                         href={`/anime?id=${character.animeId}`}
-                                        className="relative z-10 overflow-hidden rounded-2xl border border-purple-200 bg-purple-50 transition hover:bg-white hover:shadow-sm"
+                                        className="relative z-10 overflow-hidden rounded-2xl border border-pink-500/20 bg-white/[0.03] transition hover:-translate-y-1 hover:border-pink-400/40 hover:bg-pink-500/10 hover:shadow-[0_0_18px_rgba(236,72,153,0.12)]"
                                     >
                                         {character.imageUrl && (
                                             <img
                                                 src={character.imageUrl}
                                                 alt={character.name}
-                                                className="h-44 w-full object-cover"
+                                                className="h-44 w-full object-cover object-[center_5%]"
                                             />
                                         )}
 
                                         <div className="p-3 text-left">
-                                            <span className="rounded-full bg-purple-100 px-2 py-1 text-[10px] font-bold uppercase text-purple-900">
-                                                {character.rarity}
-                                            </span>
+                                        <span className="rounded-full border border-pink-500/20 bg-pink-500/10 px-2 py-1 text-[10px] font-bold uppercase text-pink-200">
+                                            {character.rarity}
+                                        </span>
 
-                                            <h3 className="mt-2 line-clamp-1 text-sm font-bold text-purple-950">
+                                            <h3 className="mt-2 line-clamp-1 text-sm font-bold text-white">
                                                 {character.name}
                                             </h3>
 
-                                            <p className="mt-1 line-clamp-1 text-xs text-purple-900/60">
-                                                {character.animeTitle ?? "Unknown Anime"}
+                                            <p className="mt-1 line-clamp-1 text-xs text-purple-100/60">
+                                                {character.animeTitle ??
+                                                    "Unknown Anime"}
                                             </p>
 
-                                            <p className="mt-2 text-xs font-semibold text-purple-900">
+                                            <p className="mt-2 text-xs font-semibold text-pink-200">
                                                 Power: {character.powerLevel}
                                             </p>
                                         </div>
@@ -370,25 +386,26 @@ export default function ProfilePage() {
                         )}
                     </section>
 
-                    <section className="relative z-10 mt-6 rounded-3xl border border-purple-200 bg-white p-6 shadow-sm">
+                    <section className="relative z-10 mt-6 rounded-3xl border border-pink-500/20 bg-black/40 p-6 shadow-[0_0_25px_rgba(236,72,153,0.08)] backdrop-blur-xl">
                         <div>
-                            <p className="text-xs font-bold uppercase tracking-widest text-purple-900/50">
+                            <p className="text-xs font-bold uppercase tracking-widest text-pink-300/60">
                                 Wishlist
                             </p>
 
-                            <h2 className="mt-2 text-2xl font-bold text-purple-950">
+                            <h2 className="mt-2 text-2xl font-bold text-white">
                                 Saved Anime
                             </h2>
                         </div>
 
                         {!canViewWishlist && (
-                            <p className="mt-5 rounded-2xl border border-purple-200 bg-purple-50 p-4 text-purple-900/70">
-                                This wishlist is private. Add this user as a friend to view it.
+                            <p className="mt-5 rounded-2xl border border-pink-500/20 bg-white/[0.03] p-4 text-purple-100/70">
+                                This wishlist is private. Add this user as a friend
+                                to view it.
                             </p>
                         )}
 
                         {canViewWishlist && wishlist.length === 0 && (
-                            <p className="mt-5 rounded-2xl border border-purple-200 bg-purple-50 p-4 text-purple-900/70">
+                            <p className="mt-5 rounded-2xl border border-pink-500/20 bg-white/[0.03] p-4 text-purple-100/70">
                                 This user has no anime in their wishlist.
                             </p>
                         )}
@@ -409,10 +426,14 @@ export default function ProfilePage() {
                                     return (
                                         <Link
                                             key={`${anime.mal_id}-${index}`}
-                                            href={anime.mal_id ? `/anime?id=${anime.mal_id}` : "#"}
-                                            className="relative z-10 flex gap-4 rounded-2xl border border-purple-200 bg-purple-50 p-4 shadow-sm transition hover:-translate-y-0.5 hover:bg-white hover:shadow-md"
+                                            href={
+                                                anime.mal_id
+                                                    ? `/anime?id=${anime.mal_id}`
+                                                    : "#"
+                                            }
+                                            className="relative z-10 flex gap-4 rounded-2xl border border-pink-500/20 bg-white/[0.03] p-4 backdrop-blur-xl transition hover:-translate-y-1 hover:border-pink-400/40 hover:bg-pink-500/10 hover:shadow-[0_0_18px_rgba(236,72,153,0.12)]"
                                         >
-                                            <div className="relative h-32 w-24 shrink-0 overflow-hidden rounded-xl bg-purple-100">
+                                            <div className="relative h-32 w-24 shrink-0 overflow-hidden rounded-xl border border-pink-500/20 bg-black/40">
                                                 {image ? (
                                                     <Image
                                                         src={image}
@@ -421,40 +442,40 @@ export default function ProfilePage() {
                                                         className="object-cover"
                                                     />
                                                 ) : (
-                                                    <div className="flex h-full items-center justify-center text-xs text-purple-300">
+                                                    <div className="flex h-full items-center justify-center text-xs text-purple-100/40">
                                                         No image
                                                     </div>
                                                 )}
                                             </div>
 
-                                            <div className="flex flex-col justify-center">
-                                                <h3 className="text-lg font-semibold text-purple-950">
+                                            <div className="flex min-w-0 flex-col justify-center">
+                                                <h3 className="text-lg font-semibold text-white">
                                                     {title}
                                                 </h3>
 
                                                 <div className="mt-2 flex flex-wrap gap-2 text-sm">
                                                     {anime.score && (
-                                                        <span className="rounded-full bg-purple-100 px-3 py-1 text-purple-900">
-                                                            Score: {anime.score}
-                                                        </span>
+                                                        <span className="rounded-full border border-pink-500/20 bg-pink-500/10 px-3 py-1 text-pink-200">
+                                                        Score: {anime.score}
+                                                    </span>
                                                     )}
 
                                                     {anime.type && (
-                                                        <span className="rounded-full bg-purple-100 px-3 py-1 text-purple-900">
-                                                            {anime.type}
-                                                        </span>
+                                                        <span className="rounded-full border border-pink-500/20 bg-pink-500/10 px-3 py-1 text-pink-200">
+                                                        {anime.type}
+                                                    </span>
                                                     )}
 
                                                     {anime.year && (
-                                                        <span className="rounded-full bg-purple-100 px-3 py-1 text-purple-900">
-                                                            {anime.year}
-                                                        </span>
+                                                        <span className="rounded-full border border-pink-500/20 bg-pink-500/10 px-3 py-1 text-pink-200">
+                                                        {anime.year}
+                                                    </span>
                                                     )}
 
                                                     {anime.episodes && (
-                                                        <span className="rounded-full bg-purple-100 px-3 py-1 text-purple-900">
-                                                            {anime.episodes} episodes
-                                                        </span>
+                                                        <span className="rounded-full border border-pink-500/20 bg-pink-500/10 px-3 py-1 text-pink-200">
+                                                        {anime.episodes} episodes
+                                                    </span>
                                                     )}
                                                 </div>
                                             </div>

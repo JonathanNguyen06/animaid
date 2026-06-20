@@ -45,19 +45,39 @@ const watchStatuses: WatchStatus[] = [
 function statusClass(status: WatchStatus) {
     switch (status) {
         case "Watching":
-            return "border-blue-200 bg-blue-50 text-blue-700";
+            return `
+                border-cyan-500/30
+                bg-cyan-500/10
+                text-cyan-300
+            `;
 
         case "Finished":
-            return "border-green-200 bg-green-50 text-green-700";
+            return `
+                border-green-500/30
+                bg-green-500/10
+                text-green-300
+            `;
 
         case "Dropped":
-            return "border-red-200 bg-red-50 text-red-700";
+            return `
+                border-red-500/30
+                bg-red-500/10
+                text-red-300
+            `;
 
         case "On Hold":
-            return "border-yellow-200 bg-yellow-50 text-yellow-700";
+            return `
+                border-yellow-500/30
+                bg-yellow-500/10
+                text-yellow-300
+            `;
 
         case "Plan to Watch":
-            return "border-purple-200 bg-purple-50 text-purple-700";
+            return `
+                border-pink-500/30
+                bg-pink-500/10
+                text-pink-300
+            `;
     }
 }
 
@@ -67,6 +87,7 @@ export default function WishlistPage() {
     const [animeList, setAnimeList] = useState<WishlistAnime[]>([]);
     const [loading, setLoading] = useState(true);
     const [savingId, setSavingId] = useState<number | null>(null);
+    const [openStatusId, setOpenStatusId] = useState<number | null>(null);
 
     useEffect(() => {
         async function loadWishlist() {
@@ -163,21 +184,38 @@ export default function WishlistPage() {
 
     return (
         <main className="mx-auto max-w-5xl px-4 py-8">
-            <section className="relative z-10 rounded-3xl border border-purple-200 bg-white p-8 shadow-sm">
-                <p className="text-xs font-bold uppercase tracking-widest text-purple-900/50">
+            <section
+                className="
+                relative z-10 rounded-3xl
+                border border-pink-500/20
+                bg-black/40
+                p-8
+                backdrop-blur-xl
+                shadow-[0_0_25px_rgba(236,72,153,0.08)]
+            "
+            >
+                <p className="text-xs font-bold uppercase tracking-widest text-pink-300/70">
                     Anime List
                 </p>
 
-                <h1 className="mt-3 text-4xl font-bold text-purple-950">
+                <h1 className="mt-3 text-4xl font-bold text-white">
                     My Wishlist
                 </h1>
 
-                <p className="mt-3 text-purple-900/70">
+                <p className="mt-3 text-purple-100/70">
                     Characters from anime on your wishlist have a slightly increased chance of appearing in packs.
                 </p>
 
                 {animeList.length === 0 && (
-                    <p className="mt-8 rounded-2xl border border-purple-200 bg-purple-50 p-6 text-purple-900/70">
+                    <p
+                        className="
+                        mt-8 rounded-2xl
+                        border border-pink-500/20
+                        bg-pink-500/10
+                        p-6
+                        text-purple-100/70
+                    "
+                    >
                         Your wishlist is empty.
                     </p>
                 )}
@@ -193,9 +231,26 @@ export default function WishlistPage() {
                             <Link
                                 key={anime.mal_id}
                                 href={`/anime?id=${anime.mal_id}`}
-                                className="relative z-10 flex gap-4 rounded-2xl border border-purple-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                                className="
+                                relative z-10 flex gap-4 rounded-2xl
+                                border border-pink-500/20
+                                bg-black/40
+                                p-4
+                                backdrop-blur-md
+                                shadow-[0_0_15px_rgba(236,72,153,0.06)]
+                                transition-all duration-300
+                                hover:-translate-y-1
+                                hover:border-pink-500/40
+                                hover:shadow-[0_0_25px_rgba(236,72,153,0.18)]
+                            "
                             >
-                                <div className="relative h-36 w-24 shrink-0 overflow-hidden rounded-xl bg-purple-100">
+                                <div
+                                    className="
+                                    relative h-36 w-24 shrink-0 overflow-hidden rounded-xl
+                                    border border-pink-500/20
+                                    bg-black/30
+                                "
+                                >
                                     {anime.image_url ? (
                                         <Image
                                             src={anime.image_url}
@@ -213,33 +268,65 @@ export default function WishlistPage() {
                                 <div className="flex flex-1 flex-col justify-center">
                                     <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                                         <div>
-                                            <h2 className="text-lg font-semibold text-purple-950">
+                                            <h2 className="text-lg font-semibold text-white">
                                                 {anime.title}
                                             </h2>
 
                                             <div className="mt-2 flex flex-wrap gap-2 text-sm">
                                                 {anime.score && (
-                                                    <span className="rounded-full bg-purple-100 px-3 py-1 text-purple-900">
-                                                        Score: {anime.score}
-                                                    </span>
+                                                    <span
+                                                        className="
+                                                        rounded-full
+                                                        border border-pink-500/20
+                                                        bg-pink-500/10
+                                                        px-3 py-1
+                                                        text-pink-200
+                                                    "
+                                                    >
+                                                    Score: {anime.score}
+                                                </span>
                                                 )}
 
                                                 {anime.type && (
-                                                    <span className="rounded-full bg-purple-100 px-3 py-1 text-purple-900">
-                                                        {anime.type}
-                                                    </span>
+                                                    <span
+                                                        className="
+                                                        rounded-full
+                                                        border border-pink-500/20
+                                                        bg-pink-500/10
+                                                        px-3 py-1
+                                                        text-pink-200
+                                                    "
+                                                    >
+                                                    {anime.type}
+                                                </span>
                                                 )}
 
                                                 {anime.year && (
-                                                    <span className="rounded-full bg-purple-100 px-3 py-1 text-purple-900">
-                                                        {anime.year}
-                                                    </span>
+                                                    <span
+                                                        className="
+                                                        rounded-full
+                                                        border border-pink-500/20
+                                                        bg-pink-500/10
+                                                        px-3 py-1
+                                                        text-pink-200
+                                                    "
+                                                    >
+                                                    {anime.year}
+                                                </span>
                                                 )}
 
                                                 {anime.episodes && (
-                                                    <span className="rounded-full bg-purple-100 px-3 py-1 text-purple-900">
-                                                        {anime.episodes} episodes
-                                                    </span>
+                                                    <span
+                                                        className="
+                                                        rounded-full
+                                                        border border-pink-500/20
+                                                        bg-pink-500/10
+                                                        px-3 py-1
+                                                        text-pink-200
+                                                    "
+                                                    >
+                                                    {anime.episodes} episodes
+                                                </span>
                                                 )}
                                             </div>
                                         </div>
@@ -248,58 +335,98 @@ export default function WishlistPage() {
                                             className="flex flex-col gap-3 md:min-w-[220px]"
                                             onClick={(e) => e.preventDefault()}
                                         >
-                                            <select
-                                                value={status}
-                                                onChange={(e) =>
-                                                    updateAnimeProgress(
-                                                        anime.mal_id,
-                                                        {
-                                                            watchStatus: e.target.value as WatchStatus,
-                                                        }
-                                                    )
-                                                }
-                                                disabled={savingId === anime.mal_id}
-                                                className={`cursor-pointer rounded-xl border px-3 py-2 text-sm font-semibold outline-none transition ${statusClass(status)}`}
-                                            >
-                                                {watchStatuses.map((option) => (
-                                                    <option
-                                                        key={option}
-                                                        value={option}
-                                                    >
-                                                        {option}
-                                                    </option>
-                                                ))}
-                                            </select>
+                                            <div className="relative">
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        setOpenStatusId(
+                                                            openStatusId === anime.mal_id
+                                                                ? null
+                                                                : anime.mal_id
+                                                        )
+                                                    }
+                                                    disabled={savingId === anime.mal_id}
+                                                    className={`
+                                                    w-full rounded-xl border px-3 py-2 text-left text-sm font-semibold
+                                                    backdrop-blur-md transition-all
+                                                    hover:shadow-[0_0_15px_rgba(236,72,153,0.18)]
+                                                    disabled:cursor-not-allowed disabled:opacity-60 hover:cursor-pointer
+                                                    ${statusClass(status)}
+                                                `}
+                                                >
+                                                    {status}
+                                                </button>
 
-                                            <div className="rounded-2xl border border-purple-200 bg-purple-50 p-3">
-                                                <div className="flex items-center justify-between text-xs font-semibold text-purple-900/60">
+                                                {openStatusId === anime.mal_id && (
+                                                    <div
+                                                        className="
+                                                        absolute right-0 z-30 mt-2 w-full overflow-hidden rounded-xl
+                                                        border border-pink-500/20
+                                                        bg-black/90
+                                                        backdrop-blur-xl
+                                                        shadow-[0_0_25px_rgba(236,72,153,0.18)]
+                                                    "
+                                                    >
+                                                        {watchStatuses.map((option) => (
+                                                            <button
+                                                                key={option}
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    updateAnimeProgress(anime.mal_id, {
+                                                                        watchStatus: option,
+                                                                    });
+                                                                    setOpenStatusId(null);
+                                                                }}
+                                                                className={`
+                                                                block w-full px-3 py-2 text-left text-sm font-semibold
+                                                                transition
+                                                                ${
+                                                                    option === status
+                                                                        ? "bg-pink-500/15 text-pink-200"
+                                                                        : "text-purple-100/80 hover:bg-pink-500/10 hover:text-pink-200"
+                                                                }
+                                                            `}
+                                                            >
+                                                                {option}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            <div
+                                                className="
+                                                rounded-2xl
+                                                border border-pink-500/20
+                                                bg-white/5
+                                                p-3
+                                            "
+                                            >
+                                                <div className="flex items-center justify-between text-xs font-semibold text-purple-100/60">
                                                     <span>Episodes</span>
 
                                                     <span>
-                                                        {episodesWatched}
+                                                    {episodesWatched}
                                                         {hasEpisodeCount
                                                             ? ` / ${totalEpisodes}`
                                                             : ""}
-                                                    </span>
+                                                </span>
                                                 </div>
 
                                                 <div className="mt-2 flex items-center gap-2">
                                                     <button
                                                         type="button"
                                                         onClick={() =>
-                                                            updateAnimeProgress(
-                                                                anime.mal_id,
-                                                                {
-                                                                    episodesWatched:
-                                                                        episodesWatched - 1,
-                                                                }
-                                                            )
+                                                            updateAnimeProgress(anime.mal_id, {
+                                                                episodesWatched:
+                                                                    episodesWatched - 1,
+                                                            })
                                                         }
                                                         disabled={
                                                             savingId === anime.mal_id ||
                                                             episodesWatched <= 0
                                                         }
-                                                        className="flex h-8 w-8 items-center justify-center rounded-xl border border-purple-200 bg-white text-purple-900 transition hover:bg-purple-100 hover:cursor-pointer disabled:cursor-not-allowed disabled:opacity-40"
+                                                        className="flex h-8 w-8 items-center justify-center rounded-xl border border-pink-500/20 bg-white/5 text-pink-200 transition hover:bg-pink-500/10 hover:cursor-pointer disabled:cursor-not-allowed disabled:opacity-40"
                                                     >
                                                         -
                                                     </button>
@@ -314,44 +441,54 @@ export default function WishlistPage() {
                                                         }
                                                         value={episodesWatched}
                                                         onChange={(e) =>
-                                                            updateAnimeProgress(
-                                                                anime.mal_id,
-                                                                {
-                                                                    episodesWatched:
-                                                                        Number(e.target.value),
-                                                                }
-                                                            )
+                                                            updateAnimeProgress(anime.mal_id, {
+                                                                episodesWatched:
+                                                                    Number(e.target.value),
+                                                            })
                                                         }
                                                         disabled={savingId === anime.mal_id}
-                                                        className="w-16 rounded-xl border border-purple-200 bg-white px-2 py-1 text-center text-sm font-semibold text-purple-950 outline-none focus:border-purple-400"
+                                                        className="
+                                                        w-16 rounded-xl
+                                                        border border-pink-500/20
+                                                        bg-white/5
+                                                        px-2 py-1
+                                                        text-center text-sm font-semibold
+                                                        text-white
+                                                        outline-none
+                                                        focus:border-pink-500/50
+                                                    "
                                                     />
 
                                                     <button
                                                         type="button"
                                                         onClick={() =>
-                                                            updateAnimeProgress(
-                                                                anime.mal_id,
-                                                                {
-                                                                    episodesWatched:
-                                                                        episodesWatched + 1,
-                                                                }
-                                                            )
+                                                            updateAnimeProgress(anime.mal_id, {
+                                                                episodesWatched:
+                                                                    episodesWatched + 1,
+                                                            })
                                                         }
                                                         disabled={savingId === anime.mal_id}
-                                                        className="flex h-8 w-8 items-center justify-center rounded-xl border border-purple-200 bg-white text-purple-900 transition hover:bg-purple-100 hover:cursor-pointer disabled:cursor-not-allowed disabled:opacity-40"
+                                                        className="flex h-8 w-8 items-center justify-center rounded-xl border border-pink-500/20 bg-white/5 text-pink-200 transition hover:bg-pink-500/10 hover:cursor-pointer disabled:cursor-not-allowed disabled:opacity-40"
                                                     >
                                                         +
                                                     </button>
                                                 </div>
 
                                                 {hasEpisodeCount && (
-                                                    <div className="mt-3 h-2 overflow-hidden rounded-full bg-purple-100">
+                                                    <div className="mt-3 h-2 overflow-hidden rounded-full bg-pink-500/10">
                                                         <div
-                                                            className="h-full rounded-full bg-purple-700 transition-all"
+                                                            className="
+                                                            h-full rounded-full
+                                                            bg-gradient-to-r from-pink-500 to-purple-500
+                                                            shadow-[0_0_12px_rgba(236,72,153,0.45)]
+                                                            transition-all
+                                                        "
                                                             style={{
                                                                 width: `${
                                                                     totalEpisodes > 0
-                                                                        ? (episodesWatched / totalEpisodes) * 100
+                                                                        ? (episodesWatched /
+                                                                            totalEpisodes) *
+                                                                        100
                                                                         : 0
                                                                 }%`,
                                                             }}

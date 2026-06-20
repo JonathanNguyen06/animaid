@@ -109,10 +109,11 @@ const SearchControls = () => {
     return (
         <div className="mx-auto w-full max-w-4xl space-y-6 z-10 relative">
             {/* Search by title */}
-            <div className="rounded-3xl border border-purple-200/70 bg-white p-5 shadow-sm text-center">
-                <h2 className="mb-4 text-lg font-semibold text-purple-950">
+            <div className="rounded-3xl border border-pink-500/20 bg-black/40 p-5 text-center backdrop-blur-xl shadow-[0_0_25px_rgba(236,72,153,0.08)]">
+                <h2 className="mb-4 text-lg font-semibold text-white">
                     Search by title
                 </h2>
+
                 <Searchbar
                     query={query}
                     setQuery={setQuery}
@@ -120,58 +121,58 @@ const SearchControls = () => {
                 />
             </div>
 
-            <div className="flex items-center gap-4 text-xs font-bold uppercase tracking-widest text-purple-900/50">
-                <div className="flex-1 border-t border-purple-200" />
+            <div className="flex items-center gap-4 text-xs font-bold uppercase tracking-widest text-pink-300/60">
+                <div className="flex-1 border-t border-pink-500/20" />
                 <span>or</span>
-                <div className="flex-1 border-t border-purple-200" />
+                <div className="flex-1 border-t border-pink-500/20" />
             </div>
 
             {/* Random roll */}
-            <div className="rounded-3xl border border-purple-200/70 bg-white p-5 shadow-sm text-center">
-                <h2 className="text-lg font-semibold text-purple-950">
+            <div className="rounded-3xl border border-pink-500/20 bg-black/40 p-5 text-center backdrop-blur-xl shadow-[0_0_25px_rgba(236,72,153,0.08)]">
+                <h2 className="text-lg font-semibold text-white">
                     Roll a random anime
                 </h2>
-                <p className="mt-1 text-sm text-purple-900/60">
+
+                <p className="mt-1 text-sm text-purple-100/60">
                     Pick filters, then let AnimAid surprise you.
                 </p>
 
-                {/* Episodes + Type rows */}
                 <div className="my-6 space-y-6 flex flex-col items-center">
                     <EpisodeSlider value={episodeRange} setValue={setEpisodeRange} />
                     <TypeTogglePills value={type} setValue={setType} />
                 </div>
 
-                {/* Genre toggle grid — full width */}
                 <GenreToggleGrid
                     genreOptions={genreOptions}
                     value={selectedGenres}
                     setValue={setSelectedGenres}
                 />
 
-                {/* Advanced toggle */}
                 <div className="mt-6 flex justify-center">
                     <button
                         type="button"
-                        className="w-fit text-sm font-medium text-purple-900/60 transition hover:cursor-pointer hover:text-purple-900"
+                        className="w-fit text-sm font-medium text-pink-300/70 transition hover:cursor-pointer hover:text-pink-300 hover:drop-shadow-[0_0_8px_rgba(236,72,153,0.7)]"
                         onClick={() => setShowAdvanced(!showAdvanced)}
                     >
                         {showAdvanced ? "Hide advanced filters" : "Show advanced filters"}
                     </button>
                 </div>
 
-                {/* Advanced filters */}
                 {showAdvanced && (
-                    <div className="mt-6 rounded-2xl border border-purple-100 bg-purple-50/40 p-6">
-                        <p className="mb-6 text-center text-sm font-semibold text-purple-950">
+                    <div className="relative z-30 mt-6 rounded-2xl border border-pink-500/20 bg-white/5 p-6 backdrop-blur-md shadow-[inset_0_0_20px_rgba(236,72,153,0.04)]">
+                        <p className="mb-6 text-center text-sm font-semibold text-white">
                             Advanced filters
                         </p>
+
                         <div className="grid grid-cols-1 items-end gap-10 md:grid-cols-2">
                             <div className="w-full">
-                                <p className="mb-4 text-center text-sm font-medium text-purple-900/70">
+                                <p className="mb-4 text-center text-sm font-medium text-purple-100/70">
                                     Minimum Score
                                 </p>
+
                                 <ScoreSlider value={minScore} setValue={setMinScore} />
                             </div>
+
                             <div className="w-full">
                                 <PopularityDropdown value={popularity} setValue={setPopularity} />
                             </div>
@@ -179,15 +180,15 @@ const SearchControls = () => {
                     </div>
                 )}
 
-                {/* Error message */}
                 {rollError && (
-                    <div className="mt-5 flex items-center gap-2.5 rounded-2xl border border-purple-200 bg-purple-50 px-4 py-3 text-sm text-purple-900">
+                    <div className="mt-5 flex items-center gap-2.5 rounded-2xl border border-pink-500/30 bg-pink-500/10 px-4 py-3 text-sm text-pink-100 shadow-[0_0_18px_rgba(236,72,153,0.12)]">
                         <span className="text-base">🎲</span>
                         <span>{rollError}</span>
+
                         <button
                             type="button"
                             onClick={() => setRollError(null)}
-                            className="ml-auto text-purple-400 hover:text-purple-700 cursor-pointer transition-colors"
+                            className="ml-auto cursor-pointer text-pink-300/60 transition-colors hover:text-pink-200"
                             aria-label="Dismiss"
                         >
                             ✕
@@ -195,7 +196,7 @@ const SearchControls = () => {
                     </div>
                 )}
 
-                <div className="mt-6 flex justify-center">
+                <div className="relative z-10 mt-6 flex justify-center">
                     <RerollButton onClick={handleRandomRoll} rolling={rolling} />
                 </div>
             </div>

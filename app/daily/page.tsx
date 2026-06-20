@@ -197,14 +197,14 @@ export default function DailyPage() {
 
     function cellClass(status: CellStatus) {
         if (status === "correct") {
-            return "border-green-200 bg-green-100 text-green-800";
+            return "border-green-400/20 bg-green-500/10 text-green-200";
         }
 
         if (status === "close") {
-            return "border-yellow-200 bg-yellow-100 text-yellow-800";
+            return "border-yellow-400/20 bg-yellow-500/10 text-yellow-200";
         }
 
-        return "border-purple-100 bg-purple-50 text-purple-900/60";
+        return "border-pink-500/10 bg-white/[0.03] text-purple-100/60";
     }
 
     function compareExact(guess?: string | null, answer?: string | null): CellStatus {
@@ -262,7 +262,7 @@ export default function DailyPage() {
         allGenresCorrect: boolean
     ) {
         if (allGenresCorrect) {
-            return "border-green-200 bg-green-100 text-green-800";
+            return "border-green-400/20 bg-green-500/10 text-green-200";
         }
 
         const isPartialMatch = answerGenres
@@ -270,10 +270,10 @@ export default function DailyPage() {
             .includes(genre.toLowerCase());
 
         if (isPartialMatch) {
-            return "border-yellow-200 bg-yellow-100 text-yellow-800";
+            return "border-yellow-400/20 bg-yellow-500/10 text-yellow-200";
         }
 
-        return "border-purple-100 bg-white text-purple-900/50";
+        return "border-pink-500/20 bg-white/[0.03] text-purple-100/60";
     }
 
     function numericArrow(
@@ -313,24 +313,29 @@ export default function DailyPage() {
     }
 
     return (
-        <main className="mx-auto flex min-h-[calc(100vh-130px)] max-w-4xl flex-col items-center justify-center px-4 py-10">
-            <section className="w-full rounded-3xl border border-purple-200 bg-white relative z-10 p-6 text-center shadow-sm">
-                <p className="text-xs font-bold uppercase tracking-widest text-purple-900/50">
+        <main className="relative mx-auto flex min-h-[calc(100vh-130px)] max-w-4xl flex-col items-center justify-center px-4 py-10 text-white">
+            <div className="pointer-events-none absolute inset-0 overflow-hidden">
+                <div className="absolute left-10 top-24 h-72 w-72 rounded-full bg-pink-500/10 blur-[120px]" />
+                <div className="absolute bottom-20 right-10 h-72 w-72 rounded-full bg-fuchsia-500/10 blur-[120px]" />
+            </div>
+
+            <section className="relative z-10 w-full rounded-3xl border border-pink-500/20 bg-black/40 p-6 text-center shadow-[0_0_25px_rgba(236,72,153,0.08)] backdrop-blur-xl">
+                <p className="text-xs font-bold uppercase tracking-widest text-pink-300/60">
                     Daily Quest
                 </p>
 
-                <h1 className="mt-3 text-4xl font-bold text-purple-950">
+                <h1 className="mt-3 text-4xl font-bold text-white">
                     Anime Challenge
                 </h1>
 
-                <p className="mx-auto mt-3 max-w-2xl text-purple-900/70">
+                <p className="mx-auto mt-3 max-w-2xl text-purple-100/70">
                     Guess today’s anime in 6 tries. Complete the challenge to earn a character pack.
                 </p>
 
                 <button
                     type="button"
                     onClick={() => setShowRules(!showRules)}
-                    className="mt-4 rounded-xl border border-purple-200 bg-white px-4 py-2 text-sm font-semibold text-purple-900 shadow-sm transition hover:bg-purple-50 hover:cursor-pointer"
+                    className="mt-4 rounded-xl border border-pink-500/20 bg-black/40 px-4 py-2 text-sm font-semibold text-pink-200 shadow-[0_0_15px_rgba(236,72,153,0.08)] transition hover:border-pink-400/40 hover:bg-pink-500/10 hover:cursor-pointer"
                 >
                     How to play
                 </button>
@@ -345,21 +350,21 @@ export default function DailyPage() {
                         <button
                             type="submit"
                             disabled={!user || won || lost}
-                            className="rounded-2xl bg-purple-900 hover:cursor-pointer px-5 py-3 font-semibold text-white shadow-sm transition hover:bg-purple-800 disabled:cursor-not-allowed disabled:opacity-60"
+                            className="rounded-2xl border border-pink-500/20 bg-pink-500/10 px-5 py-3 font-semibold text-pink-200 shadow-[0_0_15px_rgba(236,72,153,0.08)] transition hover:border-pink-400/40 hover:bg-pink-500/20 hover:cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
                         >
                             Guess
                         </button>
                     </form>
 
                     {guessError && (
-                        <div className="mt-4 flex items-center gap-2 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                        <div className="mt-4 flex items-center gap-2 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300 backdrop-blur-xl">
                             <span>⚠️</span>
                             <span>{guessError}</span>
 
                             <button
                                 type="button"
                                 onClick={() => setGuessError(null)}
-                                className="ml-auto text-red-400 hover:text-red-700 transition-colors hover:cursor-pointer"
+                                className="ml-auto text-red-300/70 transition-colors hover:text-red-200 hover:cursor-pointer"
                             >
                                 ✕
                             </button>
@@ -367,22 +372,22 @@ export default function DailyPage() {
                     )}
 
                     {attempts.length >= 3 && !won && !lost && dailyAnime && (
-                        <div className="mt-4 rounded-2xl border border-purple-200 bg-purple-50 p-4">
+                        <div className="mt-4 rounded-2xl border border-pink-500/20 bg-pink-500/10 p-4 backdrop-blur-xl">
                             {!showHint ? (
                                 <button
                                     type="button"
                                     onClick={() => setShowHint(true)}
-                                    className="rounded-xl bg-purple-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-purple-800 hover:cursor-pointer"
+                                    className="rounded-xl border border-pink-500/20 bg-black/40 px-4 py-2 text-sm font-semibold text-pink-200 shadow-[0_0_15px_rgba(236,72,153,0.08)] transition hover:border-pink-400/40 hover:bg-pink-500/20 hover:cursor-pointer"
                                 >
                                     Reveal Hint
                                 </button>
                             ) : (
                                 <div>
-                                    <p className="text-xs font-bold uppercase tracking-widest text-purple-900/50">
+                                    <p className="text-xs font-bold uppercase tracking-widest text-pink-300/60">
                                         Title Length Hint
                                     </p>
 
-                                    <p className="mt-2 break-words font-mono text-lg font-bold tracking-widest text-purple-950">
+                                    <p className="mt-2 break-words font-mono text-lg font-bold tracking-widest text-white">
                                         {getTitleHint(answerTitle)}
                                     </p>
                                 </div>
@@ -390,16 +395,16 @@ export default function DailyPage() {
                         </div>
                     )}
 
-                    <div className="mt-6 w-full overflow-hidden rounded-2xl border border-purple-200 bg-white shadow-sm">
+                    <div className="mt-6 w-full overflow-hidden rounded-2xl border border-pink-500/20 bg-black/30 shadow-[0_0_20px_rgba(236,72,153,0.08)] backdrop-blur-xl">
                         <table className="w-full table-fixed border-collapse text-center text-sm">
-                            <thead className="bg-purple-50 text-xs font-bold uppercase tracking-widest text-purple-900/60">
+                            <thead className="bg-pink-500/10 text-xs font-bold uppercase tracking-widest text-pink-200">
                             <tr>
-                                <th className="w-[22%] border-b border-purple-200 px-4 py-3">Title</th>
-                                <th className="w-[14%] border-b border-purple-200 px-4 py-3">Source</th>
-                                <th className="w-[10%] border-b border-purple-200 px-4 py-3">Year</th>
-                                <th className="w-[10%] border-b border-purple-200 px-4 py-3">Score</th>
-                                <th className="w-[18%] border-b border-purple-200 px-4 py-3">Studio</th>
-                                <th className="w-[26%] border-b border-purple-200 px-4 py-3">Genres</th>
+                                <th className="w-[22%] border-b border-pink-500/20 px-4 py-3">Title</th>
+                                <th className="w-[14%] border-b border-pink-500/20 px-4 py-3">Source</th>
+                                <th className="w-[10%] border-b border-pink-500/20 px-4 py-3">Year</th>
+                                <th className="w-[10%] border-b border-pink-500/20 px-4 py-3">Score</th>
+                                <th className="w-[18%] border-b border-pink-500/20 px-4 py-3">Studio</th>
+                                <th className="w-[26%] border-b border-pink-500/20 px-4 py-3">Genres</th>
                             </tr>
                             </thead>
 
@@ -408,27 +413,27 @@ export default function DailyPage() {
                                 const attempt = attempts[index];
 
                                 return (
-                                    <tr key={index} className="border-b border-purple-100 last:border-b-0">
-                                        <td className={`border-r border-purple-100 px-4 py-4 font-medium ${
+                                    <tr key={index} className="border-b border-pink-500/10 last:border-b-0">
+                                        <td className={`border-r border-pink-500/10 px-4 py-4 font-medium ${
                                             attempt
                                                 ? cellClass(compareExact(attempt.title, dailyAnime.title))
-                                                : "text-purple-300"
+                                                : "text-purple-100/40"
                                         }`}>
                                             {attempt?.title ?? `Attempt ${index + 1}`}
                                         </td>
 
-                                        <td className={`border-r border-purple-100 px-4 py-4 ${
+                                        <td className={`border-r border-pink-500/10 px-4 py-4 ${
                                             attempt
                                                 ? cellClass(compareExact(attempt.source, dailyAnime.source))
-                                                : "text-purple-300"
+                                                : "text-purple-100/40"
                                         }`}>
                                             {attempt?.source ?? "—"}
                                         </td>
 
-                                        <td className={`border-r border-purple-100 px-4 py-4 ${
+                                        <td className={`border-r border-pink-500/10 px-4 py-4 ${
                                             attempt
                                                 ? cellClass(compareYear(attempt.year, dailyAnime.year))
-                                                : "text-purple-300"
+                                                : "text-purple-100/40"
                                         }`}>
                                             <>
                                                 {attempt?.year}
@@ -439,10 +444,10 @@ export default function DailyPage() {
                                             </>
                                         </td>
 
-                                        <td className={`border-r border-purple-100 px-4 py-4 ${
+                                        <td className={`border-r border-pink-500/10 px-4 py-4 ${
                                             attempt
                                                 ? cellClass(compareScore(attempt.score, dailyAnime.score))
-                                                : "text-purple-300"
+                                                : "text-purple-100/40"
                                         }`}>
                                             <>
                                                 {attempt?.score}
@@ -453,10 +458,10 @@ export default function DailyPage() {
                                             </>
                                         </td>
 
-                                        <td className={`border-r border-purple-100 px-4 py-4 ${
+                                        <td className={`border-r border-pink-500/10 px-4 py-4 ${
                                             attempt
                                                 ? cellClass(compareExact(attempt.studio, dailyAnime.studio))
-                                                : "text-purple-300"
+                                                : "text-purple-100/40"
                                         }`}>
                                             {attempt?.studio ?? "—"}
                                         </td>
@@ -464,10 +469,10 @@ export default function DailyPage() {
                                         <td
                                             className={`px-4 py-4 ${
                                                 attempt && genresAreExact(attempt.genres, dailyAnime.genres)
-                                                    ? "border-green-200 bg-green-100"
+                                                    ? "border-green-400/20 bg-green-500/10"
                                                     : attempt
-                                                        ? "bg-purple-50"
-                                                        : "text-purple-300"
+                                                        ? "bg-white/[0.03]"
+                                                        : "text-purple-100/40"
                                             }`}
                                         >
                                             {attempt?.genres?.length ? (
@@ -505,15 +510,15 @@ export default function DailyPage() {
 
                     {(won || lost) && dailyAnime && (
                         <div
-                            className={`mt-6 rounded-3xl border p-5 text-left ${
+                            className={`mt-6 rounded-3xl border p-5 text-left backdrop-blur-xl ${
                                 won
-                                    ? "border-green-200 bg-green-50"
-                                    : "border-red-200 bg-red-50"
+                                    ? "border-green-400/20 bg-green-500/10"
+                                    : "border-red-400/20 bg-red-500/10"
                             }`}
                         >
                             <p
                                 className={`text-sm font-semibold ${
-                                    won ? "text-green-800" : "text-red-700"
+                                    won ? "text-green-200" : "text-red-300"
                                 }`}
                             >
                                 {won
@@ -525,7 +530,7 @@ export default function DailyPage() {
                                 href={`/anime?id=${dailyAnime.mal_id}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="mt-4 flex gap-4 rounded-2xl border border-purple-200 bg-white p-4 shadow-sm transition hover:-translate-y-1 hover:shadow-md"
+                                className="mt-4 flex gap-4 rounded-2xl border border-pink-500/20 bg-black/40 p-4 shadow-[0_0_18px_rgba(236,72,153,0.08)] transition hover:-translate-y-1 hover:border-pink-400/40 hover:bg-pink-500/10"
                             >
                                 {answerImage && (
                                     <img
@@ -536,16 +541,16 @@ export default function DailyPage() {
                                 )}
 
                                 <div className="flex flex-col justify-center">
-                                    <h3 className="text-lg font-bold text-purple-950">
+                                    <h3 className="text-lg font-bold text-white">
                                         {answerTitle}
                                     </h3>
 
-                                    <p className="mt-1 text-sm text-purple-900/60">
+                                    <p className="mt-1 text-sm text-purple-100/60">
                                         {dailyAnime.year ?? "Unknown year"} •{" "}
                                         {dailyAnime.studio ?? "Unknown studio"}
                                     </p>
 
-                                    <p className="mt-2 text-sm font-semibold text-purple-900">
+                                    <p className="mt-2 text-sm font-semibold text-pink-200">
                                         View anime →
                                     </p>
                                 </div>
@@ -557,14 +562,14 @@ export default function DailyPage() {
                         <button
                             type="button"
                             onClick={handleClaimPack}
-                            className="mt-4 w-full rounded-2xl bg-purple-900 px-5 py-3 font-semibold text-white shadow-sm transition hover:bg-purple-800 hover:cursor-pointer"
+                            className="mt-4 w-full rounded-2xl border border-pink-500/20 bg-pink-500/10 px-5 py-3 font-semibold text-pink-200 shadow-[0_0_15px_rgba(236,72,153,0.08)] transition hover:border-pink-400/40 hover:bg-pink-500/20 hover:cursor-pointer"
                         >
                             Claim Character Pack
                         </button>
                     )}
 
                     {won && rewardClaimed && (
-                        <div className="mt-4 rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-semibold text-green-800">
+                        <div className="mt-4 rounded-2xl border border-green-400/20 bg-green-500/10 px-4 py-3 text-sm font-semibold text-green-200 backdrop-blur-xl">
                             Character pack added to your collection of packs!
                         </div>
                     )}
@@ -572,7 +577,7 @@ export default function DailyPage() {
                     <div className="mt-8">
                         <Link
                             href="/"
-                            className="text-sm font-medium text-purple-900/60 transition hover:text-purple-900"
+                            className="text-sm font-medium text-pink-300/70 transition hover:text-pink-200"
                         >
                             Back to home
                         </Link>
@@ -581,30 +586,30 @@ export default function DailyPage() {
             </section>
 
             {showRules && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4">
-                    <div className="w-full max-w-lg rounded-3xl border border-purple-200 bg-white p-6 shadow-xl">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-4 backdrop-blur-sm">
+                    <div className="w-full max-w-lg rounded-3xl border border-pink-500/20 bg-black/90 p-6 shadow-[0_0_30px_rgba(236,72,153,0.15)] backdrop-blur-xl">
                         <div className="flex items-start justify-between gap-4">
-                            <h2 className="text-2xl font-bold text-purple-950">
+                            <h2 className="text-2xl font-bold text-white">
                                 How to Play
                             </h2>
 
                             <button
                                 type="button"
                                 onClick={() => setShowRules(false)}
-                                className="text-purple-400 transition hover:text-purple-900 hover:cursor-pointer"
+                                className="text-pink-300/70 transition hover:text-pink-200 hover:cursor-pointer"
                                 aria-label="Close rules"
                             >
                                 ✕
                             </button>
                         </div>
 
-                        <div className="mt-5 space-y-4 text-left text-sm leading-6 text-purple-900/70">
+                        <div className="mt-5 space-y-4 text-left text-sm leading-6 text-purple-100/70">
                             <p>
                                 Guess today’s anime in 6 tries. Each guess fills the board with clues about how close your guess is to the answer.
                             </p>
 
                             <div>
-                                <h3 className="font-semibold text-purple-950">Rules</h3>
+                                <h3 className="font-semibold text-white">Rules</h3>
                                 <ul className="mt-2 list-disc space-y-1 pl-5">
                                     <li>Each guess must be a real anime title.</li>
                                     <li>You get 6 attempts per day.</li>
@@ -614,46 +619,46 @@ export default function DailyPage() {
                             </div>
 
                             <div>
-                                <h3 className="font-semibold text-purple-950">Colors</h3>
+                                <h3 className="font-semibold text-white">Colors</h3>
 
                                 <div className="mt-2 space-y-2">
                                     <p>
-            <span className="rounded-md border border-green-200 bg-green-100 px-2 py-1 font-semibold text-green-800">
-                Green
-            </span>{" "}
+                                    <span className="rounded-md border border-green-400/20 bg-green-500/10 px-2 py-1 font-semibold text-green-200">
+                                        Green
+                                    </span>{" "}
                                         means an exact match.
                                     </p>
 
                                     <p>
-            <span className="rounded-md border border-yellow-200 bg-yellow-100 px-2 py-1 font-semibold text-yellow-800">
-                Yellow
-            </span>{" "}
+                                    <span className="rounded-md border border-yellow-400/20 bg-yellow-500/10 px-2 py-1 font-semibold text-yellow-200">
+                                        Yellow
+                                    </span>{" "}
                                         means a close match.
                                     </p>
 
-                                    <ul className="ml-5 list-disc text-purple-900/70">
+                                    <ul className="ml-5 list-disc text-purple-100/70">
                                         <li>Year is within 3 years of the answer.</li>
                                         <li>Score is within 0.5 points of the answer.</li>
                                         <li>Genres share at least one genre with the answer.</li>
                                     </ul>
 
                                     <p>
-            <span className="rounded-md border border-purple-100 bg-purple-50 px-2 py-1 font-semibold text-purple-900/60">
-                Purple
-            </span>{" "}
+                                    <span className="rounded-md border border-pink-500/20 bg-white/[0.03] px-2 py-1 font-semibold text-purple-100/70">
+                                        Purple
+                                    </span>{" "}
                                         means no meaningful match.
                                     </p>
                                 </div>
                             </div>
 
                             <div>
-                                <h3 className="font-semibold text-purple-950">Arrows</h3>
+                                <h3 className="font-semibold text-white">Arrows</h3>
 
                                 <p className="mt-2">
                                     Numeric categories use directional hints:
                                 </p>
 
-                                <ul className="ml-5 mt-2 list-disc text-purple-900/70">
+                                <ul className="ml-5 mt-2 list-disc text-purple-100/70">
                                     <li>⬆️ means the correct value is higher.</li>
                                     <li>⬇️ means the correct value is lower.</li>
                                     <li>No arrow means you guessed the exact value.</li>

@@ -30,19 +30,24 @@ const modes = [
 
 export default function HigherLowerSelectPage() {
     return (
-        <main className="mx-auto flex min-h-[calc(100vh-130px)] max-w-7xl flex-col px-4 py-10">
+        <main className="relative mx-auto flex min-h-[calc(100vh-130px)] max-w-7xl flex-col px-4 py-10 text-white">
+            <div className="pointer-events-none absolute inset-0 overflow-hidden">
+                <div className="absolute left-10 top-24 h-72 w-72 rounded-full bg-pink-500/10 blur-[120px]" />
+                <div className="absolute bottom-20 right-10 h-72 w-72 rounded-full bg-fuchsia-500/10 blur-[120px]" />
+            </div>
+
             <section className="relative z-10 mb-8 text-center">
-                <p className="text-xs font-bold uppercase tracking-widest text-purple-900/50">
+                <p className="text-xs font-bold uppercase tracking-widest text-pink-300/60">
                     Higher or Lower
                 </p>
 
-                <h1 className="mt-3 text-5xl font-bold text-purple-950">
+                <h1 className="mt-3 text-5xl font-bold text-white">
                     Choose a Mode
                 </h1>
 
-                <p className="mx-auto mt-3 max-w-2xl text-purple-900/70">
-                    Build your streak by guessing which anime or character ranks higher.
-                    Earn packs every 5 correct answers, up to 4 per day.
+                <p className="mx-auto mt-3 max-w-2xl text-purple-100/70">
+                    Build your streak by guessing which anime or character ranks
+                    higher. Earn packs every 5 correct answers, up to 4 per day.
                 </p>
             </section>
 
@@ -59,33 +64,72 @@ export default function HigherLowerSelectPage() {
                     >
                         <Link
                             href={mode.href}
-                            className="group relative z-10 flex min-h-[520px] overflow-hidden rounded-3xl border border-purple-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl"
+                            className="
+                        group relative z-10 flex min-h-[520px] overflow-hidden
+                        rounded-3xl
+                        border border-pink-500/20
+                        bg-black/40
+                        backdrop-blur-xl
+                        shadow-[0_0_25px_rgba(236,72,153,0.08)]
+                        transition
+                        hover:-translate-y-1
+                        hover:border-pink-400/40
+                        hover:shadow-[0_0_35px_rgba(236,72,153,0.18)]
+                        "
                         >
-                            <div className="absolute inset-0 bg-purple-100">
+                            <div className="absolute inset-0">
                                 <Image
                                     src={mode.imageLink}
                                     alt={mode.title}
                                     fill
-                                    className="object-cover object-top"
+                                    className="object-cover object-top transition duration-500 group-hover:scale-105"
                                 />
                             </div>
 
-                            <div className="absolute inset-0 bg-gradient-to-t from-purple-950/85 via-purple-950/35 to-transparent" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/65 to-transparent" />
+                            <div className="absolute inset-0 bg-pink-500/0 transition duration-500 group-hover:bg-pink-500/10" />
 
                             <div className="relative z-10 mt-auto flex w-full flex-col p-6 text-left">
-                                <span className="mb-3 w-fit rounded-full border border-white/30 bg-white/20 px-3 py-1 text-xs font-bold uppercase tracking-widest text-white backdrop-blur-sm">
-                                    {mode.status}
-                                </span>
+                            <span
+                                className="
+                                mb-3 w-fit
+                                rounded-full
+                                border border-pink-300/30
+                                bg-pink-500/10
+                                px-3 py-1
+                                text-xs font-bold uppercase tracking-widest
+                                text-pink-100
+                                backdrop-blur-sm
+                                "
+                            >
+                                {mode.status}
+                            </span>
 
-                                <h2 className="text-3xl font-bold text-white">
+                                <h2 className="text-3xl font-bold text-white drop-shadow-lg">
                                     {mode.title}
                                 </h2>
 
-                                <p className="mt-3 text-sm leading-6 text-white/80">
+                                <p className="mt-3 text-sm leading-6 text-purple-100/80">
                                     {mode.description}
                                 </p>
 
-                                <div className="mt-6 inline-flex w-fit rounded-2xl bg-white px-5 py-3 text-sm font-bold text-purple-950 transition group-hover:bg-purple-100">
+                                <div
+                                    className="
+                                mt-6 inline-flex w-fit
+                                rounded-2xl
+                                border border-pink-500/20
+                                bg-pink-500/10
+                                px-5 py-3
+                                text-sm font-bold
+                                text-pink-200
+                                backdrop-blur-xl
+                                shadow-[0_0_15px_rgba(236,72,153,0.12)]
+                                transition
+                                group-hover:border-pink-400/40
+                                group-hover:bg-pink-500/20
+                                group-hover:shadow-[0_0_22px_rgba(236,72,153,0.2)]
+                                "
+                                >
                                     Play Mode
                                 </div>
                             </div>
