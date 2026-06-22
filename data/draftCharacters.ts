@@ -2199,7 +2199,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "giyu-tomioka",
         name: "Giyu Tomioka",
         anime: "Demon Slayer",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/3/423445.webp",
+        imageUrl: "/draft/demonslayer/giyu.jpeg",
         stats: {
             leadership: 75,
             power: 88,
@@ -2213,7 +2213,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "kyojuro-rengoku",
         name: "Kyojuro Rengoku",
         anime: "Demon Slayer",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/2/377344.webp",
+        imageUrl: "/draft/demonslayer/rengoku.avif",
         stats: {
             leadership: 92,
             power: 88,
@@ -2227,7 +2227,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "tengen-uzui",
         name: "Tengen Uzui",
         anime: "Demon Slayer",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/16/387706.webp",
+        imageUrl: "/draft/demonslayer/uzui.webp",
         stats: {
             leadership: 78,
             power: 86,
@@ -2241,7 +2241,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "muichiro-tokito",
         name: "Muichiro Tokito",
         anime: "Demon Slayer",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/5/464903.webp",
+        imageUrl: "/draft/demonslayer/muichiro.jpg",
         stats: {
             leadership: 55,
             power: 88,
@@ -2255,7 +2255,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "shinobu-kocho",
         name: "Shinobu Kocho",
         anime: "Demon Slayer",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/3/386591.webp",
+        imageUrl: "/draft/demonslayer/shinobu.jpg",
         stats: {
             leadership: 78,
             power: 65,
@@ -2269,7 +2269,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "mitsuri-kanroji",
         name: "Mitsuri Kanroji",
         anime: "Demon Slayer",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/11/514229.webp",
+        imageUrl: "/draft/demonslayer/mitsuri.avif",
         stats: {
             leadership: 70,
             power: 86,
@@ -2283,7 +2283,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "obanai-iguro",
         name: "Obanai Iguro",
         anime: "Demon Slayer",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/15/466014.webp",
+        imageUrl: "/draft/demonslayer/obanai.jpg",
         stats: {
             leadership: 72,
             power: 86,
@@ -2297,7 +2297,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "sanemi-shinazugawa",
         name: "Sanemi Shinazugawa",
         anime: "Demon Slayer",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/11/556642.webp",
+        imageUrl: "/draft/demonslayer/sanemi.webp",
         stats: {
             leadership: 72,
             power: 90,
@@ -2311,7 +2311,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "gyomei-himejima",
         name: "Gyomei Himejima",
         anime: "Demon Slayer",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/10/550017.webp",
+        imageUrl: "/draft/demonslayer/gyomei.webp",
         stats: {
             leadership: 88,
             power: 92,
@@ -2325,7 +2325,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "kanae-kocho",
         name: "Kanae Kocho",
         anime: "Demon Slayer",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/16/389355.webp",
+        imageUrl: "/draft/demonslayer/kanae.webp",
         stats: {
             leadership: 80,
             power: 76,
@@ -2339,7 +2339,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "kanao-tsuyuri",
         name: "Kanao Tsuyuri",
         anime: "Demon Slayer",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/2/384712.webp",
+        imageUrl: "/draft/demonslayer/kanao.webp",
         stats: {
             leadership: 55,
             power: 76,
@@ -2353,7 +2353,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "muzan-kibutsuji",
         name: "Muzan Kibutsuji",
         anime: "Demon Slayer",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/4/384669.webp",
+        imageUrl: "/draft/demonslayer/muzan.avif",
         stats: {
             leadership: 82,
             power: 94,
@@ -2367,7 +2367,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "kokushibo",
         name: "Kokushibo",
         anime: "Demon Slayer",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/10/406156.webp",
+        imageUrl: "/draft/demonslayer/kokushibo.jpg",
         stats: {
             leadership: 75,
             power: 93,
@@ -2395,7 +2395,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "akaza",
         name: "Akaza",
         anime: "Demon Slayer",
-        imageUrl: "https://cdn.myanimelist.net/images/characters/2/464775.webp",
+        imageUrl: "/draft/demonslayer/akaza.webp",
         stats: {
             leadership: 55,
             power: 91,
@@ -2409,7 +2409,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "rui",
         name: "Rui",
         anime: "Demon Slayer",
-        imageUrl: "https://cdn.myanimelist.net/img/sp/icon/apple-touch-icon-256.png",
+        imageUrl: "/draft/demonslayer/rui.avif",
         stats: {
             leadership: 55,
             power: 70,
