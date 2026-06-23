@@ -94,9 +94,9 @@ export const draftCharacters: DraftCharacter[] = [
             leadership: 88,
             power: 96,
             utility: 35,
-            speed: 85,
-            iq: 60,
-            defense: 78,
+            speed: 90,
+            iq: 70,
+            defense: 84,
         },
     },
     {
@@ -106,11 +106,11 @@ export const draftCharacters: DraftCharacter[] = [
         imageUrl: "/draft/naruto/sasuke.png",
         stats: {
             leadership: 58,
-            power: 88,
+            power: 93,
             utility: 82,
             speed: 92,
             iq: 82,
-            defense: 78,
+            defense: 82,
         },
     },
     {
@@ -707,7 +707,7 @@ export const draftCharacters: DraftCharacter[] = [
         id: "sosuke-aizen",
         name: "Sosuke Aizen",
         anime: "Bleach",
-        imageUrl: "/draft/bleach/aizen.avif",
+        imageUrl: "/draft/bleach/aizen.webp",
         stats: {
             leadership: 95,
             power: 98,
