@@ -42,10 +42,10 @@ export const positionWeights = {
     },
 
     Support: {
-        utility: 0.50,
+        utility: 0.65,
         iq: 0.20,
-        speed: 0.15,
-        defense: 0.15,
+        speed: 0.05,
+        defense: 0.10,
     },
 
     Scout: {
@@ -56,10 +56,9 @@ export const positionWeights = {
     },
 
     Strategist: {
-        iq: 0.70,
+        iq: 0.75,
         leadership: 0.15,
         utility: 0.10,
-        speed: 0.05,
     },
 
     Assassin: {
@@ -1174,7 +1173,7 @@ export const draftCharacters: DraftCharacter[] = [
         imageUrl: "/draft/dragonball/roshi.avif",
         stats: {
             leadership: 92,
-            power: 65,
+            power: 83,
             utility: 78,
             speed: 45,
             iq: 92,
@@ -1188,11 +1187,11 @@ export const draftCharacters: DraftCharacter[] = [
         imageUrl: "/draft/dragonball/yamcha.png",
         stats: {
             leadership: 50,
-            power: 45,
+            power: 80,
             utility: 35,
-            speed: 55,
+            speed: 75,
             iq: 50,
-            defense: 40,
+            defense: 78,
         },
     },
     {
@@ -2370,11 +2369,11 @@ export const draftCharacters: DraftCharacter[] = [
         imageUrl: "/draft/demonslayer/kokushibo.jpg",
         stats: {
             leadership: 75,
-            power: 93,
+            power: 95,
             utility: 75,
-            speed: 90,
-            iq: 85,
-            defense: 90
+            speed: 95,
+            iq: 90,
+            defense: 92
         }
     },
     {
@@ -2402,7 +2401,7 @@ export const draftCharacters: DraftCharacter[] = [
             utility: 65,
             speed: 92,
             iq: 78,
-            defense: 88
+            defense: 90
         }
     },
     {
@@ -2959,8 +2958,8 @@ export const draftCharacters: DraftCharacter[] = [
         anime: "Jujutsu Kaisen",
         imageUrl: "/draft/jjk/inumaki.jpg",
         stats: {
-            leadership: 60,
-            power: 75,
+            leadership: 30,
+            power: 70,
             utility: 90,
             speed: 72,
             iq: 72,
@@ -3114,12 +3113,12 @@ export const draftCharacters: DraftCharacter[] = [
         anime: "Classroom of the Elite",
         imageUrl: "/draft/misc/ayanokoji.png",
         stats: {
-            leadership: 70,
-            power: 83,
-            utility: 50,
-            speed: 80,
+            leadership: 80,
+            power: 70,
+            utility: 40,
+            speed: 60,
             iq: 99,
-            defense: 70
+            defense: 50
         }
     },
     {
@@ -3569,7 +3568,7 @@ export const draftCharacters: DraftCharacter[] = [
             power: 95,
             utility: 75,
             speed: 85,
-            iq: 82,
+            iq: 85,
             defense: 90
         }
     },
