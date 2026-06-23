@@ -56,9 +56,9 @@ export const positionWeights = {
     },
 
     Strategist: {
-        iq: 0.75,
+        iq: 0.80,
         leadership: 0.15,
-        utility: 0.10,
+        utility: 0.05,
     },
 
     Assassin: {
@@ -1229,9 +1229,9 @@ export const draftCharacters: DraftCharacter[] = [
         anime: "Death Note",
         imageUrl: "/draft/deathnote/l.webp",
         stats: {
-            leadership: 70,
+            leadership: 80,
             power: 20,
-            utility: 30,
+            utility: 40,
             speed: 25,
             iq: 99,
             defense: 20,
