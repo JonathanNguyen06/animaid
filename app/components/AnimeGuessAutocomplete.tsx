@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import Autocomplete from "@mui/material/Autocomplete";
 import TextField from "@mui/material/TextField";
-import { isFirstSeasonAnime } from "@/app/api/jikan/daily/route";
 
 type AnimeOption = {
     mal_id: number;
@@ -29,24 +28,39 @@ export default function AnimeGuessAutocomplete({ value, setValue }: Props) {
             return;
         }
 
+        const controller = new AbortController();
+
         const timeout = setTimeout(async () => {
             try {
                 setLoading(true);
 
                 const res = await fetch(
-                    `/api/jikan/search?q=${encodeURIComponent(inputValue)}&limit=8`
+                    `/api/mal/search?q=${encodeURIComponent(inputValue)}&limit=8`,
+                    { signal: controller.signal }
                 );
 
                 const json = await res.json();
-                const validAnime = (json.data ?? []).filter(isFirstSeasonAnime);
 
-                setOptions(validAnime);
+                if (!res.ok) {
+                    setOptions([]);
+                    return;
+                }
+
+                setOptions(json.data ?? []);
+            } catch (error: any) {
+                if (error.name !== "AbortError") {
+                    console.error("Anime autocomplete search error:", error);
+                    setOptions([]);
+                }
             } finally {
                 setLoading(false);
             }
         }, 300);
 
-        return () => clearTimeout(timeout);
+        return () => {
+            clearTimeout(timeout);
+            controller.abort();
+        };
     }, [inputValue]);
 
     return (
@@ -74,6 +88,7 @@ export default function AnimeGuessAutocomplete({ value, setValue }: Props) {
                             padding: "8px",
                             backgroundColor: "#0b0b0f",
                         },
+
                         "& .MuiAutocomplete-noOptions": {
                             color: "#ffffff",
                         },
@@ -111,13 +126,7 @@ export default function AnimeGuessAutocomplete({ value, setValue }: Props) {
                     <li
                         key={key}
                         {...optionProps}
-                        className="
-                    cursor-pointer
-                    rounded-xl
-                    px-4 py-3
-                    transition
-                    hover:bg-pink-500/10
-                    "
+                        className="cursor-pointer rounded-xl px-4 py-3 transition hover:bg-pink-500/10"
                     >
                         <div className="w-full">
                             <p className="font-semibold text-white">
@@ -126,35 +135,15 @@ export default function AnimeGuessAutocomplete({ value, setValue }: Props) {
 
                             <div className="mt-2 flex flex-wrap gap-2">
                                 {option.type && (
-                                    <span
-                                        className="
-                                    rounded-full
-                                    border border-pink-500/20
-                                    bg-pink-500/10
-                                    px-2 py-0.5
-                                    text-xs
-                                    font-medium
-                                    text-pink-200
-                                    "
-                                    >
-                                    {option.type}
-                                </span>
+                                    <span className="rounded-full border border-pink-500/20 bg-pink-500/10 px-2 py-0.5 text-xs font-medium text-pink-200">
+                                        {option.type}
+                                    </span>
                                 )}
 
                                 {option.year && (
-                                    <span
-                                        className="
-                                    rounded-full
-                                    border border-purple-300/20
-                                    bg-white/[0.04]
-                                    px-2 py-0.5
-                                    text-xs
-                                    font-medium
-                                    text-purple-100/60
-                                    "
-                                    >
-                                    {option.year}
-                                </span>
+                                    <span className="rounded-full border border-purple-300/20 bg-white/[0.04] px-2 py-0.5 text-xs font-medium text-purple-100/60">
+                                        {option.year}
+                                    </span>
                                 )}
                             </div>
                         </div>
@@ -186,7 +175,6 @@ export default function AnimeGuessAutocomplete({ value, setValue }: Props) {
                                 borderColor: "rgba(244,114,182,0.55)",
                                 borderWidth: "1px",
                             },
-
                         },
 
                         "& .MuiInputBase-input": {

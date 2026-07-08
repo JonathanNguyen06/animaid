@@ -23,6 +23,16 @@ type GuessAnime = {
     score?: number | null;
     studio?: string | null;
     genres: string[];
+    type?: string | null;
+    episodes?: number | null;
+    popularity?: number | null;
+    rank?: number | null;
+    images?: {
+        jpg?: {
+            image_url?: string | null;
+            large_image_url?: string | null;
+        };
+    };
 };
 
 type AnimeOption = {
@@ -70,8 +80,16 @@ export default function DailyPage() {
             try {
                 setLoading(true);
 
-                const res = await fetch("/api/jikan/daily");
+                const res = await fetch("/api/mal/daily");
                 const json = await res.json();
+
+                if (!res.ok) {
+                    throw new Error(json?.error ?? json?.message ?? "Failed to load daily anime.");
+                }
+
+                if (!json.data) {
+                    throw new Error("Daily anime data was missing.");
+                }
 
                 setDailyAnime(json.data);
 
@@ -82,9 +100,9 @@ export default function DailyPage() {
                     setWon(progress.won ?? false);
                     setRewardClaimed(progress.rewardClaimed ?? false);
                 }
-            } catch (error) {
+            } catch (error: any) {
                 console.error("Daily challenge load error:", error);
-                setGuessError("Failed to load daily challenge.");
+                setGuessError(error?.message ?? "Failed to load daily challenge.");
             } finally {
                 setLoading(false);
             }
@@ -131,7 +149,7 @@ export default function DailyPage() {
 
         try {
             const res = await fetch(
-                `/api/jikan/guess?id=${selectedAnime.mal_id}`
+                `/api/mal/guess?id=${selectedAnime.mal_id}`
             );
 
             const json = await res.json();
@@ -313,7 +331,7 @@ export default function DailyPage() {
     }
 
     return (
-        <main className="relative mx-auto flex min-h-[calc(100vh-130px)] max-w-4xl flex-col items-center justify-center px-4 py-10 text-white">
+        <main className="relative mx-auto flex min-h-[calc(100vh-130px)] max-w-7xl flex-col items-center justify-center px-6 py-10 text-white">
             <div className="pointer-events-none absolute inset-0 overflow-hidden">
                 <div className="absolute left-10 top-24 h-72 w-72 rounded-full bg-pink-500/10 blur-[120px]" />
                 <div className="absolute bottom-20 right-10 h-72 w-72 rounded-full bg-fuchsia-500/10 blur-[120px]" />
@@ -340,7 +358,7 @@ export default function DailyPage() {
                     How to play
                 </button>
 
-                <div className="mx-auto mt-8 max-w-xl">
+                <div className="mx-auto mt-8 w-full max-w-3xl">
                     <form onSubmit={handleSubmit} className="flex gap-2">
                         <AnimeGuessAutocomplete
                             value={selectedAnime}
@@ -396,15 +414,15 @@ export default function DailyPage() {
                     )}
 
                     <div className="mt-6 w-full overflow-hidden rounded-2xl border border-pink-500/20 bg-black/30 shadow-[0_0_20px_rgba(236,72,153,0.08)] backdrop-blur-xl">
-                        <table className="w-full table-fixed border-collapse text-center text-sm">
+                        <table className="w-full border-collapse text-center text-sm">
                             <thead className="bg-pink-500/10 text-xs font-bold uppercase tracking-widest text-pink-200">
                             <tr>
-                                <th className="w-[22%] border-b border-pink-500/20 px-4 py-3">Title</th>
-                                <th className="w-[14%] border-b border-pink-500/20 px-4 py-3">Source</th>
-                                <th className="w-[10%] border-b border-pink-500/20 px-4 py-3">Year</th>
-                                <th className="w-[10%] border-b border-pink-500/20 px-4 py-3">Score</th>
+                                <th className="w-[24%] border-b border-pink-500/20 px-4 py-3">Title</th>
+                                <th className="w-[12%] border-b border-pink-500/20 px-4 py-3">Source</th>
+                                <th className="w-[8%] border-b border-pink-500/20 px-4 py-3">Year</th>
+                                <th className="w-[8%] border-b border-pink-500/20 px-4 py-3">Score</th>
                                 <th className="w-[18%] border-b border-pink-500/20 px-4 py-3">Studio</th>
-                                <th className="w-[26%] border-b border-pink-500/20 px-4 py-3">Genres</th>
+                                <th className="w-[30%] border-b border-pink-500/20 px-4 py-3">Genres</th>
                             </tr>
                             </thead>
 
@@ -486,7 +504,7 @@ export default function DailyPage() {
                                                         return (
                                                             <span
                                                                 key={genre}
-                                                                className={`rounded-full border px-2 py-1 text-xs font-semibold ${genrePillClass(
+                                                                className={`rounded-full border px-3 py-1 text-xs font-semibold whitespace-nowrap ${genrePillClass(
                                                                     genre,
                                                                     dailyAnime.genres,
                                                                     allGenresCorrect

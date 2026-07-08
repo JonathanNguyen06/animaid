@@ -97,11 +97,11 @@ const Navbar = () => {
                     <Image src={"/icons/animaid.png"} alt={"AnimAid"} width={150} height={150}/>
                 </a>
                 <nav className="flex items-center gap-7 text-base font-medium">
+                    <Link href="/games" className="text-purple-100/70 transition-all hover:text-pink-300 hover:drop-shadow-[0_0_8px_rgba(236,72,153,0.8)]">
+                        Games
+                    </Link>
                     {!authLoading && username && (
                         <>
-                            <Link href="/games" className="text-purple-100/70 transition-all hover:text-pink-300 hover:drop-shadow-[0_0_8px_rgba(236,72,153,0.8)]">
-                                Games
-                            </Link>
                             <Link
                                 href="/packs"
                                 className="text-purple-100/70 transition-all hover:text-pink-300 hover:drop-shadow-[0_0_8px_rgba(236,72,153,0.8)]"
