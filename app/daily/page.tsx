@@ -540,7 +540,7 @@ export default function DailyPage() {
                                 }`}
                             >
                                 {won
-                                    ? "You got it! You earned 1 character pack."
+                                    ? "You got it! 🎉 Pack rewards are temporarily unavailable while the pack system is being rebuilt."
                                     : "Out of guesses! The correct answer was:"}
                             </p>
 
@@ -576,21 +576,21 @@ export default function DailyPage() {
                         </div>
                     )}
 
-                    {won && !rewardClaimed && (
-                        <button
-                            type="button"
-                            onClick={handleClaimPack}
-                            className="mt-4 w-full rounded-2xl border border-pink-500/20 bg-pink-500/10 px-5 py-3 font-semibold text-pink-200 shadow-[0_0_15px_rgba(236,72,153,0.08)] transition hover:border-pink-400/40 hover:bg-pink-500/20 hover:cursor-pointer"
-                        >
-                            Claim Character Pack
-                        </button>
-                    )}
+                    {/*{won && !rewardClaimed && (*/}
+                    {/*    <button*/}
+                    {/*        type="button"*/}
+                    {/*        onClick={handleClaimPack}*/}
+                    {/*        className="mt-4 w-full rounded-2xl border border-pink-500/20 bg-pink-500/10 px-5 py-3 font-semibold text-pink-200 shadow-[0_0_15px_rgba(236,72,153,0.08)] transition hover:border-pink-400/40 hover:bg-pink-500/20 hover:cursor-pointer"*/}
+                    {/*    >*/}
+                    {/*        Claim Character Pack*/}
+                    {/*    </button>*/}
+                    {/*)}*/}
 
-                    {won && rewardClaimed && (
-                        <div className="mt-4 rounded-2xl border border-green-400/20 bg-green-500/10 px-4 py-3 text-sm font-semibold text-green-200 backdrop-blur-xl">
-                            Character pack added to your collection of packs!
-                        </div>
-                    )}
+                    {/*{won && rewardClaimed && (*/}
+                    {/*    <div className="mt-4 rounded-2xl border border-green-400/20 bg-green-500/10 px-4 py-3 text-sm font-semibold text-green-200 backdrop-blur-xl">*/}
+                    {/*        Character pack added to your collection of packs!*/}
+                    {/*    </div>*/}
+                    {/*)}*/}
 
                     <div className="mt-8">
                         <Link

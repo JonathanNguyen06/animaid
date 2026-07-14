@@ -102,21 +102,21 @@ const Navbar = () => {
                     </Link>
                     {!authLoading && username && (
                         <>
-                            <Link
-                                href="/packs"
-                                className="text-purple-100/70 transition-all hover:text-pink-300 hover:drop-shadow-[0_0_8px_rgba(236,72,153,0.8)]"
-                            >
-                                Packs
+                            {/*<Link*/}
+                            {/*    href="/packs"*/}
+                            {/*    className="relative inline-flex text-purple-100/70 transition-all hover:text-pink-300 hover:drop-shadow-[0_0_8px_rgba(236,72,153,0.8)]"*/}
+                            {/*>*/}
+                            {/*    Packs*/}
 
-                                {unopenedPackCount > 0 && (
-                                    <span className="absolute -right-4 -top-3 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[11px] font-bold leading-none text-white shadow-sm">
-                                {unopenedPackCount > 99 ? "99+" : unopenedPackCount}
-                            </span>
-                                )}
-                            </Link>
-                            <Link href="/collection" className="text-purple-100/70 transition-all hover:text-pink-300 hover:drop-shadow-[0_0_8px_rgba(236,72,153,0.8)]">
-                                Collection
-                            </Link>
+                            {/*    {unopenedPackCount > 0 && (*/}
+                            {/*        <span className="absolute -right-4 -top-3 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[11px] font-bold leading-none text-white shadow-sm">*/}
+                            {/*        {unopenedPackCount > 99 ? "99+" : unopenedPackCount}*/}
+                            {/*    </span>*/}
+                            {/*    )}*/}
+                            {/*</Link>*/}
+                            {/*<Link href="/collection" className="text-purple-100/70 transition-all hover:text-pink-300 hover:drop-shadow-[0_0_8px_rgba(236,72,153,0.8)]">*/}
+                            {/*    Collection*/}
+                            {/*</Link>*/}
                             <Link href="/friends" className="text-purple-100/70 transition-all hover:text-pink-300 hover:drop-shadow-[0_0_8px_rgba(236,72,153,0.8)]">
                                 Friends
                             </Link>

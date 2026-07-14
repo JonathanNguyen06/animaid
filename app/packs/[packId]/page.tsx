@@ -107,7 +107,6 @@ export default function PackPage() {
 
             const openedRewards = await openPack(pack.id, user.uid);
 
-            // Rewards are ready now, so burst right before reveal
             setBurstAnimation(true);
 
             await new Promise((resolve) => setTimeout(resolve, 700));
