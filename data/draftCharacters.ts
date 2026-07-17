@@ -1229,9 +1229,9 @@ export const draftCharacters: DraftCharacter[] = [
         anime: "Death Note",
         imageUrl: "/draft/deathnote/l.webp",
         stats: {
-            leadership: 80,
+            leadership: 85,
             power: 20,
-            utility: 40,
+            utility: 60,
             speed: 25,
             iq: 99,
             defense: 20,
@@ -4710,10 +4710,10 @@ export const draftCharacters: DraftCharacter[] = [
         stats: {
             leadership: 90,
             power: 35,
-            utility: 55,
-            speed: 40,
-            iq: 72,
-            defense: 88,
+            utility: 20,
+            speed: 50,
+            iq: 69,
+            defense: 85,
         },
     },
     {
@@ -4722,12 +4722,12 @@ export const draftCharacters: DraftCharacter[] = [
         anime: "Tokyo Revengers",
         imageUrl: "/draft/tokyorevengers/mikey.jpg",
         stats: {
-            leadership: 98,
-            power: 82,
-            utility: 45,
-            speed: 92,
+            leadership: 95,
+            power: 80,
+            utility: 20,
+            speed: 70,
             iq: 75,
-            defense: 85,
+            defense: 80,
         },
     },
     {
@@ -4741,7 +4741,7 @@ export const draftCharacters: DraftCharacter[] = [
             utility: 55,
             speed: 72,
             iq: 78,
-            defense: 90,
+            defense: 85,
         },
     },
     // Blue Lock

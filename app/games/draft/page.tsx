@@ -10,15 +10,8 @@ import {
     type DraftHighScore,
 } from "@/lib/firebase";
 import { onAuthStateChanged, type User } from "firebase/auth";
-
-type DraftPick = {
-    character: DraftCharacter;
-    position: DraftPosition;
-    basePower: number;
-    power: number;
-    grade: string;
-    hasSynergy?: boolean;
-};
+import { useRouter } from "next/navigation";
+import type { DraftPick, DraftResult } from "@/types/draft";
 
 type PowerBurst = {
     id: number;
@@ -202,6 +195,394 @@ function TeamPowerCounter({
     );
 }
 
+function LegendaryPickReveal({
+                                 pick,
+                             }: {
+    pick: DraftPick;
+}) {
+    const isSPlus = pick.grade === "S+";
+
+    return (
+        <div className="pointer-events-none fixed inset-0 z-[100] flex items-center justify-center overflow-hidden">
+            {/* Dark cinematic backdrop */}
+            <div className="absolute inset-0 animate-[revealBackdrop_2.6s_ease-out_forwards] bg-black/95 backdrop-blur-md" />
+
+            {/* Full-screen flash */}
+            <div
+                className={`absolute inset-0 animate-[revealFlash_900ms_ease-out_forwards] ${
+                    isSPlus ? "bg-yellow-200" : "bg-fuchsia-400"
+                }`}
+            />
+
+            {/* Expanding energy rings */}
+            <div
+                className={`absolute h-[350px] w-[350px] animate-[energyRing_1.6s_ease-out_forwards] rounded-full border-4 ${
+                    isSPlus
+                        ? "border-yellow-300"
+                        : "border-purple-400"
+                }`}
+            />
+
+            <div
+                className={`absolute h-[350px] w-[350px] animate-[energyRing_1.6s_200ms_ease-out_forwards] rounded-full border-2 opacity-0 ${
+                    isSPlus
+                        ? "border-white"
+                        : "border-fuchsia-300"
+                }`}
+            />
+
+            {/* Rotating light rays */}
+            <div className="absolute h-[900px] w-[900px] animate-[spin_12s_linear_infinite]">
+                {Array.from({ length: 12 }).map((_, index) => (
+                    <div
+                        key={index}
+                        className={`absolute left-1/2 top-1/2 h-[450px] w-8 origin-top -translate-x-1/2 ${
+                            isSPlus
+                                ? "bg-gradient-to-b from-yellow-200/60 to-transparent"
+                                : "bg-gradient-to-b from-fuchsia-400/45 to-transparent"
+                        }`}
+                        style={{
+                            transform: `translateX(-50%) rotate(${
+                                index * 30
+                            }deg)`,
+                        }}
+                    />
+                ))}
+            </div>
+
+            {/* Particles */}
+            <div className="absolute inset-0">
+                {Array.from({ length: 32 }).map((_, index) => {
+                    const angle = (index / 32) * Math.PI * 2;
+                    const distance = 220 + (index % 5) * 45;
+                    const x = Math.cos(angle) * distance;
+                    const y = Math.sin(angle) * distance;
+
+                    return (
+                        <span
+                            key={index}
+                            className={`absolute left-1/2 top-1/2 h-2 w-2 rounded-full ${
+                                isSPlus
+                                    ? "bg-yellow-300 shadow-[0_0_14px_rgba(253,224,71,1)]"
+                                    : "bg-fuchsia-300 shadow-[0_0_14px_rgba(232,121,249,1)]"
+                            }`}
+                            style={
+                                {
+                                    "--particle-x": `${x}px`,
+                                    "--particle-y": `${y}px`,
+                                    animation:
+                                        "legendaryParticle 1.5s ease-out forwards",
+                                    animationDelay: `${
+                                        (index % 8) * 35
+                                    }ms`,
+                                } as React.CSSProperties
+                            }
+                        />
+                    );
+                })}
+            </div>
+
+            <div className="relative z-10 flex flex-col items-center">
+                {/* Rarity heading */}
+                <p
+                    className={`mb-5 animate-[rarityLabel_2.2s_ease-out_forwards] text-sm font-black uppercase tracking-[0.55em] ${
+                        isSPlus
+                            ? "text-yellow-200"
+                            : "text-fuchsia-200"
+                    }`}
+                >
+                    {isSPlus ? "Limit Break" : "Elite Pick"}
+                </p>
+
+                {/* Character card */}
+                <div
+                    className={`relative h-[460px] w-[310px] animate-[legendaryCard_2.4s_cubic-bezier(.16,1,.3,1)_forwards] overflow-hidden rounded-[2rem] border-4 bg-black ${
+                        isSPlus
+                            ? "border-yellow-300 shadow-[0_0_40px_rgba(250,204,21,0.9),0_0_100px_rgba(250,204,21,0.45)]"
+                            : "border-purple-400 shadow-[0_0_40px_rgba(168,85,247,0.9),0_0_100px_rgba(217,70,239,0.4)]"
+                    }`}
+                >
+                    <img
+                        src={pick.character.imageUrl}
+                        alt={pick.character.name}
+                        className="absolute inset-0 h-full w-full object-cover object-[50%_20%]"
+                    />
+
+                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
+
+                    {/* Animated shine */}
+                    <div className="absolute inset-y-0 -left-1/2 w-1/3 animate-[cardShine_1.4s_500ms_ease-in-out_forwards] skew-x-[-18deg] bg-gradient-to-r from-transparent via-white/70 to-transparent" />
+
+                    {/* Giant grade behind details */}
+                    <div
+                        className={`absolute right-3 top-1/2 -translate-y-1/2 animate-[gradeSlam_2.2s_cubic-bezier(.16,1,.3,1)_forwards] text-[9rem] font-black italic leading-none ${
+                            isSPlus
+                                ? "text-yellow-300"
+                                : "text-purple-300"
+                        } drop-shadow-[0_0_25px_currentColor]`}
+                    >
+                        {pick.grade}
+                    </div>
+
+                    <div className="absolute bottom-0 left-0 right-0 p-6">
+                        <p
+                            className={`text-xs font-black uppercase tracking-[0.3em] ${
+                                isSPlus
+                                    ? "text-yellow-300"
+                                    : "text-fuchsia-300"
+                            }`}
+                        >
+                            {positionIcons[pick.position]}{" "}
+                            {pick.position}
+                        </p>
+
+                        <h2 className="mt-2 text-3xl font-black text-white drop-shadow-lg">
+                            {pick.character.name}
+                        </h2>
+
+                        <p className="mt-1 text-sm font-semibold text-white/70">
+                            {pick.character.anime}
+                        </p>
+
+                        <div className="mt-4 flex items-end justify-between">
+                            <span
+                                className={`text-6xl font-black italic leading-none ${
+                                    isSPlus
+                                        ? "text-yellow-300"
+                                        : "text-purple-300"
+                                }`}
+                            >
+                                {pick.grade}
+                            </span>
+
+                            <div className="text-right">
+                                <p className="text-3xl font-black text-white">
+                                    {pick.power}
+                                </p>
+
+                                <p className="text-[10px] font-black uppercase tracking-widest text-white/50">
+                                    OVR
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/*<p className="mt-5 animate-[revealSubtitle_2.3s_ease-out_forwards] text-xs font-bold uppercase tracking-[0.35em] text-white/60">*/}
+                {/*    Character successfully drafted*/}
+                {/*</p>*/}
+            </div>
+
+            <style>{`
+                @keyframes revealBackdrop {
+                    0% {
+                        opacity: 0;
+                    }
+                    12% {
+                        opacity: 1;
+                    }
+                    78% {
+                        opacity: 1;
+                    }
+                    100% {
+                        opacity: 0;
+                    }
+                }
+
+                @keyframes revealFlash {
+                    0% {
+                        opacity: 0;
+                    }
+                    8% {
+                        opacity: 0.9;
+                    }
+                    18% {
+                        opacity: 0;
+                    }
+                    100% {
+                        opacity: 0;
+                    }
+                }
+
+                @keyframes legendaryCard {
+                    0% {
+                        opacity: 0;
+                        transform:
+                            perspective(1000px)
+                            scale(0.25)
+                            rotateY(130deg)
+                            translateY(100px);
+                    }
+                    35% {
+                        opacity: 1;
+                        transform:
+                            perspective(1000px)
+                            scale(1.1)
+                            rotateY(-8deg)
+                            translateY(0);
+                    }
+                    50% {
+                        transform:
+                            perspective(1000px)
+                            scale(1)
+                            rotateY(0deg)
+                            translateY(0);
+                    }
+                    82% {
+                        opacity: 1;
+                        transform:
+                            perspective(1000px)
+                            scale(1)
+                            rotateY(0deg)
+                            translateY(0);
+                    }
+                    100% {
+                        opacity: 0;
+                        transform:
+                            perspective(1000px)
+                            scale(1.08)
+                            rotateY(0deg)
+                            translateY(-25px);
+                    }
+                }
+
+                @keyframes gradeSlam {
+                    0% {
+                        opacity: 0;
+                        transform:
+                            translateY(-50%)
+                            scale(5)
+                            rotate(-15deg);
+                    }
+                    25% {
+                        opacity: 0;
+                    }
+                    40% {
+                        opacity: 0.8;
+                        transform:
+                            translateY(-50%)
+                            scale(0.8)
+                            rotate(-6deg);
+                    }
+                    52% {
+                        transform:
+                            translateY(-50%)
+                            scale(1.1)
+                            rotate(-6deg);
+                    }
+                    70% {
+                        opacity: 0.25;
+                        transform:
+                            translateY(-50%)
+                            scale(1)
+                            rotate(-6deg);
+                    }
+                    100% {
+                        opacity: 0;
+                        transform:
+                            translateY(-50%)
+                            scale(1)
+                            rotate(-6deg);
+                    }
+                }
+
+                @keyframes legendaryParticle {
+                    0% {
+                        opacity: 0;
+                        transform:
+                            translate(-50%, -50%)
+                            scale(0);
+                    }
+                    20% {
+                        opacity: 1;
+                        transform:
+                            translate(-50%, -50%)
+                            scale(1.8);
+                    }
+                    100% {
+                        opacity: 0;
+                        transform:
+                            translate(
+                                calc(-50% + var(--particle-x)),
+                                calc(-50% + var(--particle-y))
+                            )
+                            scale(0.3);
+                    }
+                }
+
+                @keyframes energyRing {
+                    0% {
+                        opacity: 0;
+                        transform: scale(0.25);
+                    }
+                    20% {
+                        opacity: 1;
+                    }
+                    100% {
+                        opacity: 0;
+                        transform: scale(2.5);
+                    }
+                }
+
+                @keyframes rarityLabel {
+                    0%,
+                    30% {
+                        opacity: 0;
+                        transform:
+                            translateY(20px)
+                            scale(0.8);
+                        letter-spacing: 0.8em;
+                    }
+                    45% {
+                        opacity: 1;
+                        transform:
+                            translateY(0)
+                            scale(1);
+                    }
+                    80% {
+                        opacity: 1;
+                    }
+                    100% {
+                        opacity: 0;
+                    }
+                }
+
+                @keyframes revealSubtitle {
+                    0%,
+                    45% {
+                        opacity: 0;
+                        transform: translateY(15px);
+                    }
+                    60% {
+                        opacity: 1;
+                        transform: translateY(0);
+                    }
+                    85% {
+                        opacity: 1;
+                    }
+                    100% {
+                        opacity: 0;
+                    }
+                }
+
+                @keyframes cardShine {
+                    0% {
+                        left: -60%;
+                        opacity: 0;
+                    }
+                    20% {
+                        opacity: 1;
+                    }
+                    100% {
+                        left: 140%;
+                        opacity: 0;
+                    }
+                }
+            `}</style>
+        </div>
+    );
+}
+
 export default function DraftPage() {
     const [usedCharacterIds, setUsedCharacterIds] = useState<string[]>([]);
     const [currentCharacter, setCurrentCharacter] = useState<DraftCharacter | null>(null);
@@ -218,6 +599,10 @@ export default function DraftPage() {
     } | null>(null);
     const [powerBursts, setPowerBursts] = useState<PowerBurst[]>([]);
     const [lastPowerIncrease, setLastPowerIncrease] = useState(0);
+    const [legendaryReveal, setLegendaryReveal] = useState<DraftPick | null>(null);
+    const [isLeavingDraft, setIsLeavingDraft] = useState(false);
+
+    const router = useRouter();
 
     const droppedInSlotRef = useRef(false);
     const dragSkeletonTimeoutRef = useRef<number | null>(null);
@@ -362,7 +747,10 @@ export default function DraftPage() {
     function confirmPick() {
         if (!pendingPick) return;
 
-        const previousTotal = picks.reduce((total, pick) => total + pick.power, 0);
+        const previousTotal = picks.reduce(
+            (total, pick) => total + pick.power,
+            0
+        );
 
         const basePower = calculateDraftPower(
             pendingPick.character,
@@ -378,16 +766,39 @@ export default function DraftPage() {
         };
 
         const updatedPicks = applySynergyBonuses([...picks, newPick]);
-        const newTotal = updatedPicks.reduce((total, pick) => total + pick.power, 0);
-        const increase = newTotal - previousTotal;
 
-        const newUsedIds = [...usedCharacterIds, pendingPick.character.id];
+        const revealedPick = updatedPicks.find(
+            (pick) => pick.position === pendingPick.position
+        );
+
+        const newTotal = updatedPicks.reduce(
+            (total, pick) => total + pick.power,
+            0
+        );
+
+        const increase = newTotal - previousTotal;
+        const newUsedIds = [
+            ...usedCharacterIds,
+            pendingPick.character.id,
+        ];
 
         setPicks(updatedPicks);
         setUsedCharacterIds(newUsedIds);
         setPendingPick(null);
         setHoveredPosition(null);
         setLastPowerIncrease(increase);
+
+        if (
+            revealedPick &&
+            (revealedPick.grade === "S" ||
+                revealedPick.grade === "S+")
+        ) {
+            setLegendaryReveal(revealedPick);
+
+            window.setTimeout(() => {
+                setLegendaryReveal(null);
+            }, 2600);
+        }
 
         const burstId = Date.now();
 
@@ -405,9 +816,52 @@ export default function DraftPage() {
             );
         }, 1000);
 
-        if (picks.length + 1 < positions.length) {
-            setCurrentCharacter(getRandomCharacter(newUsedIds));
+        const completedDraft = updatedPicks.length === positions.length;
+
+        if (completedDraft) {
+            const completedTotalPower = updatedPicks.reduce(
+                (total, pick) => total + pick.power,
+                0
+            );
+
+            const completedAveragePower = Math.round(
+                completedTotalPower / positions.length
+            );
+
+            const completedGrade = getDraftGrade(completedAveragePower);
+
+            const result: DraftResult = {
+                picks: updatedPicks,
+                totalPower: completedTotalPower,
+                averagePower: completedAveragePower,
+                grade: completedGrade,
+                isNewHighScore:
+                    !highScore ||
+                    completedTotalPower > highScore.totalPower,
+            };
+
+            sessionStorage.setItem(
+                "anime-draft-result",
+                JSON.stringify(result)
+            );
+
+            // Keep the completed draft visible while waiting
+            setIsLeavingDraft(true);
+
+            const revealDuration =
+                revealedPick?.grade === "S+" ||
+                revealedPick?.grade === "S"
+                    ? 2600
+                    : 500;
+
+            window.setTimeout(() => {
+                router.push("/games/draft/results");
+            }, revealDuration);
+
+            return;
         }
+
+        setCurrentCharacter(getRandomCharacter(newUsedIds));
     }
 
     function restartDraft() {
@@ -425,6 +879,17 @@ export default function DraftPage() {
 
     return (
         <main className="mx-auto min-h-[calc(100vh-130px)] max-w-[1600px] px-4 py-10">
+            {legendaryReveal && (
+                <LegendaryPickReveal pick={legendaryReveal} />
+            )}
+
+            {isLeavingDraft && (
+                <div className="pointer-events-none fixed inset-0 z-[90] bg-black/10 backdrop-blur-[1px]">
+                    <div className="absolute bottom-8 left-1/2 -translate-x-1/2 rounded-full border border-white/10 bg-black/70 px-5 py-3 text-xs font-black uppercase tracking-[0.3em] text-white/70 shadow-xl backdrop-blur-xl">
+                        Preparing Draft Report
+                    </div>
+                </div>
+            )}
             <div className="pointer-events-none fixed inset-0 overflow-hidden">
                 <div className="absolute left-0 top-0 h-[500px] w-[500px] rounded-full bg-pink-500/10 blur-[150px]" />
                 <div className="absolute right-0 top-0 h-[500px] w-[500px] rounded-full bg-purple-500/10 blur-[150px]" />
@@ -453,8 +918,14 @@ export default function DraftPage() {
                     Drag the character into a position. Once confirmed, that slot is locked.
                 </p>
 
-                {!draftComplete && (
-                    <div className="mt-8 grid gap-8 xl:grid-cols-[340px_1fr]">
+                {(!draftComplete || isLeavingDraft) && (
+                    <div
+                        className={`mt-8 grid gap-8 xl:grid-cols-[340px_1fr] ${
+                            isLeavingDraft
+                                ? "pointer-events-none"
+                                : ""
+                        }`}
+                    >
                         <div>
                             <h2 className="mb-4 text-xl font-bold text-white">
                                 Current Character
@@ -669,7 +1140,7 @@ export default function DraftPage() {
                                                             {pick.character.anime}
                                                         </p>
 
-                                                        <p className="mt-3 text-3xl font-black text-yellow-300 drop-shadow">
+                                                        <p className="mt-3 text-3xl font-black text-yellow-300 drop-shadow italic">
                                                             {pick.grade}
                                                         </p>
                                                     </div>
@@ -680,225 +1151,6 @@ export default function DraftPage() {
                                 })}
                             </div>
                         </div>
-                    </div>
-                )}
-
-                {draftComplete && (
-                    <div className="mt-10 text-center">
-                        <div className="relative mx-auto max-w-5xl overflow-hidden rounded-[2rem] border border-pink-500/30 bg-gradient-to-br from-purple-950 via-purple-900 to-black p-8 text-white shadow-[0_0_60px_rgba(236,72,153,0.30)]">
-                            <div className="absolute -right-20 -top-20 h-52 w-52 rounded-full bg-yellow-300/20 blur-3xl" />
-                            <div className="absolute -bottom-20 -left-20 h-52 w-52 rounded-full bg-fuchsia-400/20 blur-3xl" />
-
-                            <div className="relative z-10">
-                                <p className="text-xs font-black uppercase tracking-[0.45em] text-yellow-300">
-                                    Draft Complete
-                                </p>
-
-                                <h2 className="mt-4 text-5xl font-black text-white drop-shadow md:text-6xl">
-                                    {getDraftGrade(averagePower)} Draft
-                                </h2>
-
-                                <div className="mt-8 grid gap-4 md:grid-cols-3">
-                                    <div className="rounded-3xl border border-white/10 bg-white/10 p-5 backdrop-blur">
-                                        <p className="text-xs font-black uppercase tracking-widest text-purple-200">
-                                            Total Power
-                                        </p>
-
-                                        <p className="mt-2 text-5xl font-black text-yellow-300 drop-shadow-[0_0_18px_rgba(250,204,21,0.65)]">
-                                            {totalPower}
-                                        </p>
-                                    </div>
-
-                                    <div className="rounded-3xl border border-white/10 bg-white/10 p-5 backdrop-blur">
-                                        <p className="text-xs font-black uppercase tracking-widest text-purple-200">
-                                            Average Power
-                                        </p>
-
-                                        <p className="mt-2 text-5xl font-black text-white">
-                                            {averagePower}
-                                        </p>
-                                    </div>
-
-                                    <div className="rounded-3xl border border-white/10 bg-white/10 p-5 backdrop-blur">
-                                        <p className="text-xs font-black uppercase tracking-widest text-purple-200">
-                                            Grade
-                                        </p>
-
-                                        <p className="mt-2 text-5xl font-black text-fuchsia-300 drop-shadow-[0_0_18px_rgba(217,70,239,0.65)]">
-                                            {getDraftGrade(averagePower)}
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {highScore && (
-                            <div
-                                className={`mx-auto mt-6 max-w-3xl overflow-hidden rounded-3xl border p-5 transition ${
-                                    isNewHighScore
-                                        ? "animate-pulse border-yellow-300 bg-gradient-to-br from-yellow-300 via-amber-200 to-purple-200 shadow-[0_0_40px_rgba(250,204,21,0.85)]"
-                                        : "border-purple-300 bg-gradient-to-br from-purple-950 via-purple-900 to-black shadow-[0_0_25px_rgba(126,34,206,0.35)]"
-                                }`}
-                            >
-                                <div className="flex flex-col gap-4 text-center text-white sm:flex-row sm:items-center sm:justify-between">
-                                    <div className="text-left">
-                                        <p
-                                            className={`text-xs font-black uppercase tracking-[0.3em] ${
-                                                isNewHighScore ? "text-purple-950" : "text-yellow-300"
-                                            }`}
-                                        >
-                                            {isNewHighScore ? "✨ New Record ✨" : "High Score"}
-                                        </p>
-
-                                        <p
-                                            className={`mt-1 text-sm font-semibold ${
-                                                isNewHighScore ? "text-purple-900" : "text-white/60"
-                                            }`}
-                                        >
-                                            Best saved draft
-                                        </p>
-                                    </div>
-
-                                    <div className="flex items-center justify-center gap-5">
-                                        <div>
-                                            <p
-                                                className={`text-4xl font-black ${
-                                                    isNewHighScore ? "text-purple-950" : "text-yellow-300"
-                                                }`}
-                                            >
-                                                {highScore.totalPower}
-                                            </p>
-
-                                            <p
-                                                className={`text-xs font-bold uppercase ${
-                                                    isNewHighScore ? "text-purple-900" : "text-white/50"
-                                                }`}
-                                            >
-                                                Total
-                                            </p>
-                                        </div>
-
-                                        <div className="h-12 w-px bg-white/20" />
-
-                                        <div>
-                                            <p
-                                                className={`text-4xl font-black ${
-                                                    isNewHighScore ? "text-purple-950" : "text-white"
-                                                }`}
-                                            >
-                                                {highScore.averagePower}
-                                            </p>
-
-                                            <p
-                                                className={`text-xs font-bold uppercase ${
-                                                    isNewHighScore ? "text-purple-900" : "text-white/50"
-                                                }`}
-                                            >
-                                                Avg
-                                            </p>
-                                        </div>
-
-                                        <div className="h-12 w-px bg-white/20" />
-
-                                        <div>
-                                            <p
-                                                className={`text-4xl font-black ${
-                                                    isNewHighScore ? "text-purple-950" : "text-fuchsia-300"
-                                                }`}
-                                            >
-                                                {highScore.grade}
-                                            </p>
-
-                                            <p
-                                                className={`text-xs font-bold uppercase ${
-                                                    isNewHighScore ? "text-purple-900" : "text-white/50"
-                                                }`}
-                                            >
-                                                Grade
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                            {sortedPicks.map((pick) => (
-                                <div
-                                    key={pick.position}
-                                    className={`relative min-h-[360px] overflow-hidden rounded-3xl border-2 bg-black text-left transition ${
-                                        pick.hasSynergy
-                                            ? "border-pink-300 shadow-[0_0_28px_rgba(244,114,182,0.6)]"
-                                            : getGradeGlow(pick.grade)
-                                    }`}
-                                >
-                                    <img
-                                        src={pick.character.imageUrl}
-                                        alt={pick.character.name}
-                                        draggable={false}
-                                        className="pointer-events-none absolute inset-0 h-full w-full object-cover object-[50%_20%]"
-                                    />
-
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/45 to-transparent" />
-
-                                    <div className="absolute bottom-0 left-0 right-0 p-5">
-                                        <p className="text-xs font-bold uppercase tracking-widest text-purple-200">
-                                            {positionIcons[pick.position]} {pick.position}
-                                        </p>
-
-                                        {pick.hasSynergy && (
-                                            <p className="mt-2 text-xs font-black uppercase tracking-widest text-pink-300">
-                                                Series Link
-                                            </p>
-                                        )}
-
-                                        <h3 className="mt-2 text-xl font-black text-white drop-shadow">
-                                            {pick.character.name}
-                                        </h3>
-
-                                        <p className="text-sm font-medium text-white/75">
-                                            {pick.character.anime}
-                                        </p>
-
-                                        <div className="mt-4 flex items-center justify-between">
-                                            <span className="text-3xl font-black text-yellow-300 drop-shadow">
-                                                {pick.grade}
-                                            </span>
-
-                                            <span className="rounded-full bg-white/15 px-3 py-1 text-sm font-black text-white backdrop-blur">
-                                                {pick.power}
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-
-                        <button
-                            type="button"
-                            onClick={restartDraft}
-                            className="
-                            mt-8
-                            rounded-2xl
-                            border border-pink-500/30
-                            bg-gradient-to-r
-                            from-pink-600
-                            via-fuchsia-600
-                            to-purple-700
-                            px-8
-                            py-4
-                            font-black
-                            text-white
-                            shadow-[0_0_30px_rgba(236,72,153,0.35)]
-                            transition-all
-                            duration-300
-                            hover:-translate-y-1
-                            hover:shadow-[0_0_45px_rgba(236,72,153,0.65)]
-                            hover:cursor-pointer
-                            "
-                        >
-                            Start New Draft
-                        </button>
                     </div>
                 )}
             </section>

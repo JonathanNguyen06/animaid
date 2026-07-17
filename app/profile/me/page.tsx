@@ -238,37 +238,77 @@ export default function MyProfilePage() {
                                     {draftHighScore.lineup.map((pick) => (
                                         <div
                                             key={pick.position}
-                                            className="overflow-hidden rounded-2xl border border-yellow-400/20 bg-black/40 text-left shadow-[0_0_16px_rgba(250,204,21,0.10)] backdrop-blur-xl"
+                                            className="
+                                                relative
+                                                min-h-[360px]
+                                                overflow-hidden
+                                                rounded-3xl
+                                                border-2
+                                                border-yellow-400/20
+                                                bg-black
+                                                text-left
+                                                shadow-[0_0_20px_rgba(250,204,21,0.14)]
+                                                transition-all
+                                                duration-300
+                                                hover:-translate-y-1
+                                                hover:border-yellow-300/50
+                                                hover:shadow-[0_0_28px_rgba(250,204,21,0.28)]
+                                            "
                                         >
-                                            {pick.character.imageUrl && (
+                                            {pick.character.imageUrl ? (
                                                 <img
                                                     src={pick.character.imageUrl}
                                                     alt={pick.character.name}
-                                                    className="h-40 w-full object-cover object-[center_5%]"
+                                                    draggable={false}
+                                                    className="
+                                                        pointer-events-none
+                                                        absolute
+                                                        inset-0
+                                                        h-full
+                                                        w-full
+                                                        object-cover
+                                                        object-[50%_20%]
+                                                        transition-transform
+                                                        duration-500
+                                                    "
                                                 />
+                                            ) : (
+                                                <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-purple-950 via-black to-pink-950">
+                                                    <span className="text-5xl opacity-30">
+                                                        ?
+                                                    </span>
+                                                </div>
                                             )}
 
-                                            <div className="p-4">
-                                                <p className="text-xs font-bold uppercase tracking-widest text-yellow-200/60">
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/35 to-transparent" />
+
+                                            <div className="absolute inset-x-0 bottom-0 p-5">
+                                                <p className="text-xs font-bold uppercase tracking-widest text-yellow-200/70">
                                                     {pick.position}
                                                 </p>
 
-                                                <h4 className="mt-2 line-clamp-1 font-bold text-white">
+                                                <h4 className="mt-2 line-clamp-1 text-xl font-black text-white drop-shadow-lg">
                                                     {pick.character.name}
                                                 </h4>
 
-                                                <p className="mt-1 line-clamp-1 text-xs text-purple-100/60">
+                                                <p className="mt-1 line-clamp-1 text-sm font-medium text-white/65">
                                                     {pick.character.anime}
                                                 </p>
 
-                                                <div className="mt-3 flex items-center justify-between">
-                                                <span className="text-xl font-black text-yellow-200">
-                                                    {pick.grade}
-                                                </span>
+                                                <div className="mt-4 flex items-end justify-between">
+                                                    <span className="text-4xl font-black text-yellow-300 drop-shadow-[0_0_14px_rgba(250,204,21,0.65)] italic">
+                                                        {pick.grade}
+                                                    </span>
 
-                                                    <span className="rounded-full border border-pink-500/20 bg-pink-500/10 px-3 py-1 text-xs font-bold text-pink-200">
-                                                    {pick.power}
-                                                </span>
+                                                    <div className="text-right">
+                                                        <span className="inline-flex rounded-full border border-white/15 bg-black/45 px-3 py-1.5 text-sm font-black text-white backdrop-blur-md">
+                                                            {pick.power}
+                                                        </span>
+
+                                                        <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-white/40">
+                                                            Overall
+                                                        </p>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
