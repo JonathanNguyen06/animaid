@@ -19,6 +19,7 @@ import {
 import { onAuthStateChanged, type User } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import type { DraftPick, DraftResult } from "@/types/draft";
+import {createDraftMatch} from "@/lib/multiplayerDraft";
 
 type PowerBurst = {
     id: number;
@@ -669,6 +670,26 @@ export default function DraftPage() {
         ];
     }, [selectedPowerPosition]);
 
+    async function handleCreateMatch() {
+        if (!user) return;
+
+        try {
+            const code = await createDraftMatch(
+                user.uid,
+                user.displayName ?? "Player"
+            );
+
+            router.push(
+                `/games/draft/multiplayer/${code}`
+            );
+        } catch (error) {
+            console.error(
+                "Failed to create multiplayer match:",
+                error
+            );
+        }
+    }
+
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
             setUser(currentUser);
@@ -1145,6 +1166,26 @@ export default function DraftPage() {
             {legendaryReveal && (
                 <LegendaryPickReveal pick={legendaryReveal} />
             )}
+            <button
+                type="button"
+                onClick={handleCreateMatch}
+                className="
+                mt-3
+                rounded-xl
+                border border-pink-400/30
+                bg-pink-500/15
+                px-4 py-2
+                text-sm font-black
+                text-pink-200
+                transition
+                hover:cursor-pointer
+                hover:border-pink-300/60
+                hover:bg-pink-500/25
+                hover:text-white
+            "
+            >
+                Create Multiplayer Match
+            </button>
 
             {isLeavingDraft && (
                 <div className="pointer-events-none fixed inset-0 z-[90] bg-black/10 backdrop-blur-[1px]">
