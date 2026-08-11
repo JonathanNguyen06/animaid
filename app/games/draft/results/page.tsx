@@ -2,8 +2,22 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { DraftPosition } from "@/data/draftCharacters";
-import type { DraftResult } from "@/types/draft";
+import type {
+    DraftPosition,
+    AnyDraftPosition,
+} from "@/data/draftCharacters";
+
+import type {
+    DraftPick,
+    DraftResult,
+} from "@/types/draft";
+import {getLetterGrade} from "@/data/draftLogic";
+
+type RevealPhase =
+    | "lineup"
+    | "ascension"
+    | "boost"
+    | "final";
 
 const positionIcons: Record<DraftPosition, string> = {
     Captain: "👑",
@@ -15,6 +29,14 @@ const positionIcons: Record<DraftPosition, string> = {
     Ace: "🔥",
     Vanguard: "🛡️",
 };
+
+function getPositionIcon(position: AnyDraftPosition) {
+    if (position in positionIcons) {
+        return positionIcons[position as DraftPosition];
+    }
+
+    return "⚡";
+}
 
 const positionOrder: DraftPosition[] = [
     "Captain",
@@ -67,11 +89,21 @@ function getGradeStyle(grade: string) {
     }
 }
 
+function getPreAscensionPower(pick: DraftPick) {
+    return pick.power - (pick.ascensionBonus ?? 0);
+}
+
 export default function DraftResultsPage() {
     const router = useRouter();
     const [result, setResult] = useState<DraftResult | null>(null);
     const [loading, setLoading] = useState(true);
     const [shareMessage, setShareMessage] = useState("");
+    const [revealPhase, setRevealPhase] =
+        useState<RevealPhase>("lineup");
+    const [revealedCount, setRevealedCount] =
+        useState(0);
+    const [showAscensionImpact, setShowAscensionImpact] =
+        useState(false);
 
     useEffect(() => {
         const savedResult = sessionStorage.getItem(
@@ -93,15 +125,133 @@ export default function DraftResultsPage() {
         }
     }, [router]);
 
-    const sortedPicks = useMemo(() => {
+    const normalPicks = useMemo(() => {
         if (!result) return [];
 
-        return [...result.picks].sort(
-            (a, b) =>
-                positionOrder.indexOf(a.position) -
-                positionOrder.indexOf(b.position)
+        return positionOrder.flatMap((position) => {
+            const pick = result.picks.find(
+                (pick) => pick.position === position
+            );
+
+            return pick ? [pick] : [];
+        });
+    }, [result]);
+
+    useEffect(() => {
+        if (!result) return;
+        if (revealPhase !== "lineup") return;
+
+        if (revealedCount >= result.picks.length) {
+            const timeout = window.setTimeout(() => {
+                setRevealPhase("ascension");
+            }, 800);
+
+            return () => window.clearTimeout(timeout);
+        }
+
+        const timeout = window.setTimeout(() => {
+            setRevealedCount((current) => current + 1);
+        }, 850);
+
+        return () => window.clearTimeout(timeout);
+    }, [
+        result,
+        revealPhase,
+        revealedCount,
+    ]);
+
+    useEffect(() => {
+        if (!result) return;
+        if (revealPhase !== "ascension") return;
+
+        const impactTimeout = window.setTimeout(() => {
+            setShowAscensionImpact(true);
+        }, 1200);
+
+        const boostTimeout = window.setTimeout(() => {
+            setRevealPhase("boost");
+        }, 2600);
+
+        return () => {
+            window.clearTimeout(impactTimeout);
+            window.clearTimeout(boostTimeout);
+        };
+    }, [result, revealPhase]);
+
+    useEffect(() => {
+        if (revealPhase !== "boost") return;
+
+        const timeout = window.setTimeout(() => {
+            setRevealPhase("final");
+        }, 900);
+
+        return () => window.clearTimeout(timeout);
+    }, [revealPhase]);
+
+    const powerPositionPick = useMemo(() => {
+        if (!result) return null;
+
+        return (
+            result.picks.find(
+                (pick) =>
+                    !positionOrder.includes(
+                        pick.position as DraftPosition
+                    )
+            ) ?? null
         );
     }, [result]);
+
+    const sortedPicks = useMemo(() => {
+        return [
+            ...normalPicks,
+            ...(powerPositionPick
+                ? [powerPositionPick]
+                : []),
+        ];
+    }, [normalPicks, powerPositionPick]);
+
+    const gridPicks = useMemo<DraftPick[]>(() => {
+        return [
+            ...normalPicks.slice(0, 4),
+
+            ...(powerPositionPick
+                ? [powerPositionPick]
+                : []),
+
+            ...normalPicks.slice(4),
+        ];
+    }, [normalPicks, powerPositionPick]);
+
+    const revealedPower = useMemo(() => {
+        if (!result) return 0;
+
+        return gridPicks
+            .slice(0, revealedCount)
+            .reduce(
+                (total, pick) =>
+                    total + getPreAscensionPower(pick),
+                0
+            );
+    }, [
+        result,
+        gridPicks,
+        revealedCount,
+    ]);
+
+    const preAscensionTotal = useMemo(() => {
+        if (!result) return 0;
+
+        return result.picks.reduce(
+            (total, pick) =>
+                total + getPreAscensionPower(pick),
+            0
+        );
+    }, [result]);
+
+    const displayedTeamPower =
+        revealPhase === "final"
+            ? (result?.totalPower ?? 0)
+            : revealedPower;
 
     const strongestPick = useMemo(() => {
         if (!result) return null;
@@ -130,7 +280,7 @@ export default function DraftResultsPage() {
         const lineupText = sortedPicks
             .map(
                 (pick) =>
-                    `${positionIcons[pick.position]} ${pick.position}: ` +
+                    `${getPositionIcon(pick.position)} ${pick.position}: ` +
                     `${pick.character.name} — ${pick.grade} (${pick.power})`
             )
             .join("\n");
@@ -205,6 +355,52 @@ export default function DraftResultsPage() {
 
     return (
         <main className="relative min-h-[calc(100vh-130px)] overflow-hidden px-4 py-10">
+
+            {revealPhase === "ascension" && (
+                <div className="pointer-events-none fixed inset-0 z-[150] flex items-center justify-center overflow-hidden">
+                    {/* Dark backdrop */}
+                    <div className="absolute inset-0 animate-[ascensionBackdrop_2.6s_ease-in-out_forwards] bg-black/90 backdrop-blur-md" />
+
+                    {/* Energy glow */}
+                    <div className="absolute h-[500px] w-[500px] animate-[ascensionGlow_2.5s_ease-in-out_forwards] rounded-full bg-yellow-300/15 blur-[100px]" />
+
+                    {/* Expanding rings */}
+                    <div className="absolute h-72 w-72 animate-[ascensionRing_1.8s_ease-out_forwards] rounded-full border-2 border-yellow-300/60" />
+
+                    <div className="absolute h-72 w-72 animate-[ascensionRing_1.8s_250ms_ease-out_forwards] rounded-full border border-pink-400/50 opacity-0" />
+
+                    <div className="relative z-10 w-full max-w-xl px-5 text-center">
+                        <p className="animate-[ascensionLabel_1s_ease-out_forwards] text-xs font-black uppercase tracking-[0.55em] text-yellow-300/70">
+                            Ascension Activated
+                        </p>
+
+                        <h2 className="mt-5 animate-[ascensionTitle_1.2s_cubic-bezier(.16,1,.3,1)_forwards] text-5xl font-black text-white md:text-7xl">
+                            {result.ascension.name}
+                        </h2>
+
+                        <p className="mx-auto mt-5 max-w-md animate-[ascensionDescription_1.5s_ease-out_forwards] text-sm leading-6 text-white/60">
+                            {result.ascension.description}
+                        </p>
+
+                        <div
+                            className={`mt-8 transition-all duration-500 ${
+                                showAscensionImpact
+                                    ? "scale-100 opacity-100"
+                                    : "scale-50 opacity-0"
+                            }`}
+                        >
+                            <p className="text-6xl font-black text-yellow-300 drop-shadow-[0_0_25px_rgba(250,204,21,0.8)]">
+                                +{result.ascension.totalBonus}
+                            </p>
+
+                            <p className="mt-2 text-xs font-black uppercase tracking-[0.3em] text-white/40">
+                                Team Power
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <div className="pointer-events-none fixed inset-0">
                 <div className="absolute left-0 top-0 h-[550px] w-[550px] rounded-full bg-pink-500/10 blur-[160px]" />
                 <div className="absolute right-0 top-10 h-[550px] w-[550px] rounded-full bg-purple-500/10 blur-[160px]" />
@@ -242,7 +438,9 @@ export default function DraftResultsPage() {
                                                             }
                                     `}
                         >
-                            {result.grade}
+                            {revealPhase === "final"
+                                ? result.grade
+                                : "?"}
                         </h1>
 
                         <p className="mt-3 text-2xl font-bold uppercase tracking-[0.4em] text-white/75">
@@ -256,31 +454,48 @@ export default function DraftResultsPage() {
                         </p>
 
                         <div className="mx-auto mt-9 grid max-w-4xl gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                            <ResultStat
-                                label="Total Power"
-                                value={result.totalPower}
-                                highlight
-                            />
+                            <div
+                                key={displayedTeamPower}
+                                className="animate-[teamPowerImpact_450ms_cubic-bezier(.16,1,.3,1)]"
+                            >
+                                <ResultStat
+                                    label="Team Power"
+                                    value={displayedTeamPower}
+                                    highlight
+                                />
+                            </div>
 
                             <ResultStat
                                 label="Average"
-                                value={result.averagePower}
+                                value={
+                                    revealPhase === "final"
+                                        ? result.averagePower
+                                        : "?"
+                                }
                             />
 
                             <ResultStat
                                 label="Draft Grade"
-                                value={result.grade}
+                                value={
+                                    revealPhase === "final"
+                                        ? result.grade
+                                        : "?"
+                                }
                             />
 
                             <ResultStat
                                 label="Series Links"
-                                value={synergyCount}
+                                value={
+                                    revealPhase === "final"
+                                        ? synergyCount
+                                        : "?"
+                                }
                             />
                         </div>
                     </div>
                 </section>
 
-                {strongestPick && (
+                {revealPhase === "final" && strongestPick && (
                     <section className="mt-6 overflow-hidden rounded-3xl border border-yellow-400/20 bg-gradient-to-r from-yellow-500/10 via-black/50 to-pink-500/10 p-5 backdrop-blur-xl">
                         <div className="flex flex-col gap-5 md:flex-row md:items-center">
                             <div className="relative h-28 w-full overflow-hidden rounded-2xl border border-yellow-300/20 md:w-40">
@@ -338,171 +553,383 @@ export default function DraftResultsPage() {
                         </p>
                     </div>
 
-                    <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-                        {sortedPicks.map((pick, index) => {
+                    <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-5">
+                        {gridPicks.map((pick, index) => {
                             const style = getGradeStyle(pick.grade);
+
+                            const isPowerPosition =
+                                pick.position === powerPositionPick?.position;
+
+                            const isRevealed =
+                                index < revealedCount;
+
+                            const isJustRevealed =
+                                revealPhase === "lineup" &&
+                                isRevealed &&
+                                index === revealedCount - 1;
+
+                            const ascensionApplied =
+                                revealPhase === "boost" ||
+                                revealPhase === "final";
+
+                            const displayedPower =
+                                ascensionApplied
+                                    ? pick.power
+                                    : getPreAscensionPower(pick);
+
+                            const displayedGrade =
+                                ascensionApplied
+                                    ? pick.grade
+                                    : getLetterGrade(
+                                        getPreAscensionPower(pick)
+                                    );
+
+                            const ascensionBonus =
+                                pick.ascensionBonus ?? 0;
+
+                            const receivedAscension =
+                                ascensionBonus > 0;
 
                             return (
                                 <article
                                     key={pick.position}
-                                    className={`group relative min-h-[410px] overflow-hidden rounded-3xl border-2 bg-black text-left transition duration-300 hover:-translate-y-2 ${style.border}`}
+                                    className={`
+                                        group relative min-h-[410px]
+                                        overflow-hidden rounded-3xl border-2
+                                        bg-black text-left
+                                        transition duration-300
+                                        hover:-translate-y-2
+                                        ${style.border}
+                                        ${
+                                        ascensionApplied && receivedAscension
+                                            ? "ring-2 ring-yellow-300/60 shadow-[0_0_40px_rgba(250,204,21,0.35)]"
+                                            : ""
+                                    }
+                                        ${
+                                        isPowerPosition
+                                            ? "xl:col-start-5 xl:row-start-1 xl:row-span-2 xl:self-center"
+                                            : ""
+                                        }
+                                    `}
                                     style={{
                                         animation:
                                             "resultCardEnter 650ms ease-out both",
                                         animationDelay: `${index * 80}ms`,
                                     }}
                                 >
-                                    <img
-                                        src={pick.character.imageUrl}
-                                        alt={pick.character.name}
-                                        draggable={false}
-                                        className="absolute inset-0 h-full w-full object-cover object-[50%_20%] transition duration-700 group-hover:scale-105"
-                                    />
+                                    {isRevealed ? (
+                                        <div
+                                            className="
+                                                absolute inset-0
+                                                animate-[draftCardReveal_700ms_cubic-bezier(.16,1,.3,1)_both]
+                                            "
+                                        >
+                                            {/* Reveal flash */}
+                                            {isJustRevealed && (
+                                                <>
+                                                    <div
+                                                        className={`
+                                                        pointer-events-none absolute inset-0 z-40
+                                                        animate-[draftRevealFlash_650ms_ease-out_forwards]
+                                                        ${
+                                                            isPowerPosition
+                                                                ? "bg-yellow-200"
+                                                                : displayedGrade === "S+" || displayedGrade === "S"
+                                                                    ? "bg-purple-300"
+                                                                    : "bg-pink-300"
+                                                        }
+                                                        `}
+                                                    />
 
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/35 to-transparent" />
+                                                    {/* Expanding energy ring */}
+                                                    <div
+                                                        className={`
+                                                            pointer-events-none
+                                                            absolute left-1/2 top-1/2 z-30
+                                                            h-28 w-28
+                                                            -translate-x-1/2 -translate-y-1/2
+                                                            animate-[draftRevealRing_800ms_ease-out_forwards]
+                                                            rounded-full border-4
+                                                            ${
+                                                            isPowerPosition
+                                                                ? "border-yellow-300"
+                                                                : displayedGrade === "S+" || displayedGrade === "S"
+                                                                    ? "border-purple-300"
+                                                                    : "border-pink-400"
+                                                        }
+                                                        `}
+                                                    />
 
-                                    <div className="absolute inset-x-0 top-0 flex items-start justify-between p-4">
-                                        <span className="rounded-full border border-white/10 bg-black/45 px-3 py-1.5 text-xs font-black uppercase tracking-wider text-white backdrop-blur-md">
-                                            {positionIcons[pick.position]}{" "}
-                                            {pick.position}
-                                        </span>
+                                                    {/* Radial particles */}
+                                                    <div className="pointer-events-none absolute inset-0 z-40">
+                                                        {Array.from({ length: 12 }).map((_, particleIndex) => (
+                                                            <span
+                                                                key={particleIndex}
+                                                                className={`
+                                                                    absolute left-1/2 top-1/2
+                                                                    h-2 w-2 rounded-full
+                                                                    animate-[draftRevealParticle_800ms_ease-out_forwards]
+                                                                    ${
+                                                                    isPowerPosition
+                                                                        ? "bg-yellow-300 shadow-[0_0_12px_rgba(250,204,21,1)]"
+                                                                        : "bg-pink-300 shadow-[0_0_12px_rgba(244,114,182,1)]"
+                                                                }
+                                                                `}
+                                                                style={
+                                                                    {
+                                                                        "--particle-angle":
+                                                                            `${particleIndex * 30}deg`,
+                                                                        animationDelay:
+                                                                            `${particleIndex * 18}ms`,
+                                                                    } as React.CSSProperties
+                                                                }
+                                                            />
+                                                        ))}
+                                                    </div>
 
-                                        {pick.hasSynergy && (
-                                            <span className="rounded-full border border-pink-300/20 bg-pink-500/20 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-pink-200 backdrop-blur-md">
-                                                Series Link
-                                            </span>
-                                        )}
-                                    </div>
+                                                    {/* Bright vertical shine */}
+                                                    <div className="pointer-events-none absolute inset-y-0 -left-1/2 z-30 w-1/3 animate-[draftRevealShine_850ms_100ms_ease-out_forwards] skew-x-[-18deg] bg-gradient-to-r from-transparent via-white/80 to-transparent" />
+                                                </>
+                                            )}
 
-                                    <div className="absolute inset-x-0 bottom-0 p-5">
-                                        <h3 className="text-2xl font-black text-white drop-shadow-lg">
-                                            {pick.character.name}
-                                        </h3>
+                                            <img
+                                                src={pick.character.imageUrl}
+                                                alt={pick.character.name}
+                                                draggable={false}
+                                                className="
+                                                    absolute inset-0
+                                                    h-full w-full
+                                                    object-cover object-[50%_20%]
+                                                    transition duration-700
+                                                    group-hover:scale-105
+                                                "
+                                            />
 
-                                        <p className="mt-1 line-clamp-1 text-sm font-medium text-white/60">
-                                            {pick.character.anime}
-                                        </p>
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/35 to-transparent" />
 
-                                        <div className="mt-5 flex items-end justify-between">
-                                            <span
-                                                className={`text-5xl font-black italic ${style.grade}`}
-                                            >
-                                                {pick.grade}
-                                            </span>
+                                            {/* Top badges */}
+                                            <div className="absolute inset-x-0 top-0 flex items-start justify-between p-4">
+                                                <span
+                                                    className={`
+                                                        animate-[draftBadgeDrop_550ms_180ms_cubic-bezier(.16,1,.3,1)_both]
+                                                        rounded-full border
+                                                        px-3 py-1.5
+                                                        text-xs font-black uppercase tracking-wider
+                                                        backdrop-blur-md
+                                                        ${
+                                                        isPowerPosition
+                                                            ? "border-yellow-300/30 bg-yellow-500/15 text-yellow-200"
+                                                            : "border-white/10 bg-black/45 text-white"
+                                                    }
+                                                    `}
+                                                >
+                                                    {getPositionIcon(pick.position)}{" "}
+                                                    {pick.position}
+                                                </span>
 
-                                            <div className="text-right">
-                                                <p className="text-3xl font-black text-white">
-                                                    {pick.power}
-                                                </p>
+                                                {pick.hasSynergy && (
+                                                    <span className="animate-[draftBadgeDrop_550ms_250ms_cubic-bezier(.16,1,.3,1)_both] rounded-full border border-pink-300/20 bg-pink-500/20 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-pink-200 backdrop-blur-md">
+                                                        Series Link
+                                                    </span>
+                                                )}
+                                            </div>
 
-                                                <p className="text-[10px] font-black uppercase tracking-widest text-white/35">
-                                                    Power
-                                                </p>
+                                            {/* Bottom info */}
+                                            <div className="absolute inset-x-0 bottom-0 p-5">
+                                                <div className="animate-[draftInfoRise_600ms_220ms_cubic-bezier(.16,1,.3,1)_both]">
+                                                    <h3 className="text-2xl font-black text-white drop-shadow-lg">
+                                                        {pick.character.name}
+                                                    </h3>
+
+                                                    <p className="mt-1 line-clamp-1 text-sm font-medium text-white/60">
+                                                        {pick.character.anime}
+                                                    </p>
+                                                </div>
+
+                                                {ascensionApplied && receivedAscension && (
+                                                    <div className="mt-3 flex items-center gap-2 animate-[draftInfoRise_450ms_ease-out_both]">
+                                                        <span className="rounded-full border border-yellow-300/30 bg-yellow-300/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-yellow-200">
+                                                            Ascended
+                                                        </span>
+
+                                                        <span className="text-sm font-black text-yellow-300">
+                                                            +{ascensionBonus}
+                                                        </span>
+                                                    </div>
+                                                )}
+
+                                                <div className="mt-5 flex items-end justify-between">
+                                                    <span
+                                                        className={`
+                                                            text-5xl font-black italic
+                                                            animate-[draftGradeSlam_700ms_320ms_cubic-bezier(.16,1,.3,1)_both]
+                                                            ${style.grade}
+                                                            ${
+                                                            ascensionApplied && receivedAscension
+                                                                ? "scale-110"
+                                                                : ""
+                                                        }
+                                                        `}
+                                                    >
+                                                        {displayedGrade}
+                                                    </span>
+
+                                                    <div
+                                                        className="
+                                                            text-right
+                                                            animate-[draftPowerSlam_650ms_380ms_cubic-bezier(.16,1,.3,1)_both]
+                                                        "
+                                                    >
+                                                        <p
+                                                            className={`text-3xl font-black transition-all duration-500 ${
+                                                                ascensionApplied && receivedAscension
+                                                                    ? "scale-110 text-yellow-300 drop-shadow-[0_0_14px_rgba(250,204,21,0.7)]"
+                                                                    : "text-white"
+                                                            }`}
+                                                        >
+                                                            {displayedPower}
+                                                        </p>
+
+                                                        <p className="text-[10px] font-black uppercase tracking-widest text-white/35">
+                                                            Power
+                                                        </p>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
+                                    ) : (
+                                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-black via-purple-950/40 to-black">
+                                            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(236,72,153,0.08),transparent_60%)]" />
+
+                                            <p
+                                                className={`relative text-4xl ${
+                                                    isPowerPosition
+                                                        ? "text-yellow-300/30"
+                                                        : "text-pink-300/25"
+                                                }`}
+                                            >
+                                                {getPositionIcon(pick.position)}
+                                            </p>
+
+                                            <p
+                                                className={`relative mt-4 text-xs font-black uppercase tracking-[0.25em] ${
+                                                    isPowerPosition
+                                                        ? "text-yellow-300/40"
+                                                        : "text-white/25"
+                                                }`}
+                                            >
+                                                {pick.position}
+                                            </p>
+
+                                            <p className="relative mt-2 text-[10px] font-bold uppercase tracking-widest text-white/15">
+                                                Awaiting Reveal
+                                            </p>
+                                        </div>
+                                    )}
                                 </article>
                             );
                         })}
                     </div>
                 </section>
 
-                <div className="mt-10 flex flex-col justify-center gap-3 sm:flex-row">
-                    <button
-                        type="button"
-                        onClick={shareDraft}
-                        className="
-                            group
-                            relative
-                            overflow-hidden
-                            rounded-2xl
-                            border border-yellow-300/40
-                            bg-gradient-to-r
-                            from-yellow-300
-                            via-amber-300
-                            to-yellow-500
-                            px-8
-                            py-4
-                            font-black
-                            text-purple-950
-                            shadow-[0_0_25px_rgba(250,204,21,0.3)]
-                            transition-all
-                            duration-300
-                            hover:-translate-y-1
-                            hover:cursor-pointer
-                            hover:shadow-[0_0_40px_rgba(250,204,21,0.55)]
-                        "
-                    >
-                        <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/40 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
+                {revealPhase === "final" && (
+                    <div className="mt-10 flex flex-col justify-center gap-3 sm:flex-row">
+                        <button
+                            type="button"
+                            onClick={shareDraft}
+                            className="
+                                group
+                                relative
+                                overflow-hidden
+                                rounded-2xl
+                                border border-yellow-300/40
+                                bg-gradient-to-r
+                                from-yellow-300
+                                via-amber-300
+                                to-yellow-500
+                                px-8
+                                py-4
+                                font-black
+                                text-purple-950
+                                shadow-[0_0_25px_rgba(250,204,21,0.3)]
+                                transition-all
+                                duration-300
+                                hover:-translate-y-1
+                                hover:cursor-pointer
+                                hover:shadow-[0_0_40px_rgba(250,204,21,0.55)]
+                            "
+                        >
+                            <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/40 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
 
-                        <span className="relative flex items-center justify-center gap-2">
-                            <svg
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2.5"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                className="h-5 w-5"
-                                aria-hidden="true"
-                            >
-                                <circle cx="18" cy="5" r="3" />
-                                <circle cx="6" cy="12" r="3" />
-                                <circle cx="18" cy="19" r="3" />
-                                <path d="m8.6 13.5 6.8 4" />
-                                <path d="m15.4 6.5-6.8 4" />
-                            </svg>
+                            <span className="relative flex items-center justify-center gap-2">
+                                <svg
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2.5"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    className="h-5 w-5"
+                                    aria-hidden="true"
+                                >
+                                    <circle cx="18" cy="5" r="3" />
+                                    <circle cx="6" cy="12" r="3" />
+                                    <circle cx="18" cy="19" r="3" />
+                                    <path d="m8.6 13.5 6.8 4" />
+                                    <path d="m15.4 6.5-6.8 4" />
+                                </svg>
 
-                            Share Draft
-                        </span>
-                    </button>
+                                Share Draft
+                            </span>
+                        </button>
 
-                    <button
-                        type="button"
-                        onClick={startNewDraft}
-                        className="
-                            rounded-2xl
-                            bg-gradient-to-r
-                            from-pink-600
-                            via-fuchsia-600
-                            to-purple-700
-                            px-8
-                            py-4
-                            font-black
-                            text-white
-                            shadow-[0_0_30px_rgba(236,72,153,0.3)]
-                            transition
-                            hover:-translate-y-1
-                            hover:cursor-pointer
-                            hover:shadow-[0_0_45px_rgba(236,72,153,0.55)]
-                        "
-                    >
-                        Draft Again
-                    </button>
+                        <button
+                            type="button"
+                            onClick={startNewDraft}
+                            className="
+                                rounded-2xl
+                                bg-gradient-to-r
+                                from-pink-600
+                                via-fuchsia-600
+                                to-purple-700
+                                px-8
+                                py-4
+                                font-black
+                                text-white
+                                shadow-[0_0_30px_rgba(236,72,153,0.3)]
+                                transition
+                                hover:-translate-y-1
+                                hover:cursor-pointer
+                                hover:shadow-[0_0_45px_rgba(236,72,153,0.55)]
+                            "
+                        >
+                            Draft Again
+                        </button>
 
-                    <button
-                        type="button"
-                        onClick={() => router.push("/games")}
-                        className="
-                            rounded-2xl
-                            border border-white/10
-                            bg-white/5
-                            px-8
-                            py-4
-                            font-black
-                            text-white/70
-                            backdrop-blur
-                            transition
-                            hover:cursor-pointer
-                            hover:border-pink-400/30
-                            hover:bg-pink-500/10
-                            hover:text-white
-                        "
-                    >
-                        Back to Games
-                    </button>
+                        <button
+                            type="button"
+                            onClick={() => router.push("/games")}
+                            className="
+                                rounded-2xl
+                                border border-white/10
+                                bg-white/5
+                                px-8
+                                py-4
+                                font-black
+                                text-white/70
+                                backdrop-blur
+                                transition
+                                hover:cursor-pointer
+                                hover:border-pink-400/30
+                                hover:bg-pink-500/10
+                                hover:text-white
+                            "
+                        >
+                            Back to Games
+                        </button>
+                    </div>
+                    )}
                 </div>
-            </div>
 
             {shareMessage && (
                 <div className="fixed bottom-7 left-1/2 z-[100] -translate-x-1/2 animate-[shareToast_250ms_ease-out] rounded-full border border-yellow-300/30 bg-black/85 px-6 py-3 text-sm font-black text-yellow-200 shadow-[0_0_30px_rgba(250,204,21,0.25)] backdrop-blur-xl">
@@ -534,6 +961,334 @@ export default function DraftResultsPage() {
                         transform: translate(-50%, 0) scale(1);
                     }
                 }
+                
+                @keyframes ascensionBackdrop {
+                    0% {
+                        opacity: 0;
+                    }
+                
+                    12% {
+                        opacity: 1;
+                    }
+                
+                    82% {
+                        opacity: 1;
+                    }
+                
+                    100% {
+                        opacity: 0;
+                    }
+                }
+                
+                @keyframes ascensionGlow {
+                    0% {
+                        opacity: 0;
+                        transform: scale(0.4);
+                    }
+                
+                    40% {
+                        opacity: 1;
+                        transform: scale(1);
+                    }
+                
+                    100% {
+                        opacity: 0;
+                        transform: scale(1.8);
+                    }
+                }
+                
+                @keyframes ascensionRing {
+                    0% {
+                        opacity: 0;
+                        transform: scale(0.25);
+                    }
+                
+                    20% {
+                        opacity: 1;
+                    }
+                
+                    100% {
+                        opacity: 0;
+                        transform: scale(3);
+                    }
+                }
+                
+                @keyframes ascensionLabel {
+                    from {
+                        opacity: 0;
+                        transform: translateY(20px);
+                        letter-spacing: 0.9em;
+                    }
+                
+                    to {
+                        opacity: 1;
+                        transform: translateY(0);
+                        letter-spacing: 0.55em;
+                    }
+                }
+                
+                @keyframes ascensionTitle {
+                    0% {
+                        opacity: 0;
+                        transform: scale(2.5) translateY(30px);
+                        filter: blur(10px);
+                    }
+                
+                    60% {
+                        opacity: 1;
+                        transform: scale(0.95) translateY(0);
+                        filter: blur(0);
+                    }
+                
+                    100% {
+                        opacity: 1;
+                        transform: scale(1);
+                    }
+                }
+                
+                @keyframes ascensionDescription {
+                    0%,
+                    35% {
+                        opacity: 0;
+                        transform: translateY(15px);
+                    }
+                
+                    100% {
+                        opacity: 1;
+                        transform: translateY(0);
+                    }
+                }
+                
+                @keyframes draftCardReveal {
+                    0% {
+                        opacity: 0;
+                        transform:
+                            perspective(900px)
+                            scale(0.72)
+                            rotateY(18deg)
+                            translateY(35px);
+                        filter: brightness(2) blur(5px);
+                    }
+                
+                    35% {
+                        opacity: 1;
+                        transform:
+                            perspective(900px)
+                            scale(1.07)
+                            rotateY(-3deg)
+                            translateY(-5px);
+                        filter: brightness(1.4) blur(0);
+                    }
+                
+                    65% {
+                        transform:
+                            perspective(900px)
+                            scale(0.98)
+                            rotateY(1deg)
+                            translateY(0);
+                    }
+                
+                    100% {
+                        opacity: 1;
+                        transform:
+                            perspective(900px)
+                            scale(1)
+                            rotateY(0deg)
+                            translateY(0);
+                        filter: brightness(1);
+                    }
+                }
+                
+                @keyframes draftRevealFlash {
+                    0% {
+                        opacity: 0;
+                    }
+                
+                    12% {
+                        opacity: 0.9;
+                    }
+                
+                    35% {
+                        opacity: 0.25;
+                    }
+                
+                    100% {
+                        opacity: 0;
+                    }
+                }
+                
+                @keyframes draftRevealRing {
+                    0% {
+                        opacity: 0;
+                        transform:
+                            translate(-50%, -50%)
+                            scale(0.2);
+                    }
+                
+                    20% {
+                        opacity: 1;
+                    }
+                
+                    100% {
+                        opacity: 0;
+                        transform:
+                            translate(-50%, -50%)
+                            scale(4);
+                    }
+                }
+                
+                @keyframes draftRevealShine {
+                    0% {
+                        left: -60%;
+                        opacity: 0;
+                    }
+                
+                    15% {
+                        opacity: 1;
+                    }
+                
+                    100% {
+                        left: 140%;
+                        opacity: 0;
+                    }
+                }
+                
+                @keyframes draftRevealParticle {
+                    0% {
+                        opacity: 0;
+                        transform:
+                            translate(-50%, -50%)
+                            rotate(var(--particle-angle))
+                            translateX(0)
+                            scale(0);
+                    }
+                
+                    20% {
+                        opacity: 1;
+                        transform:
+                            translate(-50%, -50%)
+                            rotate(var(--particle-angle))
+                            translateX(20px)
+                            scale(1.7);
+                    }
+                
+                    100% {
+                        opacity: 0;
+                        transform:
+                            translate(-50%, -50%)
+                            rotate(var(--particle-angle))
+                            translateX(130px)
+                            scale(0.2);
+                    }
+                }
+                
+                @keyframes draftBadgeDrop {
+                    0% {
+                        opacity: 0;
+                        transform:
+                            translateY(-24px)
+                            scale(0.8);
+                    }
+                
+                    70% {
+                        opacity: 1;
+                        transform:
+                            translateY(3px)
+                            scale(1.04);
+                    }
+                
+                    100% {
+                        opacity: 1;
+                        transform:
+                            translateY(0)
+                            scale(1);
+                    }
+                }
+                
+                @keyframes draftInfoRise {
+                    from {
+                        opacity: 0;
+                        transform: translateY(24px);
+                    }
+                
+                    to {
+                        opacity: 1;
+                        transform: translateY(0);
+                    }
+                }
+                
+                @keyframes draftGradeSlam {
+                    0% {
+                        opacity: 0;
+                        transform:
+                            translateX(-30px)
+                            scale(2.4)
+                            rotate(-12deg);
+                    }
+                
+                    55% {
+                        opacity: 1;
+                        transform:
+                            translateX(4px)
+                            scale(0.92)
+                            rotate(-3deg);
+                    }
+                
+                    75% {
+                        transform:
+                            translateX(0)
+                            scale(1.08)
+                            rotate(-3deg);
+                    }
+                
+                    100% {
+                        opacity: 1;
+                        transform:
+                            translateX(0)
+                            scale(1)
+                            rotate(0);
+                    }
+                }
+                
+                @keyframes draftPowerSlam {
+                    0% {
+                        opacity: 0;
+                        transform:
+                            translateX(25px)
+                            scale(1.8);
+                    }
+                
+                    60% {
+                        opacity: 1;
+                        transform:
+                            translateX(-3px)
+                            scale(0.95);
+                    }
+                
+                    100% {
+                        opacity: 1;
+                        transform:
+                            translateX(0)
+                            scale(1);
+                    }
+                    
+                    @keyframes teamPowerImpact {
+                        0% {
+                            transform: scale(0.92);
+                            filter: brightness(1);
+                        }
+                    
+                        45% {
+                            transform: scale(1.08);
+                            filter: brightness(1.7);
+                        }
+                    
+                        100% {
+                            transform: scale(1);
+                            filter: brightness(1);
+                        }
+                    }
+            }
             `}</style>
         </main>
     );

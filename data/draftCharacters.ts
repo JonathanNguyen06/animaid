@@ -14,6 +14,8 @@ export type DraftCharacter = {
     };
 };
 
+export type CharacterStat = keyof DraftCharacter["stats"];
+
 export type DraftPosition =
     | "Captain"
     | "Vice Captain"
@@ -22,7 +24,38 @@ export type DraftPosition =
     | "Strategist"
     | "Assassin"
     | "Ace"
-    | "Vanguard"
+    | "Vanguard";
+
+export const powerPositions: PowerPosition[] = [
+    "Juggernaut",
+    "Guardian",
+    "Battle Genius",
+    "Wildcard",
+    "Specialist",
+    "Prodigy",
+    "Apex",
+    "One Man Army",
+];
+
+export type WeightedPowerPosition =
+    | "Juggernaut"
+    | "Guardian"
+    | "Battle Genius";
+
+export type FormulaPowerPosition =
+    | "Wildcard"
+    | "Specialist"
+    | "Prodigy"
+    | "Apex"
+    | "One Man Army";
+
+export type PowerPosition =
+    | WeightedPowerPosition
+    | FormulaPowerPosition;
+
+export type AnyDraftPosition =
+    | DraftPosition
+    | PowerPosition;
 
 export const positionWeights = {
     Captain: {
@@ -33,7 +66,7 @@ export const positionWeights = {
         defense: 0.05,
     },
 
-    ViceCaptain: {
+    "Vice Captain": {
         leadership: 0.25,
         power: 0.25,
         iq: 0.20,
@@ -79,9 +112,45 @@ export const positionWeights = {
         defense: 0.60,
         leadership: 0.15,
         power: 0.15,
-        utility: 0.1,
-    }
-};
+        utility: 0.10,
+    },
+} satisfies Record<
+    DraftPosition,
+    Partial<Record<CharacterStat, number>>
+>;
+
+export const powerPositionWeights = {
+    Juggernaut: {
+        power: 0.50,
+        defense: 0.40,
+        speed: 0.10,
+    },
+
+    Guardian: {
+        defense: 0.40,
+        utility: 0.30,
+        leadership: 0.20,
+        power: 0.10,
+    },
+
+    "Battle Genius": {
+        iq: 0.40,
+        power: 0.25,
+        speed: 0.25,
+        utility: 0.10,
+    },
+} satisfies Record<
+    WeightedPowerPosition,
+    Partial<Record<CharacterStat, number>>
+>;
+
+export const formulaPowerPositions: FormulaPowerPosition[] = [
+    "Wildcard",
+    "Specialist",
+    "Prodigy",
+    "Apex",
+    "One Man Army",
+];
 
 export const draftCharacters: DraftCharacter[] = [
     // Naruto
