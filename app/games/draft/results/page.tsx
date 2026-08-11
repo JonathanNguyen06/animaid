@@ -139,29 +139,6 @@ export default function DraftResultsPage() {
 
     useEffect(() => {
         if (!result) return;
-        if (revealPhase !== "lineup") return;
-
-        if (revealedCount >= result.picks.length) {
-            const timeout = window.setTimeout(() => {
-                setRevealPhase("ascension");
-            }, 800);
-
-            return () => window.clearTimeout(timeout);
-        }
-
-        const timeout = window.setTimeout(() => {
-            setRevealedCount((current) => current + 1);
-        }, 850);
-
-        return () => window.clearTimeout(timeout);
-    }, [
-        result,
-        revealPhase,
-        revealedCount,
-    ]);
-
-    useEffect(() => {
-        if (!result) return;
         if (revealPhase !== "ascension") return;
 
         const impactTimeout = window.setTimeout(() => {
@@ -222,6 +199,51 @@ export default function DraftResultsPage() {
         ];
     }, [normalPicks, powerPositionPick]);
 
+    useEffect(() => {
+        if (!result) return;
+        if (revealPhase !== "lineup") return;
+
+        if (revealedCount >= result.picks.length) {
+            const timeout = window.setTimeout(() => {
+                setRevealPhase("ascension");
+            }, 800);
+
+            return () => window.clearTimeout(timeout);
+        }
+
+        const lastRevealedPick =
+            revealedCount > 0
+                ? gridPicks[revealedCount - 1]
+                : null;
+
+        const lastRevealedGrade =
+            lastRevealedPick
+                ? getLetterGrade(
+                    getPreAscensionPower(lastRevealedPick)
+                )
+                : null;
+
+        const revealDelay =
+            lastRevealedGrade === "S+"
+                ? 1500
+                : lastRevealedGrade === "S"
+                    ? 1200
+                    : 850;
+
+        const timeout = window.setTimeout(() => {
+            setRevealedCount(
+                (current) => current + 1
+            );
+        }, revealDelay);
+
+        return () => window.clearTimeout(timeout);
+    }, [
+        result,
+        revealPhase,
+        revealedCount,
+        gridPicks
+    ]);
+
     const revealedPower = useMemo(() => {
         if (!result) return 0;
 
@@ -237,16 +259,6 @@ export default function DraftResultsPage() {
         gridPicks,
         revealedCount,
     ]);
-
-    const preAscensionTotal = useMemo(() => {
-        if (!result) return 0;
-
-        return result.picks.reduce(
-            (total, pick) =>
-                total + getPreAscensionPower(pick),
-            0
-        );
-    }, [result]);
 
     const displayedTeamPower =
         revealPhase === "final"
@@ -418,7 +430,8 @@ export default function DraftResultsPage() {
                             Final Draft Report
                         </p>
 
-                        {result.isNewHighScore && (
+                        {revealPhase === "final" &&
+                            result.isNewHighScore && (
                             <div className="mx-auto mt-5 w-fit rounded-full border border-yellow-300/40 bg-yellow-300/10 px-5 py-2 text-xs font-black uppercase tracking-[0.25em] text-yellow-300 shadow-[0_0_20px_rgba(250,204,21,0.2)]">
                                 ✨ New Personal Record
                             </div>
@@ -430,13 +443,15 @@ export default function DraftResultsPage() {
                                 text-8xl
                                 font-black
                                 ${
-                                result.grade === "Legendary"
-                                    ? "text-yellow-300 drop-shadow-[0_0_35px_rgba(250,204,21,.8)]"
-                                    : result.grade === "S"
-                                        ? "text-fuchsia-300 drop-shadow-[0_0_30px_rgba(217,70,239,.8)]"
-                                        : "text-white"
-                                                            }
-                                    `}
+                                revealPhase !== "final"
+                                    ? "text-white/20"
+                                    : result.grade === "Legendary"
+                                        ? "text-yellow-300 drop-shadow-[0_0_35px_rgba(250,204,21,.8)]"
+                                        : result.grade === "S"
+                                            ? "text-fuchsia-300 drop-shadow-[0_0_30px_rgba(217,70,239,.8)]"
+                                            : "text-white"
+                                }
+                            `}
                         >
                             {revealPhase === "final"
                                 ? result.grade
@@ -555,8 +570,6 @@ export default function DraftResultsPage() {
 
                     <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-5">
                         {gridPicks.map((pick, index) => {
-                            const style = getGradeStyle(pick.grade);
-
                             const isPowerPosition =
                                 pick.position === powerPositionPick?.position;
 
@@ -583,6 +596,16 @@ export default function DraftResultsPage() {
                                     : getLetterGrade(
                                         getPreAscensionPower(pick)
                                     );
+
+                            const style =
+                                getGradeStyle(displayedGrade);
+
+                            const isSPlus =
+                                displayedGrade === "S+";
+
+                            const isElite =
+                                displayedGrade === "S" ||
+                                displayedGrade === "S+";
 
                             const ascensionBonus =
                                 pick.ascensionBonus ?? 0;
@@ -619,12 +642,32 @@ export default function DraftResultsPage() {
                                 >
                                     {isRevealed ? (
                                         <div
-                                            className="
+                                            className={`
                                                 absolute inset-0
-                                                animate-[draftCardReveal_700ms_cubic-bezier(.16,1,.3,1)_both]
-                                            "
+                                                ${
+                                                isJustRevealed
+                                                    ? isElite
+                                                        ? "animate-[eliteCardReveal_950ms_cubic-bezier(.16,1,.3,1)_both]"
+                                                        : "animate-[draftCardReveal_700ms_cubic-bezier(.16,1,.3,1)_both]"
+                                                    : ""
+                                                }
+                                            `}
                                         >
                                             {/* Reveal flash */}
+                                            {isJustRevealed && isElite && (
+                                                <div
+                                                    className={`
+                                                        pointer-events-none
+                                                        fixed inset-0 z-[120]
+                                                        animate-[eliteScreenFlash_850ms_ease-out_forwards]
+                                                        ${
+                                                        isSPlus
+                                                            ? "bg-yellow-200"
+                                                            : "bg-purple-400"
+                                                    }
+                                                    `}
+                                                />
+                                            )}
                                             {isJustRevealed && (
                                                 <>
                                                     <div
@@ -659,6 +702,40 @@ export default function DraftResultsPage() {
                                                         }
                                                         `}
                                                     />
+                                                    {isJustRevealed && isElite && (
+                                                        <div
+                                                            className={`
+                                                                pointer-events-none
+                                                                absolute left-1/2 top-1/2 z-30
+                                                                h-36 w-36
+                                                                -translate-x-1/2 -translate-y-1/2
+                                                                animate-[eliteRevealRing_1100ms_150ms_ease-out_forwards]
+                                                                rounded-full border-4 opacity-0
+                                                                ${
+                                                                isSPlus
+                                                                    ? "border-yellow-200"
+                                                                    : "border-fuchsia-300"
+                                                            }
+                                                            `}
+                                                        />
+                                                    )}
+                                                    {isJustRevealed && isElite && (
+                                                        <div
+                                                            className={`
+                                                                pointer-events-none
+                                                                absolute left-1/2 top-1/2 z-20
+                                                                h-64 w-64
+                                                                -translate-x-1/2 -translate-y-1/2
+                                                                animate-[eliteGlowBurst_1s_ease-out_forwards]
+                                                                rounded-full blur-[55px]
+                                                                ${
+                                                                isSPlus
+                                                                    ? "bg-yellow-300/70"
+                                                                    : "bg-purple-500/60"
+                                                            }
+                                                            `}
+                                                        />
+                                                    )}
 
                                                     {/* Radial particles */}
                                                     <div className="pointer-events-none absolute inset-0 z-40">
@@ -711,7 +788,11 @@ export default function DraftResultsPage() {
                                             <div className="absolute inset-x-0 top-0 flex items-start justify-between p-4">
                                                 <span
                                                     className={`
-                                                        animate-[draftBadgeDrop_550ms_180ms_cubic-bezier(.16,1,.3,1)_both]
+                                                        ${
+                                                        isJustRevealed
+                                                            ? "animate-[draftBadgeDrop_550ms_180ms_cubic-bezier(.16,1,.3,1)_both]"
+                                                            : ""
+                                                        }
                                                         rounded-full border
                                                         px-3 py-1.5
                                                         text-xs font-black uppercase tracking-wider
@@ -736,7 +817,13 @@ export default function DraftResultsPage() {
 
                                             {/* Bottom info */}
                                             <div className="absolute inset-x-0 bottom-0 p-5">
-                                                <div className="animate-[draftInfoRise_600ms_220ms_cubic-bezier(.16,1,.3,1)_both]">
+                                                <div
+                                                    className={
+                                                        isJustRevealed
+                                                            ? "animate-[draftInfoRise_600ms_220ms_cubic-bezier(.16,1,.3,1)_both]"
+                                                            : ""
+                                                    }
+                                                >
                                                     <h3 className="text-2xl font-black text-white drop-shadow-lg">
                                                         {pick.character.name}
                                                     </h3>
@@ -762,23 +849,33 @@ export default function DraftResultsPage() {
                                                     <span
                                                         className={`
                                                             text-5xl font-black italic
-                                                            animate-[draftGradeSlam_700ms_320ms_cubic-bezier(.16,1,.3,1)_both]
+                                                            ${
+                                                            isJustRevealed
+                                                                ? isElite
+                                                                    ? "animate-[eliteGradeSlam_900ms_300ms_cubic-bezier(.16,1,.3,1)_both]"
+                                                                    : "animate-[draftGradeSlam_700ms_320ms_cubic-bezier(.16,1,.3,1)_both]"
+                                                                : ""
+                                                            }
                                                             ${style.grade}
                                                             ${
                                                             ascensionApplied && receivedAscension
                                                                 ? "scale-110"
                                                                 : ""
-                                                        }
+                                                            }
                                                         `}
                                                     >
                                                         {displayedGrade}
                                                     </span>
 
                                                     <div
-                                                        className="
+                                                        className={`
                                                             text-right
-                                                            animate-[draftPowerSlam_650ms_380ms_cubic-bezier(.16,1,.3,1)_both]
-                                                        "
+                                                            ${
+                                                            isJustRevealed
+                                                                ? "animate-[draftPowerSlam_650ms_380ms_cubic-bezier(.16,1,.3,1)_both]"
+                                                                : ""
+                                                            }
+                                                        `}
                                                     >
                                                         <p
                                                             className={`text-3xl font-black transition-all duration-500 ${
@@ -1271,25 +1368,164 @@ export default function DraftResultsPage() {
                             translateX(0)
                             scale(1);
                     }
-                    
-                    @keyframes teamPowerImpact {
-                        0% {
-                            transform: scale(0.92);
-                            filter: brightness(1);
-                        }
-                    
-                        45% {
-                            transform: scale(1.08);
-                            filter: brightness(1.7);
-                        }
-                    
-                        100% {
-                            transform: scale(1);
-                            filter: brightness(1);
-                        }
+                }
+                
+                @keyframes teamPowerImpact {
+                    0% {
+                        transform: scale(0.92);
+                        filter: brightness(1);
                     }
+                
+                    45% {
+                        transform: scale(1.08);
+                        filter: brightness(1.7);
+                    }
+                
+                    100% {
+                        transform: scale(1);
+                        filter: brightness(1);
+                    }
+                }
+            @keyframes eliteCardReveal {
+                0% {
+                    opacity: 0;
+                    transform:
+                        perspective(1000px)
+                        scale(0.45)
+                        rotateY(30deg)
+                        translateY(55px);
+                    filter: brightness(3) blur(8px);
+                }
+            
+                30% {
+                    opacity: 1;
+                    transform:
+                        perspective(1000px)
+                        scale(1.14)
+                        rotateY(-6deg)
+                        translateY(-10px);
+                    filter: brightness(1.9) blur(0);
+                }
+            
+                55% {
+                    transform:
+                        perspective(1000px)
+                        scale(0.96)
+                        rotateY(2deg);
+                }
+            
+                75% {
+                    transform:
+                        perspective(1000px)
+                        scale(1.04)
+                        rotateY(0deg);
+                }
+            
+                100% {
+                    opacity: 1;
+                    transform:
+                        perspective(1000px)
+                        scale(1)
+                        rotateY(0deg)
+                        translateY(0);
+                    filter: brightness(1);
+                }
             }
-            `}</style>
+            @keyframes eliteScreenFlash {
+                0% {
+                    opacity: 0;
+                }
+            
+                8% {
+                    opacity: 0.75;
+                }
+            
+                20% {
+                    opacity: 0.2;
+                }
+            
+                100% {
+                    opacity: 0;
+                }
+            }
+            @keyframes eliteRevealRing {
+                0% {
+                    opacity: 0;
+                    transform:
+                        translate(-50%, -50%)
+                        scale(0.15);
+                }
+            
+                15% {
+                    opacity: 1;
+                }
+            
+                100% {
+                    opacity: 0;
+                    transform:
+                        translate(-50%, -50%)
+                        scale(5);
+                }
+            }
+            @keyframes eliteGlowBurst {
+                0% {
+                    opacity: 0;
+                    transform:
+                        translate(-50%, -50%)
+                        scale(0.2);
+                }
+            
+                30% {
+                    opacity: 1;
+                    transform:
+                        translate(-50%, -50%)
+                        scale(1);
+                }
+            
+                100% {
+                    opacity: 0;
+                    transform:
+                        translate(-50%, -50%)
+                        scale(2.2);
+                }
+            }
+            @keyframes eliteGradeSlam {
+                0% {
+                    opacity: 0;
+                    transform:
+                        scale(5)
+                        rotate(-20deg);
+                    filter: blur(8px);
+                }
+            
+                45% {
+                    opacity: 1;
+                    transform:
+                        scale(0.8)
+                        rotate(-5deg);
+                    filter: blur(0);
+                }
+            
+                60% {
+                    transform:
+                        scale(1.25)
+                        rotate(-3deg);
+                }
+            
+                78% {
+                    transform:
+                        scale(0.96);
+                }
+            
+                100% {
+                    opacity: 1;
+                    transform:
+                        scale(1)
+                        rotate(0);
+                }
+            }
+            `}
+            </style>
         </main>
     );
 }
