@@ -27,6 +27,9 @@ import {
     onSnapshot,
     deleteDoc,
 } from "firebase/firestore";
+import {
+    getDatabase,
+} from "firebase/database";
 
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
@@ -46,6 +49,8 @@ const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 // Auth exports
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
+
+export const realtimeDb = getDatabase(app);
 
 export async function signInWithGoogle() {
   return await signInWithPopup(auth, googleProvider);

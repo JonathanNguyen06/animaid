@@ -3,7 +3,13 @@ import {useEffect, useMemo, useState,} from "react";
 import {useParams, useRouter,} from "next/navigation";
 import {onAuthStateChanged, type User,} from "firebase/auth";
 import {auth,} from "@/lib/firebase";
-import {listenToDraftMatch, listenToDraftPlayerState,} from "@/lib/multiplayerDraft";
+import {
+    beginDraftRematchIfReady,
+    completeDraftMatch, getDraftPlayerState,
+    listenToDraftMatch,
+    prepareDraftRematch,
+    requestDraftRematch, startDraftRematchIfReady,
+} from "@/lib/multiplayerDraft";
 import {draftCharacters,} from "@/data/draftCharacters";
 import {draftPositions, ascensionInfo, getLetterGrade,} from "@/data/draftLogic";
 import type {DraftMatch, MultiplayerDraftPlayerState,} from "@/types/multiplayerDraft";
@@ -567,6 +573,8 @@ export default function MultiplayerDraftResultsPage() {
     const [revealPhase, setRevealPhase,] = useState<MultiplayerRevealPhase>("intro");
     const [revealedCount, setRevealedCount,] = useState(0);
     const [showAscensionImpact, setShowAscensionImpact,] = useState(false);
+    const [requestingRematch, setRequestingRematch,] = useState(false);
+    const [finalTeamsLoaded, setFinalTeamsLoaded,] = useState(false);
 
 
     // ---------------------------------------------------------
@@ -619,7 +627,8 @@ export default function MultiplayerDraftResultsPage() {
             !code ||
             !user ||
             !match ||
-            !match.guest
+            !match.guest ||
+            finalTeamsLoaded
         ) {
             return;
         }
@@ -636,6 +645,10 @@ export default function MultiplayerDraftResultsPage() {
             return;
         }
 
+        if (match.endReason === "forfeit") {
+            return;
+        }
+
         if (
             match.status !== "reveal" &&
             match.status !== "complete"
@@ -643,33 +656,81 @@ export default function MultiplayerDraftResultsPage() {
             return;
         }
 
-        const unsubscribeHost =
-            listenToDraftPlayerState(
-                code,
-                match.host.uid,
-                (state) => {
-                    setHostState(state);
-                }
-            );
+        const hostUid =
+            match.host.uid;
 
-        const unsubscribeGuest =
-            listenToDraftPlayerState(
-                code,
-                match.guest.uid,
-                (state) => {
-                    setGuestState(state);
+        const guestUid =
+            match.guest.uid;
+
+        let cancelled = false;
+
+        async function loadFinalTeams() {
+            try {
+                const [
+                    loadedHostState,
+                    loadedGuestState,
+                ] = await Promise.all([
+                    getDraftPlayerState(
+                        code,
+                        hostUid
+                    ),
+
+                    getDraftPlayerState(
+                        code,
+                        guestUid
+                    ),
+                ]);
+
+                if (cancelled) {
+                    return;
                 }
-            );
+
+                if (
+                    !loadedHostState ||
+                    !loadedGuestState
+                ) {
+                    throw new Error(
+                        "FINAL_PLAYER_STATE_MISSING"
+                    );
+                }
+
+                setHostState(
+                    loadedHostState
+                );
+
+                setGuestState(
+                    loadedGuestState
+                );
+
+                setFinalTeamsLoaded(
+                    true
+                );
+            } catch (error) {
+                if (cancelled) {
+                    return;
+                }
+
+                console.error(
+                    "Failed to load final teams:",
+                    error
+                );
+            }
+        }
+
+        loadFinalTeams();
 
         return () => {
-            unsubscribeHost();
-            unsubscribeGuest();
+            cancelled = true;
         };
     }, [
         code,
         user,
-        match,
+        match?.status,
+        match?.endReason,
+        match?.host.uid,
+        match?.guest?.uid,
         router,
+        finalTeamsLoaded,
     ]);
 
     useEffect(() => {
@@ -732,6 +793,227 @@ export default function MultiplayerDraftResultsPage() {
         };
     }, [
         revealPhase,
+    ]);
+
+    useEffect(() => {
+        if (
+            !user ||
+            !match ||
+            !code
+        ) {
+            return;
+        }
+
+        if (
+            revealPhase !== "final"
+        ) {
+            return;
+        }
+
+        // Only host finalizes the match
+        if (
+            match.host.uid !==
+            user.uid
+        ) {
+            return;
+        }
+
+        if (
+            match.status ===
+            "complete"
+        ) {
+            return;
+        }
+
+        if (
+            match.status !==
+            "reveal"
+        ) {
+            return;
+        }
+
+        if (match.endReason === "forfeit") {
+            return;
+        }
+
+        completeDraftMatch(
+            code,
+            user.uid
+        ).catch((error) => {
+            console.error(
+                "Failed to complete match:",
+                error
+            );
+        });
+    }, [
+        user,
+        code,
+        match,
+        revealPhase,
+    ]);
+
+    useEffect(() => {
+        if (
+            !user ||
+            !code ||
+            !match
+        ) {
+            return;
+        }
+
+        if (
+            match.status !==
+            "complete"
+        ) {
+            return;
+        }
+
+        if (
+            match.host.uid !==
+            user.uid
+        ) {
+            return;
+        }
+
+        if (
+            !match.hostRematchRequested ||
+            !match.guestRematchRequested
+        ) {
+            return;
+        }
+
+        beginDraftRematchIfReady(
+            code,
+            user.uid
+        ).catch((error) => {
+            console.error(
+                "Failed to begin rematch:",
+                error
+            );
+        });
+    }, [
+        user,
+        code,
+        match?.status,
+        match?.host.uid,
+        match?.hostRematchRequested,
+        match?.guestRematchRequested,
+    ]);
+
+    useEffect(() => {
+        if (
+            !user ||
+            !code ||
+            !match
+        ) {
+            return;
+        }
+
+        if (
+            match.status !==
+            "rematch"
+        ) {
+            return;
+        }
+
+        const isHost =
+            match.host.uid ===
+            user.uid;
+
+        const alreadyReady =
+            isHost
+                ? match.hostRematchReady
+                : match.guestRematchReady;
+
+        if (alreadyReady) {
+            return;
+        }
+
+        prepareDraftRematch(
+            code,
+            user.uid
+        ).catch((error) => {
+            console.error(
+                "Failed to prepare rematch:",
+                error
+            );
+        });
+    }, [
+        user,
+        code,
+        match?.status,
+        match?.host.uid,
+        match?.hostRematchReady,
+        match?.guestRematchReady,
+    ]);
+
+    useEffect(() => {
+        if (
+            !user ||
+            !code ||
+            !match
+        ) {
+            return;
+        }
+
+        if (
+            match.status !==
+            "rematch"
+        ) {
+            return;
+        }
+
+        if (
+            match.host.uid !==
+            user.uid
+        ) {
+            return;
+        }
+
+        if (
+            !match.hostRematchReady ||
+            !match.guestRematchReady
+        ) {
+            return;
+        }
+
+        startDraftRematchIfReady(
+            code,
+            user.uid
+        ).catch((error) => {
+            console.error(
+                "Failed to start rematch:",
+                error
+            );
+        });
+    }, [
+        user,
+        code,
+        match?.status,
+        match?.host.uid,
+        match?.hostRematchReady,
+        match?.guestRematchReady,
+    ]);
+
+    useEffect(() => {
+        if (!code) {
+            return;
+        }
+
+        if (
+            match?.status !==
+            "power-selection"
+        ) {
+            return;
+        }
+
+        router.replace(
+            `/games/draft/multiplayer/${code}/play`
+        );
+    }, [
+        code,
+        match?.status,
+        router,
     ]);
 
     // ---------------------------------------------------------
@@ -915,6 +1197,352 @@ export default function MultiplayerDraftResultsPage() {
     ]);
 
     if (
+        user &&
+        match &&
+        match.guest &&
+        match.status === "complete" &&
+        match.endReason === "forfeit"
+    ) {
+        const iWon =
+            match.winnerUid === user.uid;
+
+        const opponent =
+            match.host.uid === user.uid
+                ? match.guest
+                : match.host;
+
+        return (
+            <main
+                className="
+                relative
+                mx-auto
+                flex
+                min-h-[calc(100vh-130px)]
+                max-w-[1500px]
+                items-center
+                justify-center
+                overflow-hidden
+                px-4
+                py-8
+            "
+            >
+                {/* BACKGROUND GLOW */}
+
+                <div className="pointer-events-none fixed inset-0 overflow-hidden">
+                    <div className="absolute left-0 top-0 h-[500px] w-[500px] rounded-full bg-pink-500/10 blur-[150px]" />
+
+                    <div className="absolute right-0 top-0 h-[500px] w-[500px] rounded-full bg-purple-500/10 blur-[150px]" />
+
+                    <div
+                        className={`
+                        absolute
+                        bottom-[-150px]
+                        left-1/2
+                        h-[500px]
+                        w-[500px]
+                        -translate-x-1/2
+                        rounded-full
+                        blur-[140px]
+
+                        ${
+                            iWon
+                                ? "bg-yellow-400/10"
+                                : "bg-red-500/10"
+                        }
+                    `}
+                    />
+                </div>
+
+
+                <section
+                    className={`
+                    relative z-10
+                    w-full
+                    max-w-3xl
+                    overflow-hidden
+                    rounded-[2rem]
+                    border
+                    bg-black/50
+                    px-6
+                    py-12
+                    text-center
+                    backdrop-blur-xl
+
+                    ${
+                        iWon
+                            ? `
+                                border-yellow-400/25
+                                shadow-[0_0_60px_rgba(250,204,21,0.10)]
+                              `
+                            : `
+                                border-red-400/20
+                                shadow-[0_0_60px_rgba(248,113,113,0.08)]
+                              `
+                    }
+                `}
+                >
+                    {/* INNER GLOW */}
+
+                    <div
+                        className={`
+                        pointer-events-none
+                        absolute
+                        left-1/2
+                        top-[-120px]
+                        h-80
+                        w-80
+                        -translate-x-1/2
+                        rounded-full
+                        blur-[100px]
+
+                        ${
+                            iWon
+                                ? "bg-yellow-400/15"
+                                : "bg-red-500/10"
+                        }
+                    `}
+                    />
+
+
+                    <div className="relative z-10">
+
+                        {/* ICON */}
+
+                        <div
+                            className={`
+                            mx-auto
+                            flex h-20 w-20
+                            items-center justify-center
+                            rounded-full
+                            border
+                            text-4xl
+
+                            ${
+                                iWon
+                                    ? `
+                                        border-yellow-300/30
+                                        bg-yellow-500/10
+                                        shadow-[0_0_35px_rgba(250,204,21,0.18)]
+                                      `
+                                    : `
+                                        border-red-300/25
+                                        bg-red-500/10
+                                        shadow-[0_0_35px_rgba(248,113,113,0.12)]
+                                      `
+                            }
+                        `}
+                        >
+                            {iWon
+                                ? "🏆"
+                                : "⚔️"}
+                        </div>
+
+
+                        {/* LABEL */}
+
+                        <p
+                            className={`
+                            mt-6
+                            text-xs
+                            font-black
+                            uppercase
+                            tracking-[0.35em]
+
+                            ${
+                                iWon
+                                    ? "text-yellow-300/65"
+                                    : "text-red-300/60"
+                            }
+                        `}
+                        >
+                            Match Ended by Forfeit
+                        </p>
+
+
+                        {/* RESULT */}
+
+                        <h1
+                            className={`
+                            mt-3
+                            text-6xl
+                            font-black
+                            tracking-tight
+                            sm:text-7xl
+
+                            ${
+                                iWon
+                                    ? `
+                                        text-yellow-300
+                                        drop-shadow-[0_0_25px_rgba(250,204,21,0.45)]
+                                      `
+                                    : `
+                                        text-red-300
+                                        drop-shadow-[0_0_20px_rgba(248,113,113,0.25)]
+                                      `
+                            }
+                        `}
+                        >
+                            {iWon
+                                ? "VICTORY"
+                                : "DEFEAT"}
+                        </h1>
+
+
+                        {/* DESCRIPTION */}
+
+                        <p className="mx-auto mt-5 max-w-xl text-base font-medium leading-7 text-white/50">
+                            {iWon
+                                ? `${opponent.displayName} did not reconnect within 30 seconds. You win the match by forfeit.`
+                                : "You were disconnected for too long, so the match was awarded to your opponent."}
+                        </p>
+
+
+                        {/* VS CARD */}
+
+                        <div
+                            className="
+                            mx-auto
+                            mt-8
+                            grid
+                            max-w-xl
+                            grid-cols-[1fr_auto_1fr]
+                            items-center
+                            gap-5
+                            rounded-3xl
+                            border border-white/10
+                            bg-white/[0.03]
+                            p-5
+                        "
+                        >
+                            {/* YOU */}
+
+                            <div>
+                                <p className="text-[10px] font-black uppercase tracking-[0.25em] text-white/30">
+                                    You
+                                </p>
+
+                                <p
+                                    className={`
+                                    mt-2
+                                    text-xl
+                                    font-black
+
+                                    ${
+                                        iWon
+                                            ? "text-yellow-300"
+                                            : "text-white/60"
+                                    }
+                                `}
+                                >
+                                    {iWon
+                                        ? "Winner"
+                                        : "Forfeit"}
+                                </p>
+                            </div>
+
+
+                            {/* VS */}
+
+                            <div
+                                className="
+                                flex h-12 w-12
+                                items-center justify-center
+                                rounded-full
+                                border border-pink-400/20
+                                bg-pink-500/10
+                                text-xs
+                                font-black
+                                text-pink-200
+                            "
+                            >
+                                VS
+                            </div>
+
+
+                            {/* OPPONENT */}
+
+                            <div>
+                                <p className="text-[10px] font-black uppercase tracking-[0.25em] text-white/30">
+                                    {opponent.displayName}
+                                </p>
+
+                                <p
+                                    className={`
+                                    mt-2
+                                    text-xl
+                                    font-black
+
+                                    ${
+                                        !iWon
+                                            ? "text-yellow-300"
+                                            : "text-white/60"
+                                    }
+                                `}
+                                >
+                                    {!iWon
+                                        ? "Winner"
+                                        : "Forfeit"}
+                                </p>
+                            </div>
+                        </div>
+
+
+                        {/* FORFEIT BADGE */}
+
+                        <div
+                            className="
+                            mx-auto
+                            mt-6
+                            w-fit
+                            rounded-full
+                            border border-yellow-400/20
+                            bg-yellow-500/10
+                            px-5
+                            py-2
+                        "
+                        >
+                            <p className="text-[10px] font-black uppercase tracking-[0.25em] text-yellow-200/80">
+                                Victory by Forfeit
+                            </p>
+                        </div>
+
+
+                        {/* EXIT */}
+
+                        <button
+                            type="button"
+                            onClick={() =>
+                                router.push(
+                                    "/games/draft/multiplayer"
+                                )
+                            }
+                            className="
+                            mt-9
+                            rounded-2xl
+                            border border-pink-500/30
+                            bg-pink-500/10
+                            px-7
+                            py-3
+                            text-sm
+                            font-black
+                            text-pink-100
+                            transition
+                            hover:-translate-y-0.5
+                            hover:border-pink-400/60
+                            hover:bg-pink-500/20
+                            hover:cursor-pointer
+                        "
+                        >
+                            Back to Multiplayer
+                        </button>
+
+                    </div>
+                </section>
+            </main>
+        );
+    }
+
+    if (
         !user ||
         !match ||
         !match.guest ||
@@ -933,6 +1561,44 @@ export default function MultiplayerDraftResultsPage() {
                 </div>
             </main>
         );
+    }
+
+    const myRematchRequested =
+        amHost
+            ? match.hostRematchRequested
+            : match?.guestRematchRequested;
+
+    const opponentRematchRequested =
+        amHost
+            ? match.guestRematchRequested
+            : match?.hostRematchRequested;
+
+    async function handleRematch() {
+        if (
+            !user ||
+            !code ||
+            !match ||
+            requestingRematch ||
+            myRematchRequested
+        ) {
+            return;
+        }
+
+        setRequestingRematch(true);
+
+        try {
+            await requestDraftRematch(
+                code,
+                user.uid
+            );
+        } catch (error) {
+            console.error(
+                "Failed to request rematch:",
+                error
+            );
+        } finally {
+            setRequestingRematch(false);
+        }
     }
 
 
@@ -1262,6 +1928,76 @@ export default function MultiplayerDraftResultsPage() {
                                         </p>
                                     </>
                                 )}
+                            </div>
+
+                            <div className="mt-8 flex flex-wrap justify-center gap-3">
+                                <button
+                                    type="button"
+                                    onClick={handleRematch}
+                                    disabled={
+                                        requestingRematch ||
+                                        myRematchRequested ||
+                                        match.status !== "complete"
+                                    }
+                                    className={`
+                                        rounded-2xl
+                                        border
+                                        px-7 py-3
+                                        text-sm
+                                        font-black
+                                        transition
+                                        ${
+                                        myRematchRequested
+                                            ? `
+                                                    cursor-not-allowed
+                                                    border-yellow-400/25
+                                                    bg-yellow-500/10
+                                                    text-yellow-200
+                                                `
+                                            : `
+                                                border-yellow-400/40
+                                                bg-yellow-500/10
+                                                text-yellow-200
+                                                hover:-translate-y-0.5
+                                                hover:bg-yellow-500/20
+                                                hover:shadow-[0_0_20px_rgba(250,204,21,0.2)]
+                                                hover:cursor-pointer
+                                            `
+                                    }
+                                 `}
+                                >
+                                    {myRematchRequested
+                                        ? opponentRematchRequested
+                                            ? "Starting Rematch..."
+                                            : "Waiting for Opponent..."
+                                        : requestingRematch
+                                            ? "Requesting..."
+                                            : "⚡ Rematch"}
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        router.push(
+                                            "/games/draft/multiplayer"
+                                        )
+                                    }
+                                    className="
+                                        rounded-2xl
+                                        border border-pink-500/30
+                                        bg-pink-500/10
+                                        px-7 py-3
+                                        text-sm font-black
+                                        text-pink-100
+                                        transition
+                                        hover:-translate-y-0.5
+                                        hover:border-pink-400/60
+                                        hover:bg-pink-500/20
+                                        hover:cursor-pointer
+                                    "
+                                >
+                                    Leave Match
+                                </button>
                             </div>
                         </div>
                     )}

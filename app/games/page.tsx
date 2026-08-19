@@ -17,7 +17,7 @@ const games = [
         title: "Higher or Lower",
         description: "Compare animes based on their ratings or popularity, or characters based on popularity.",
         href: "/games/higher-lower",
-        status: "Available",
+        status: "Unavailable",
         imageLabel: "Higher or Lower Image",
         imageLink: "/game-images/higher-or-lower.jpg"
     },

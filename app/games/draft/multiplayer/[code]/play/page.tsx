@@ -9,12 +9,14 @@ import {
     listenToDraftPlayerState,
     selectDraftPowerPosition,
     ensureDraftRoundCharacter,
-    submitMultiplayerDraftPick, advanceDraftRoundIfReady, rerollMultiplayerDraftCharacter, selectMultiplayerAscension
+    submitMultiplayerDraftPick, advanceDraftRoundIfReady, rerollMultiplayerDraftCharacter, selectMultiplayerAscension,
+    completeDraftMatch, claimDraftForfeit
 } from "@/lib/multiplayerDraft";
 import {Ascension, ascensionInfo, draftPositions, powerPositionInfo,} from "@/data/draftLogic";
 import type {DraftMatch, MultiplayerDraftPlayerState,} from "@/types/multiplayerDraft";
 import type {AnyDraftPosition, DraftPosition, PowerPosition,} from "@/data/draftCharacters";
 import {draftCharacters,} from "@/data/draftCharacters";
+import {listenToDraftPresence, registerDraftPresence,} from "@/lib/draftPresence";
 
 export default function MultiplayerDraftPlayPage() {
     const router = useRouter();
@@ -32,6 +34,11 @@ export default function MultiplayerDraftPlayPage() {
     const advancingRoundRef = useRef(false);
     const [rerolling, setRerolling,] = useState(false);
     const [selectingAscension, setSelectingAscension,] = useState(false);
+    const [opponentOnline, setOpponentOnline,] = useState<boolean | null>(null);
+    const [disconnectSecondsRemaining, setDisconnectSecondsRemaining,] = useState<number | null>(null);
+    const [processingForfeit, setProcessingForfeit,] = useState(false);
+    const autoForfeitRef = useRef(false);
+    const opponentOnlineRef = useRef<boolean | null>(null);
 
     const positionIcons:
         Record<DraftPosition, string> = {
@@ -226,6 +233,13 @@ export default function MultiplayerDraftPlayPage() {
     ]);
 
     useEffect(() => {
+        opponentOnlineRef.current =
+            opponentOnline;
+    }, [
+        opponentOnline,
+    ]);
+
+    useEffect(() => {
         if (
             !user ||
             !code ||
@@ -312,9 +326,13 @@ export default function MultiplayerDraftPlayPage() {
     ]);
 
     useEffect(() => {
+        if (!code) {
+            return;
+        }
+
         if (
-            !code ||
-            match?.status !== "reveal"
+            match?.status !== "reveal" &&
+            match?.status !== "complete"
         ) {
             return;
         }
@@ -326,6 +344,171 @@ export default function MultiplayerDraftPlayPage() {
         code,
         match?.status,
         router,
+    ]);
+
+    useEffect(() => {
+        if (
+            !user ||
+            !code ||
+            !match ||
+            !match.guest
+        ) {
+            return;
+        }
+
+        const isHost =
+            match.host.uid === user.uid;
+
+        const opponentUid =
+            isHost
+                ? match.guest.uid
+                : match.host.uid;
+
+        /*
+         * Tell Firebase that WE are online.
+         */
+        const unregisterPresence =
+            registerDraftPresence(
+                code,
+                user.uid
+            );
+
+        /*
+         * Listen to the opponent.
+         */
+        const unsubscribeOpponent =
+            listenToDraftPresence(
+                code,
+                opponentUid,
+                (state) => {
+                    setOpponentOnline(
+                        state === "online"
+                    );
+                }
+            );
+
+        return () => {
+            unregisterPresence();
+            unsubscribeOpponent();
+        };
+    }, [
+        user,
+        code,
+        match?.host.uid,
+        match?.guest?.uid,
+    ]);
+
+    useEffect(() => {
+        if (
+            !user ||
+            !code ||
+            !match ||
+            !match.guest
+        ) {
+            return;
+        }
+
+        // Capture these AFTER the null checks.
+        const currentUid = user.uid;
+        const currentCode = code;
+
+        if (opponentOnline !== false) {
+            setDisconnectSecondsRemaining(null);
+            setProcessingForfeit(false);
+
+            autoForfeitRef.current = false;
+
+            return;
+        }
+
+        const activeStatuses = [
+            "power-selection",
+            "drafting",
+            "ascension",
+        ];
+
+        if (!activeStatuses.includes(match.status)) {
+            return;
+        }
+
+        const deadline =
+            Date.now() + 30_000;
+
+        autoForfeitRef.current = false;
+
+        setProcessingForfeit(false);
+        setDisconnectSecondsRemaining(30);
+
+        async function updateCountdown() {
+            const millisecondsRemaining =
+                deadline - Date.now();
+
+            const secondsRemaining =
+                Math.max(
+                    0,
+                    Math.ceil(
+                        millisecondsRemaining / 1000
+                    )
+                );
+
+            setDisconnectSecondsRemaining(
+                secondsRemaining
+            );
+
+            if (secondsRemaining > 0) {
+                return;
+            }
+
+            if (
+                opponentOnlineRef.current !==
+                false
+            ) {
+                return;
+            }
+
+            if (autoForfeitRef.current) {
+                return;
+            }
+
+            autoForfeitRef.current = true;
+
+            setProcessingForfeit(true);
+
+            try {
+                await claimDraftForfeit(
+                    currentCode,
+                    currentUid
+                );
+            } catch (error) {
+                console.error(
+                    "Failed to automatically forfeit opponent:",
+                    error
+                );
+
+                autoForfeitRef.current = false;
+
+                setProcessingForfeit(false);
+            }
+        }
+
+        updateCountdown();
+
+        const interval =
+            window.setInterval(
+                updateCountdown,
+                250
+            );
+
+        return () => {
+            window.clearInterval(interval);
+        };
+    }, [
+        user,
+        code,
+        opponentOnline,
+        match?.status,
+        match?.host.uid,
+        match?.guest?.uid,
     ]);
 
     async function handleReroll() {
@@ -595,6 +778,82 @@ export default function MultiplayerDraftPlayPage() {
                 <div className="absolute bottom-0 left-1/2 h-[400px] w-[400px] -translate-x-1/2 rounded-full bg-fuchsia-500/10 blur-[120px]" />
             </div>
 
+            {opponentOnline === false &&
+                disconnectSecondsRemaining !== null && (
+                    <div
+                        className="
+                            mb-5
+                            overflow-hidden
+                            rounded-2xl
+                            border border-yellow-400/25
+                            bg-yellow-500/10
+                            px-5 py-4
+                        "
+                    >
+                        <div className="flex items-center gap-3">
+
+                            <div className="relative flex h-3 w-3 shrink-0">
+                                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-yellow-400 opacity-40" />
+
+                                <span className="relative inline-flex h-3 w-3 rounded-full bg-yellow-400" />
+                            </div>
+
+
+                            <div className="flex-1">
+                                <p className="text-sm font-black text-yellow-200">
+                                    Opponent disconnected
+                                </p>
+
+                                {!processingForfeit ? (
+                                    <p className="mt-0.5 text-xs text-white/45">
+                                        Waiting for them to
+                                        reconnect. The match will
+                                        automatically end in{" "}
+
+                                        <span className="font-black text-yellow-300">
+                                {
+                                    disconnectSecondsRemaining
+                                }
+                                            s
+                            </span>
+                                        .
+                                    </p>
+                                ) : (
+                                    <p className="mt-0.5 text-xs font-semibold text-yellow-200/70">
+                                        Opponent did not reconnect.
+                                        Ending match...
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+
+
+                        {!processingForfeit && (
+                            <div className="mt-3 h-1 overflow-hidden rounded-full bg-white/10">
+
+                                <div
+                                    className="
+                                        h-full
+                                        rounded-full
+                                        bg-yellow-400
+                                        transition-[width]
+                                        duration-300
+                                        ease-linear
+                                    "
+                                    style={{
+                                        width: `${
+                                            ((30 -
+                                                    disconnectSecondsRemaining) /
+                                                30) *
+                                            100
+                                        }%`,
+                                    }}
+                                />
+                            </div>
+                        )}
+                    </div>
+                )}
+
 
             {/* ========================================================= */}
             {/* MAIN DRAFT PANEL */}
@@ -658,7 +917,18 @@ export default function MultiplayerDraftPlayPage() {
                             </p>
 
                             <div className="mt-1 flex items-center gap-2">
-                                <span className="h-2 w-2 rounded-full bg-green-400 shadow-[0_0_8px_rgba(74,222,128,0.8)]" />
+                                <span
+                                    className={`
+                                        h-2 w-2 rounded-full
+                                        ${
+                                        opponentOnline === false
+                                            ? "bg-red-400 shadow-[0_0_8px_rgba(248,113,113,0.8)]"
+                                            : opponentOnline === true
+                                                ? "bg-green-400 shadow-[0_0_8px_rgba(74,222,128,0.8)]"
+                                                : "bg-zinc-500"
+                                        }
+                                    `}
+                                />
 
                                 <p className="truncate text-sm font-black text-white">
                                     {opponentName}
@@ -1487,29 +1757,6 @@ export default function MultiplayerDraftPlayPage() {
                                         );
                                     }
                                 )}
-                            </div>
-
-
-                            {/* ============================================= */}
-                            {/* DEVELOPMENT NOTICE */}
-                            {/* REMOVE ONCE PLACEMENT IS IMPLEMENTED */}
-                            {/* ============================================= */}
-
-                            <div
-                                className="
-                                mt-5
-                                rounded-2xl
-                                border border-purple-400/15
-                                bg-purple-500/5
-                                px-4 py-3
-                                text-center
-                            "
-                            >
-                                <p className="text-xs font-semibold text-purple-100/40">
-                                    Position placement is the next multiplayer
-                                    step. Your character is already being stored
-                                    privately in Firestore.
-                                </p>
                             </div>
                         </div>
                     </div>

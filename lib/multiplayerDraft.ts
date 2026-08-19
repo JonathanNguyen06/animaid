@@ -2,7 +2,7 @@ import {
     doc,
     runTransaction,
     serverTimestamp,
-    onSnapshot, updateDoc
+    onSnapshot, updateDoc, getDoc
 } from "firebase/firestore";
 import type {
     DraftMatch, MultiplayerDraftPick, MultiplayerDraftPlayerState,
@@ -84,6 +84,16 @@ export async function createDraftMatch(
                         hostAscensionSelected: false,
                         guestAscensionSelected: false,
 
+                        hostRematchRequested: false,
+                        guestRematchRequested: false,
+
+                        hostRematchReady: false,
+                        guestRematchReady: false,
+
+                        winnerUid: null,
+                        forfeitedByUid: null,
+                        endReason: null,
+
                         createdAt: serverTimestamp(),
                     });
                 }
@@ -131,30 +141,36 @@ export function listenToDraftMatch(
 
             const match: DraftMatch = {
                 id: snapshot.id,
-
                 host: data.host,
                 guest: data.guest ?? null,
-
                 status: data.status,
                 round: data.round,
-
                 hostSubmitted:
                     data.hostSubmitted ?? false,
-
                 guestSubmitted:
                     data.guestSubmitted ?? false,
-
                 hostPowerSelected:
                     data.hostPowerSelected ?? false,
-
                 guestPowerSelected:
                     data.guestPowerSelected ?? false,
-
                 hostAscensionSelected:
                     data.hostAscensionSelected ?? false,
-
                 guestAscensionSelected:
                     data.guestAscensionSelected ?? false,
+                hostRematchRequested:
+                    data.hostRematchRequested ?? false,
+                guestRematchRequested:
+                    data.guestRematchRequested ?? false,
+                hostRematchReady:
+                    data.hostRematchReady ?? false,
+                guestRematchReady:
+                    data.guestRematchReady ?? false,
+                winnerUid:
+                    data.winnerUid ?? null,
+                forfeitedByUid:
+                    data.forfeitedByUid ?? null,
+                endReason:
+                    data.endReason ?? null,
             };
 
             onMatchChange(match);
@@ -1553,6 +1569,589 @@ export async function selectMultiplayerAscension(
             transaction.update(
                 matchRef,
                 matchUpdates
+            );
+        }
+    );
+}
+
+export async function completeDraftMatch(
+    code: string,
+    uid: string
+) {
+    const normalizedCode =
+        code.trim().toUpperCase();
+
+    const matchRef = doc(
+        db,
+        "draftMatches",
+        normalizedCode
+    );
+
+    await runTransaction(
+        db,
+        async (transaction) => {
+            const matchSnapshot =
+                await transaction.get(
+                    matchRef
+                );
+
+            if (!matchSnapshot.exists()) {
+                throw new Error(
+                    "MATCH_NOT_FOUND"
+                );
+            }
+
+            const match =
+                matchSnapshot.data();
+
+            // Already finished
+            if (
+                match.status ===
+                "complete"
+            ) {
+                return;
+            }
+
+            if (
+                match.status !==
+                "reveal"
+            ) {
+                throw new Error(
+                    "NOT_REVEAL_PHASE"
+                );
+            }
+
+            // Keep one client responsible
+            // for final match progression.
+            if (
+                match.host.uid !== uid
+            ) {
+                throw new Error(
+                    "ONLY_HOST_CAN_COMPLETE"
+                );
+            }
+
+            if (
+                !match.hostAscensionSelected ||
+                !match.guestAscensionSelected
+            ) {
+                throw new Error(
+                    "ASCENSIONS_NOT_COMPLETE"
+                );
+            }
+
+            transaction.update(
+                matchRef,
+                {
+                    status: "complete",
+                }
+            );
+        }
+    );
+}
+
+export async function requestDraftRematch(
+    code: string,
+    uid: string
+) {
+    const normalizedCode =
+        code.trim().toUpperCase();
+
+    const matchRef = doc(
+        db,
+        "draftMatches",
+        normalizedCode
+    );
+
+    await runTransaction(
+        db,
+        async (transaction) => {
+            const snapshot =
+                await transaction.get(
+                    matchRef
+                );
+
+            if (!snapshot.exists()) {
+                throw new Error(
+                    "MATCH_NOT_FOUND"
+                );
+            }
+
+            const match =
+                snapshot.data();
+
+            if (
+                match.status !==
+                "complete"
+            ) {
+                throw new Error(
+                    "MATCH_NOT_COMPLETE"
+                );
+            }
+
+            const isHost =
+                match.host.uid === uid;
+
+            const isGuest =
+                match.guest?.uid === uid;
+
+            if (!isHost && !isGuest) {
+                throw new Error(
+                    "NOT_IN_MATCH"
+                );
+            }
+
+            if (isHost) {
+                if (
+                    match.hostRematchRequested
+                ) {
+                    return;
+                }
+
+                transaction.update(
+                    matchRef,
+                    {
+                        hostRematchRequested:
+                            true,
+                    }
+                );
+
+                return;
+            }
+
+            if (
+                match.guestRematchRequested
+            ) {
+                return;
+            }
+
+            transaction.update(
+                matchRef,
+                {
+                    guestRematchRequested:
+                        true,
+                }
+            );
+        }
+    );
+}
+
+export async function beginDraftRematchIfReady(
+    code: string,
+    uid: string
+) {
+    const normalizedCode =
+        code.trim().toUpperCase();
+
+    const matchRef = doc(
+        db,
+        "draftMatches",
+        normalizedCode
+    );
+
+    await runTransaction(
+        db,
+        async (transaction) => {
+            const snapshot =
+                await transaction.get(
+                    matchRef
+                );
+
+            if (!snapshot.exists()) {
+                throw new Error(
+                    "MATCH_NOT_FOUND"
+                );
+            }
+
+            const match =
+                snapshot.data();
+
+            if (
+                match.status !==
+                "complete"
+            ) {
+                return;
+            }
+
+            if (
+                match.host.uid !== uid
+            ) {
+                throw new Error(
+                    "ONLY_HOST_CAN_BEGIN_REMATCH"
+                );
+            }
+
+            if (
+                !match.hostRematchRequested ||
+                !match.guestRematchRequested
+            ) {
+                return;
+            }
+
+            transaction.update(
+                matchRef,
+                {
+                    status:
+                        "rematch",
+
+                    hostRematchReady:
+                        false,
+
+                    guestRematchReady:
+                        false,
+                }
+            );
+        }
+    );
+}
+
+export async function prepareDraftRematch(
+    code: string,
+    uid: string
+) {
+    const normalizedCode =
+        code.trim().toUpperCase();
+
+    const matchRef = doc(
+        db,
+        "draftMatches",
+        normalizedCode
+    );
+
+    const playerStateRef = doc(
+        db,
+        "draftMatches",
+        normalizedCode,
+        "playerStates",
+        uid
+    );
+
+    const powerPositionChoices =
+        getRandomPowerPositions(3);
+
+    const ascensionChoices =
+        getRandomAscensions(3);
+
+    await runTransaction(
+        db,
+        async (transaction) => {
+            const matchSnapshot =
+                await transaction.get(
+                    matchRef
+                );
+
+            const playerSnapshot =
+                await transaction.get(
+                    playerStateRef
+                );
+
+            if (!matchSnapshot.exists()) {
+                throw new Error(
+                    "MATCH_NOT_FOUND"
+                );
+            }
+
+            if (!playerSnapshot.exists()) {
+                throw new Error(
+                    "PLAYER_STATE_NOT_FOUND"
+                );
+            }
+
+            const match =
+                matchSnapshot.data();
+
+            if (
+                match.status !==
+                "rematch"
+            ) {
+                return;
+            }
+
+            const isHost =
+                match.host.uid === uid;
+
+            const isGuest =
+                match.guest?.uid === uid;
+
+            if (!isHost && !isGuest) {
+                throw new Error(
+                    "NOT_IN_MATCH"
+                );
+            }
+
+            const alreadyReady =
+                isHost
+                    ? match.hostRematchReady
+                    : match.guestRematchReady;
+
+            if (alreadyReady) {
+                return;
+            }
+
+            // Reset this player's
+            // PRIVATE game state.
+            transaction.update(
+                playerStateRef,
+                {
+                    powerPositionChoices,
+
+                    selectedPowerPosition:
+                        null,
+
+                    currentCharacterId:
+                        null,
+
+                    usedCharacterIds:
+                        [],
+
+                    picks:
+                        [],
+
+                    lastSubmittedRound:
+                        0,
+
+                    rerollUsed:
+                        false,
+
+                    ascensionChoices,
+
+                    selectedAscension:
+                        null,
+                }
+            );
+
+            // Tell the public match
+            // this player's reset
+            // completed.
+            transaction.update(
+                matchRef,
+                isHost
+                    ? {
+                        hostRematchReady:
+                            true,
+                    }
+                    : {
+                        guestRematchReady:
+                            true,
+                    }
+            );
+        }
+    );
+}
+
+export async function startDraftRematchIfReady(
+    code: string,
+    uid: string
+) {
+    const normalizedCode =
+        code.trim().toUpperCase();
+
+    const matchRef = doc(
+        db,
+        "draftMatches",
+        normalizedCode
+    );
+
+    await runTransaction(
+        db,
+        async (transaction) => {
+            const snapshot =
+                await transaction.get(
+                    matchRef
+                );
+
+            if (!snapshot.exists()) {
+                throw new Error(
+                    "MATCH_NOT_FOUND"
+                );
+            }
+
+            const match =
+                snapshot.data();
+
+            if (
+                match.status !==
+                "rematch"
+            ) {
+                return;
+            }
+
+            if (
+                match.host.uid !== uid
+            ) {
+                throw new Error(
+                    "ONLY_HOST_CAN_START_REMATCH"
+                );
+            }
+
+            if (
+                !match.hostRematchReady ||
+                !match.guestRematchReady
+            ) {
+                return;
+            }
+
+            transaction.update(
+                matchRef,
+                {
+                    status:
+                        "power-selection",
+
+                    round:
+                        0,
+
+                    hostSubmitted:
+                        false,
+
+                    guestSubmitted:
+                        false,
+
+                    hostPowerSelected:
+                        false,
+
+                    guestPowerSelected:
+                        false,
+
+                    hostAscensionSelected:
+                        false,
+
+                    guestAscensionSelected:
+                        false,
+
+                    hostRematchRequested:
+                        false,
+
+                    guestRematchRequested:
+                        false,
+
+                    hostRematchReady:
+                        false,
+
+                    guestRematchReady:
+                        false,
+                }
+            );
+        }
+    );
+}
+
+export async function getDraftPlayerState(
+    code: string,
+    uid: string
+): Promise<MultiplayerDraftPlayerState | null> {
+    const normalizedCode =
+        code.trim().toUpperCase();
+
+    const playerStateRef = doc(
+        db,
+        "draftMatches",
+        normalizedCode,
+        "playerStates",
+        uid
+    );
+
+    const snapshot =
+        await getDoc(playerStateRef);
+
+    if (!snapshot.exists()) {
+        return null;
+    }
+
+    return snapshot.data() as MultiplayerDraftPlayerState;
+}
+
+export async function claimDraftForfeit(
+    code: string,
+    uid: string
+) {
+    const normalizedCode =
+        code.trim().toUpperCase();
+
+    const matchRef = doc(
+        db,
+        "draftMatches",
+        normalizedCode
+    );
+
+    await runTransaction(
+        db,
+        async (transaction) => {
+            const snapshot =
+                await transaction.get(
+                    matchRef
+                );
+
+            if (!snapshot.exists()) {
+                throw new Error(
+                    "MATCH_NOT_FOUND"
+                );
+            }
+
+            const match =
+                snapshot.data();
+
+            const isHost =
+                match.host.uid === uid;
+
+            const isGuest =
+                match.guest?.uid === uid;
+
+            if (
+                !isHost &&
+                !isGuest
+            ) {
+                throw new Error(
+                    "NOT_IN_MATCH"
+                );
+            }
+
+            if (!match.guest) {
+                throw new Error(
+                    "NO_OPPONENT"
+                );
+            }
+
+            /*
+             * Only allow forfeits during
+             * an unfinished match.
+             */
+            const activeStatuses = [
+                "lobby",
+                "power-selection",
+                "drafting",
+                "ascension",
+            ];
+
+            if (
+                !activeStatuses.includes(
+                    match.status
+                )
+            ) {
+                throw new Error(
+                    "MATCH_NOT_ACTIVE"
+                );
+            }
+
+            const opponentUid =
+                isHost
+                    ? match.guest.uid
+                    : match.host.uid;
+
+            transaction.update(
+                matchRef,
+                {
+                    status:
+                        "complete",
+
+                    winnerUid:
+                    uid,
+
+                    forfeitedByUid:
+                    opponentUid,
+
+                    endReason:
+                        "forfeit",
+                }
             );
         }
     );

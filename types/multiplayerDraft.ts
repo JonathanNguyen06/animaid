@@ -13,13 +13,18 @@ export type DraftMatchStatus =
     | "drafting"
     | "ascension"
     | "reveal"
-    | "complete";
+    | "complete"
+    | "rematch";
 
 export type DraftMatchPlayer = {
     uid: string;
     displayName: string;
     ready: boolean;
 };
+
+export type DraftMatchEndReason =
+    | "normal"
+    | "forfeit";
 
 export type DraftMatch = {
     id: string;
@@ -39,6 +44,16 @@ export type DraftMatch = {
 
     hostAscensionSelected: boolean;
     guestAscensionSelected: boolean;
+
+    hostRematchRequested: boolean;
+    guestRematchRequested: boolean;
+
+    hostRematchReady: boolean;
+    guestRematchReady: boolean;
+
+    winnerUid: string | null;
+    forfeitedByUid: string | null;
+    endReason: DraftMatchEndReason | null;
 };
 
 export type MultiplayerDraftPlayerState = {
