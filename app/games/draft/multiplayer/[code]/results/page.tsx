@@ -221,6 +221,14 @@ function HeadToHeadReveal({
                 )
             : 0;
 
+    const matchupWinner:
+        "you" | "opponent" | "tie" =
+        myPower > opponentPower
+            ? "you"
+            : opponentPower > myPower
+                ? "opponent"
+                : "tie";
+
     const myGrade =
         slot.myPick
             ? getLetterGrade(myPower)
@@ -546,6 +554,51 @@ function HeadToHeadReveal({
                     )}
                 </div>
             </div>
+
+            {revealed && ascensionApplied && (
+                <div className="mt-3 text-center">
+                    {matchupWinner === "you" ? (
+                        <div
+                            className="
+                                rounded-xl
+                                border border-green-400/25
+                                bg-green-500/10
+                                px-3 py-2
+                            "
+                        >
+                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-green-300">
+                                ✓ Position Won
+                            </p>
+                        </div>
+                    ) : matchupWinner === "opponent" ? (
+                        <div
+                            className="
+                                rounded-xl
+                                border border-purple-400/20
+                                bg-purple-500/10
+                                px-3 py-2
+                            "
+                        >
+                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-purple-300">
+                                Opponent Wins
+                            </p>
+                        </div>
+                    ) : (
+                        <div
+                            className="
+                                rounded-xl
+                                border border-white/10
+                                bg-white/5
+                                px-3 py-2
+                            "
+                        >
+                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">
+                                Position Tied
+                            </p>
+                        </div>
+                    )}
+                </div>
+            )}
         </div>
     );
 }
@@ -1108,6 +1161,95 @@ export default function MultiplayerDraftResultsPage() {
         revealOpponentState,
     ]);
 
+    // ---------------------------------------------------------
+    // LIVE REVEAL SCORE
+    // ---------------------------------------------------------
+
+    const liveRevealScore = useMemo(() => {
+        let myWins = 0;
+        let opponentWins = 0;
+        let ties = 0;
+
+        /*
+         * During the lineup reveal, only count
+         * positions that have actually been shown.
+         *
+         * Once Ascensions begin, every position
+         * has already been revealed.
+         */
+        const visibleSlotCount =
+            revealPhase === "intro"
+                ? 0
+                : revealPhase === "lineup"
+                    ? revealedCount
+                    : revealSlots.length;
+
+        const ascensionsActive =
+            showAscensionImpact ||
+            revealPhase === "final";
+
+        for (
+            let index = 0;
+            index < visibleSlotCount;
+            index++
+        ) {
+            const slot =
+                revealSlots[index];
+
+            if (
+                !slot.myPick ||
+                !slot.opponentPick
+            ) {
+                continue;
+            }
+
+            /*
+             * Score using exactly the same power
+             * currently being shown on the cards.
+             */
+            const myPower =
+                ascensionsActive
+                    ? slot.myPick.power
+                    : getPreAscensionPower(
+                        slot.myPick
+                    );
+
+            const opponentPower =
+                ascensionsActive
+                    ? slot.opponentPick.power
+                    : getPreAscensionPower(
+                        slot.opponentPick
+                    );
+
+            if (
+                myPower >
+                opponentPower
+            ) {
+                myWins++;
+            } else if (
+                opponentPower >
+                myPower
+            ) {
+                opponentWins++;
+            } else {
+                ties++;
+            }
+        }
+
+        return {
+            myWins,
+            opponentWins,
+            ties,
+            revealed:
+            visibleSlotCount,
+        };
+    }, [
+        revealSlots,
+        revealedCount,
+        revealPhase,
+        showAscensionImpact,
+    ]);
+
 
 // ---------------------------------------------------------
 // LINEUP REVEAL TIMER
@@ -1655,6 +1797,86 @@ export default function MultiplayerDraftResultsPage() {
             ? guestTotalPower
             : hostTotalPower;
 
+    // ---------------------------------------------------------
+    // POSITION MATCHUP SCORE
+    // ---------------------------------------------------------
+
+    const positionResults =
+        revealSlots.map((slot) => {
+            const myPower =
+                slot.myPick?.power ?? 0;
+
+            const opponentPower =
+                slot.opponentPick?.power ?? 0;
+
+            if (myPower > opponentPower) {
+                return "you" as const;
+            }
+
+            if (opponentPower > myPower) {
+                return "opponent" as const;
+            }
+
+            return "tie" as const;
+        });
+
+
+    const myPositionWins =
+        positionResults.filter(
+            (result) =>
+                result === "you"
+        ).length;
+
+
+    const opponentPositionWins =
+        positionResults.filter(
+            (result) =>
+                result === "opponent"
+        ).length;
+
+
+    const tiedPositions =
+        positionResults.filter(
+            (result) =>
+                result === "tie"
+        ).length;
+
+
+    /*
+     * Team Power only matters if
+     * positional wins are tied.
+     */
+    const decidedByPowerTiebreaker =
+        myPositionWins ===
+        opponentPositionWins;
+
+
+    const isDraw =
+        decidedByPowerTiebreaker &&
+        myTotalPower ===
+        opponentTotalPower;
+
+
+    const iWon =
+        !isDraw &&
+        (
+            myPositionWins >
+            opponentPositionWins
+
+            ||
+
+            (
+                decidedByPowerTiebreaker &&
+                myTotalPower >
+                opponentTotalPower
+            )
+        );
+
+
+    const iLost =
+        !isDraw &&
+        !iWon;
+
     return (
         <main className="mx-auto min-h-[calc(100vh-130px)] max-w-[1700px] px-4 py-6">
 
@@ -1685,6 +1907,204 @@ export default function MultiplayerDraftResultsPage() {
                     </p>
 
                     <div className="mt-8">
+                        <div
+                            className="
+                                relative
+                                mb-7
+                                overflow-hidden
+                                rounded-3xl
+                                border border-white/10
+                                bg-black/50
+                                p-5
+                                shadow-[0_0_30px_rgba(236,72,153,0.06)]
+                                backdrop-blur-xl
+                            "
+                            >
+                            <div className="pointer-events-none absolute left-0 top-1/2 h-32 w-32 -translate-y-1/2 rounded-full bg-pink-500/10 blur-[60px]" />
+
+                            <div className="pointer-events-none absolute right-0 top-1/2 h-32 w-32 -translate-y-1/2 rounded-full bg-purple-500/10 blur-[60px]" />
+
+
+                            <div className="relative z-10">
+
+                                {/* LABEL */}
+                                <div className="mb-4 text-center">
+                                    <p className="text-[10px] font-black uppercase tracking-[0.35em] text-white/30">
+                                        Live Match Score
+                                    </p>
+                                </div>
+
+
+                                <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-5">
+
+                                    {/* ===================================== */}
+                                    {/* YOU */}
+                                    {/* ===================================== */}
+
+                                    <div className="text-center">
+
+                                        <p className="text-[10px] font-black uppercase tracking-[0.25em] text-pink-300/50">
+                                            You
+                                        </p>
+
+                                        <p
+                                            key={`my-${liveRevealScore.myWins}`}
+                                            className="
+                                                mt-1
+                                                animate-[scorePop_350ms_cubic-bezier(.16,1,.3,1)]
+                                                text-6xl
+                                                font-black
+                                                text-pink-300
+                                                drop-shadow-[0_0_20px_rgba(244,114,182,0.35)]
+                                            "
+                                        >
+                                            {liveRevealScore.myWins}
+                                        </p>
+
+                                        <p className="mt-1 text-[9px] font-black uppercase tracking-widest text-white/25">
+                                            Positions
+                                        </p>
+                                    </div>
+
+
+                                    {/* ===================================== */}
+                                    {/* CENTER */}
+                                    {/* ===================================== */}
+
+                                    <div className="text-center">
+
+                                        <div
+                                            className="
+                                                flex h-12 w-12
+                                                items-center justify-center
+                                                rounded-full
+                                                border border-white/10
+                                                bg-white/[0.03]
+                                            "
+                                        >
+                                            <p className="text-xs font-black italic text-white/30">
+                                                VS
+                                            </p>
+                                        </div>
+
+                                    </div>
+
+
+                                    {/* ===================================== */}
+                                    {/* OPPONENT */}
+                                    {/* ===================================== */}
+
+                                    <div className="text-center">
+
+                                        <p className="truncate text-[10px] font-black uppercase tracking-[0.25em] text-purple-300/50">
+                                            {match.host.uid === user.uid
+                                                ? match.guest?.displayName
+                                                : match.host.displayName}
+                                        </p>
+
+                                        <p
+                                            key={`opponent-${liveRevealScore.opponentWins}`}
+                                            className="
+                                                mt-1
+                                                animate-[scorePop_350ms_cubic-bezier(.16,1,.3,1)]
+                                                text-6xl
+                                                font-black
+                                                text-purple-300
+                                                drop-shadow-[0_0_20px_rgba(168,85,247,0.35)]
+                                            "
+                                        >
+                                            {liveRevealScore.opponentWins}
+                                        </p>
+
+                                        <p className="mt-1 text-[9px] font-black uppercase tracking-widest text-white/25">
+                                            Positions
+                                        </p>
+                                    </div>
+                                </div>
+
+
+                                {/* ========================================= */}
+                                {/* REVEAL PROGRESS */}
+                                {/* ========================================= */}
+
+                                <div className="mt-5 border-t border-white/10 pt-4">
+
+                                    <div className="flex items-center justify-between gap-4">
+
+                                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/30">
+                                            {liveRevealScore.revealed}
+                                            {" / "}
+                                            {revealSlots.length}
+                                            {" Positions Revealed"}
+                                        </p>
+
+
+                                        {liveRevealScore.ties > 0 && (
+                                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-yellow-200/45">
+                                                {liveRevealScore.ties}{" "}
+                                                {liveRevealScore.ties === 1
+                                                    ? "Tie"
+                                                    : "Ties"}
+                                            </p>
+                                        )}
+                                    </div>
+
+
+                                    <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/5">
+
+                                        <div
+                                            className="
+                                                h-full
+                                                rounded-full
+                                                bg-gradient-to-r
+                                                from-pink-500
+                                                via-fuchsia-500
+                                                to-purple-500
+                                                transition-[width]
+                                                duration-500
+                                                ease-out
+                                            "
+                                            style={{
+                                                width: `${
+                                                    revealSlots.length > 0
+                                                        ? (
+                                                        liveRevealScore.revealed /
+                                                        revealSlots.length
+                                                    ) * 100
+                                                        : 0
+                                                }%`,
+                                            }}
+                                        />
+
+                                    </div>
+
+                                </div>
+
+
+                                {/* ========================================= */}
+                                {/* ASCENSION RECALC NOTICE */}
+                                {/* ========================================= */}
+
+                                {showAscensionImpact && (
+                                    <div
+                                        className="
+                                            mt-4
+                                            animate-[scorePop_500ms_cubic-bezier(.16,1,.3,1)]
+                                            rounded-xl
+                                            border border-yellow-400/20
+                                            bg-yellow-500/10
+                                            px-4 py-2
+                                            text-center
+                                        "
+                                    >
+                                        <p className="text-[10px] font-black uppercase tracking-[0.25em] text-yellow-200">
+                                            ⚡ Score Updated After Ascensions
+                                        </p>
+                                    </div>
+                                )}
+
+                            </div>
+                        </div>
 
                         <div className="mb-4 flex items-end justify-between gap-4">
                             <div>
@@ -1843,72 +2263,200 @@ export default function MultiplayerDraftResultsPage() {
 
                             <div className="mx-auto mt-6 grid max-w-5xl items-center gap-5 md:grid-cols-[1fr_auto_1fr]">
 
-                                <div className="rounded-3xl border border-pink-500/25 bg-pink-500/5 p-6">
-
+                                {/* YOU */}
+                                <div
+                                    className="
+                                        rounded-3xl
+                                        border border-pink-500/25
+                                        bg-pink-500/5
+                                        p-6
+                                    "
+                                >
                                     <p className="text-xs font-black uppercase tracking-widest text-pink-300/50">
                                         You
                                     </p>
 
-                                    <p className="mt-3 text-7xl font-black text-yellow-300 drop-shadow-[0_0_25px_rgba(250,204,21,0.4)]">
-                                        {myTotalPower}
+                                    <p
+                                        className="
+                                            mt-3
+                                            text-7xl
+                                            font-black
+                                            text-yellow-300
+                                            drop-shadow-[0_0_25px_rgba(250,204,21,0.4)]
+                                        "
+                                    >
+                                        {myPositionWins}
                                     </p>
 
                                     <p className="mt-2 text-xs font-black uppercase tracking-widest text-white/30">
-                                        Team Power
+                                        Positions Won
                                     </p>
                                 </div>
 
-                                <p className="text-3xl font-black italic text-white/20">
-                                    VS
-                                </p>
 
-                                <div className="rounded-3xl border border-purple-500/25 bg-purple-500/5 p-6">
+                                {/* SCORE */}
+                                <div className="text-center">
+                                    <p className="text-xs font-black uppercase tracking-[0.25em] text-white/20">
+                                        Final
+                                    </p>
 
+                                    <p className="mt-1 text-3xl font-black italic text-white/25">
+                                        VS
+                                    </p>
+                                </div>
+
+
+                                {/* OPPONENT */}
+                                <div
+                                    className="
+                                        rounded-3xl
+                                        border border-purple-500/25
+                                        bg-purple-500/5
+                                        p-6
+                                    "
+                                >
                                     <p className="text-xs font-black uppercase tracking-widest text-purple-300/50">
                                         {opponentPlayer.displayName}
                                     </p>
 
-                                    <p className="mt-3 text-7xl font-black text-yellow-300 drop-shadow-[0_0_25px_rgba(250,204,21,0.4)]">
-                                        {opponentTotalPower}
+                                    <p
+                                        className="
+                                            mt-3
+                                            text-7xl
+                                            font-black
+                                            text-yellow-300
+                                            drop-shadow-[0_0_25px_rgba(250,204,21,0.4)]
+                                        "
+                                    >
+                                        {opponentPositionWins}
                                     </p>
 
                                     <p className="mt-2 text-xs font-black uppercase tracking-widest text-white/30">
-                                        Team Power
+                                        Positions Won
                                     </p>
                                 </div>
+                            </div>
+
+                            <div
+                                className="
+                                    mx-auto
+                                    mt-5
+                                    max-w-3xl
+                                    rounded-2xl
+                                    border border-white/10
+                                    bg-white/[0.025]
+                                    px-5 py-4
+                                "
+                            >
+                                <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4">
+
+                                    <div className="text-center">
+                                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/30">
+                                            Your Team Power
+                                        </p>
+
+                                        <p className="mt-1 text-xl font-black text-white/70">
+                                            {myTotalPower}
+                                        </p>
+                                    </div>
+
+
+                                    <div className="h-8 w-px bg-white/10" />
+
+
+                                    <div className="text-center">
+                                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/30">
+                                            Opponent Power
+                                        </p>
+
+                                        <p className="mt-1 text-xl font-black text-white/70">
+                                            {opponentTotalPower}
+                                        </p>
+                                    </div>
+                                </div>
+
+
+                                {tiedPositions > 0 && (
+                                    <p className="mt-3 text-center text-[10px] font-bold uppercase tracking-[0.2em] text-white/25">
+                                        {tiedPositions}{" "}
+                                        {tiedPositions === 1
+                                            ? "position tied"
+                                            : "positions tied"}
+                                    </p>
+                                )}
+
+
+                                {decidedByPowerTiebreaker &&
+                                    !isDraw && (
+                                        <div
+                                            className="
+                                                mt-4
+                                                rounded-xl
+                                                border border-yellow-400/20
+                                                bg-yellow-500/10
+                                                px-4 py-2
+                                                text-center
+                                            "
+                                        >
+                                            <p className="text-[10px] font-black uppercase tracking-[0.25em] text-yellow-200">
+                                                ⚡ Team Power Tiebreaker
+                                            </p>
+                                        </div>
+                                    )}
                             </div>
 
 
                             <div className="mt-10">
 
-                                {myTotalPower ===
-                                opponentTotalPower ? (
+                                {isDraw ? (
                                     <>
-                                        <p className="text-6xl font-black text-white">
+                                        <p className="text-xs font-black uppercase tracking-[0.4em] text-white/30">
+                                            Final Result
+                                        </p>
+
+                                        <p className="mt-2 text-6xl font-black text-white">
                                             DRAW
                                         </p>
 
                                         <p className="mt-3 text-sm text-white/40">
-                                            An evenly matched draft.
+                                            Both the position score and
+                                            total team power were tied.
                                         </p>
                                     </>
-                                ) : myTotalPower >
-                                opponentTotalPower ? (
+                                ) : iWon ? (
                                     <>
                                         <p className="text-xs font-black uppercase tracking-[0.4em] text-yellow-300/60">
                                             Winner
                                         </p>
 
-                                        <h2 className="mt-2 text-7xl font-black text-yellow-300 drop-shadow-[0_0_35px_rgba(250,204,21,0.65)]">
+                                        <h2
+                                            className="
+                                                mt-2
+                                                text-7xl
+                                                font-black
+                                                text-yellow-300
+                                                drop-shadow-[0_0_35px_rgba(250,204,21,0.65)]
+                                            "
+                                        >
                                             VICTORY
                                         </h2>
 
                                         <p className="mt-3 text-lg font-bold text-white/60">
                                             You defeated{" "}
-                                            {
-                                                opponentPlayer.displayName
-                                            }
+                                            {opponentPlayer.displayName}
                                         </p>
+
+                                        <p className="mt-2 text-sm font-black text-yellow-200/60">
+                                            {myPositionWins} -{" "}
+                                            {opponentPositionWins}{" "}
+                                            Positions
+                                        </p>
+
+                                        {decidedByPowerTiebreaker && (
+                                            <p className="mt-2 text-xs font-bold uppercase tracking-widest text-yellow-300/45">
+                                                Won by Team Power Tiebreaker
+                                            </p>
+                                        )}
                                     </>
                                 ) : (
                                     <>
@@ -1916,16 +2464,34 @@ export default function MultiplayerDraftResultsPage() {
                                             Winner
                                         </p>
 
-                                        <h2 className="mt-2 text-7xl font-black text-purple-300 drop-shadow-[0_0_35px_rgba(168,85,247,0.65)]">
+                                        <h2
+                                            className="
+                                                mt-2
+                                                text-7xl
+                                                font-black
+                                                text-purple-300
+                                                drop-shadow-[0_0_35px_rgba(168,85,247,0.65)]
+                                            "
+                                        >
                                             DEFEAT
                                         </h2>
 
                                         <p className="mt-3 text-lg font-bold text-white/60">
-                                            {
-                                                opponentPlayer.displayName
-                                            }{" "}
+                                            {opponentPlayer.displayName}{" "}
                                             wins the draft
                                         </p>
+
+                                        <p className="mt-2 text-sm font-black text-purple-200/60">
+                                            {opponentPositionWins} -{" "}
+                                            {myPositionWins}{" "}
+                                            Positions
+                                        </p>
+
+                                        {decidedByPowerTiebreaker && (
+                                            <p className="mt-2 text-xs font-bold uppercase tracking-widest text-purple-300/45">
+                                                Lost by Team Power Tiebreaker
+                                            </p>
+                                        )}
                                     </>
                                 )}
                             </div>

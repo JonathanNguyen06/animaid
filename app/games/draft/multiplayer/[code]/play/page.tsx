@@ -10,7 +10,7 @@ import {
     selectDraftPowerPosition,
     ensureDraftRoundCharacter,
     submitMultiplayerDraftPick, advanceDraftRoundIfReady, rerollMultiplayerDraftCharacter, selectMultiplayerAscension,
-    completeDraftMatch, claimDraftForfeit
+    completeDraftMatch, claimDraftForfeit, listenToDraftRoundReveal, lockDraftRoundCharacter
 } from "@/lib/multiplayerDraft";
 import {Ascension, ascensionInfo, draftPositions, powerPositionInfo,} from "@/data/draftLogic";
 import type {DraftMatch, MultiplayerDraftPlayerState,} from "@/types/multiplayerDraft";
@@ -32,6 +32,7 @@ export default function MultiplayerDraftPlayPage() {
     const [isDraggingCard, setIsDraggingCard,] = useState(false);
     const [submittingPick, setSubmittingPick,] = useState(false);
     const advancingRoundRef = useRef(false);
+    const autoLockingRollRef = useRef(false);
     const [rerolling, setRerolling,] = useState(false);
     const [selectingAscension, setSelectingAscension,] = useState(false);
     const [opponentOnline, setOpponentOnline,] = useState<boolean | null>(null);
@@ -39,6 +40,8 @@ export default function MultiplayerDraftPlayPage() {
     const [processingForfeit, setProcessingForfeit,] = useState(false);
     const autoForfeitRef = useRef(false);
     const opponentOnlineRef = useRef<boolean | null>(null);
+    const [opponentVisibleCharacterId, setOpponentVisibleCharacterId,] = useState<string | null>(null);
+    const [lockingRoll, setLockingRoll,] = useState(false);
 
     const positionIcons:
         Record<DraftPosition, string> = {
@@ -274,6 +277,108 @@ export default function MultiplayerDraftPlayPage() {
     ]);
 
     useEffect(() => {
+        if (
+            !user ||
+            !code ||
+            !match ||
+            !playerState
+        ) {
+            return;
+        }
+
+        if (
+            match.status !== "drafting"
+        ) {
+            return;
+        }
+
+        /*
+         * Auto-lock only after the player's
+         * one reroll has already been consumed.
+         */
+        if (!playerState.rerollUsed) {
+            return;
+        }
+
+        /*
+         * Wait until this round actually has
+         * a character.
+         */
+        if (
+            !playerState.currentCharacterId
+        ) {
+            return;
+        }
+
+        /*
+         * Don't accidentally operate on a
+         * character from an already-submitted
+         * round.
+         */
+        if (
+            playerState.lastSubmittedRound >=
+            match.round
+        ) {
+            return;
+        }
+
+        const isHost =
+            match.host.uid === user.uid;
+
+        const rollAlreadyLocked =
+            isHost
+                ? match.hostRollLocked
+                : match.guestRollLocked;
+
+        if (rollAlreadyLocked) {
+            return;
+        }
+
+        /*
+         * Prevent multiple simultaneous
+         * auto-lock attempts.
+         */
+        if (
+            autoLockingRollRef.current
+        ) {
+            return;
+        }
+
+        autoLockingRollRef.current = true;
+        setLockingRoll(true);
+
+        lockDraftRoundCharacter(
+            code,
+            user.uid
+        )
+            .catch((error) => {
+                console.error(
+                    "Failed to automatically lock character:",
+                    error
+                );
+            })
+            .finally(() => {
+                autoLockingRollRef.current =
+                    false;
+
+                setLockingRoll(false);
+            });
+    }, [
+        user,
+        code,
+
+        match?.status,
+        match?.round,
+        match?.host.uid,
+        match?.hostRollLocked,
+        match?.guestRollLocked,
+
+        playerState?.rerollUsed,
+        playerState?.currentCharacterId,
+        playerState?.lastSubmittedRound,
+    ]);
+
+    useEffect(() => {
         if (!user || !code || !match) {
             return;
         }
@@ -344,6 +449,72 @@ export default function MultiplayerDraftPlayPage() {
         code,
         match?.status,
         router,
+    ]);
+
+    useEffect(() => {
+        if (
+            !user ||
+            !code ||
+            !match ||
+            !match.guest
+        ) {
+            return;
+        }
+
+        const bothLocked =
+            match.hostRollLocked &&
+            match.guestRollLocked;
+
+        if (!bothLocked) {
+            setOpponentVisibleCharacterId(
+                null
+            );
+
+            return;
+        }
+
+        const isHost =
+            match.host.uid ===
+            user.uid;
+
+        const opponentUid =
+            isHost
+                ? match.guest.uid
+                : match.host.uid;
+
+        return listenToDraftRoundReveal(
+            code,
+            opponentUid,
+            (reveal) => {
+                /*
+                 * Ignore a reveal document
+                 * left over from the last round.
+                 */
+                if (
+                    !reveal ||
+                    reveal.round !==
+                    match.round
+                ) {
+                    setOpponentVisibleCharacterId(
+                        null
+                    );
+
+                    return;
+                }
+
+                setOpponentVisibleCharacterId(
+                    reveal.characterId
+                );
+            }
+        );
+    }, [
+        user,
+        code,
+        match?.round,
+        match?.host.uid,
+        match?.guest?.uid,
+        match?.hostRollLocked,
+        match?.guestRollLocked,
     ]);
 
     useEffect(() => {
@@ -518,6 +689,7 @@ export default function MultiplayerDraftPlayPage() {
             !playerState ||
             !currentCharacter ||
             playerState.rerollUsed ||
+            myRollLocked ||
             mySubmitted ||
             pendingPosition ||
             rerolling
@@ -548,6 +720,7 @@ export default function MultiplayerDraftPlayPage() {
     ) {
         if (
             !currentCharacter ||
+            !bothRollsLocked ||
             pendingPosition ||
             mySubmitted
         ) {
@@ -581,6 +754,7 @@ export default function MultiplayerDraftPlayPage() {
 
         if (
             !currentCharacter ||
+            !bothRollsLocked ||
             mySubmitted ||
             filledPositions.includes(
                 position
@@ -718,6 +892,71 @@ export default function MultiplayerDraftPlayPage() {
 
     const isHost =
         match.host.uid === user.uid;
+
+    const myRollLocked =
+        isHost
+            ? match.hostRollLocked
+            : match.guestRollLocked;
+
+    const opponentRollLocked =
+        isHost
+            ? match.guestRollLocked
+            : match.hostRollLocked;
+
+    const bothRollsLocked =
+        match.hostRollLocked &&
+        match.guestRollLocked;
+
+    const opponentCurrentCharacter =
+        opponentVisibleCharacterId
+            ? draftCharacters.find(
+            (character) =>
+                character.id ===
+                opponentVisibleCharacterId
+        ) ?? null
+            : null;
+
+    async function handleLockRoll() {
+        if (
+            !user ||
+            !code ||
+            !match ||
+            !playerState ||
+            !playerState.currentCharacterId ||
+            lockingRoll
+        ) {
+            return;
+        }
+
+        const isHost =
+            match.host.uid ===
+            user.uid;
+
+        const alreadyLocked =
+            isHost
+                ? match.hostRollLocked
+                : match.guestRollLocked;
+
+        if (alreadyLocked) {
+            return;
+        }
+
+        setLockingRoll(true);
+
+        try {
+            await lockDraftRoundCharacter(
+                code,
+                user.uid
+            );
+        } catch (error) {
+            console.error(
+                "Failed to lock round character:",
+                error
+            );
+        } finally {
+            setLockingRoll(false);
+        }
+    }
 
     const opponentAscensionSelected =
         isHost
@@ -887,8 +1126,10 @@ export default function MultiplayerDraftPlayPage() {
                         </h1>
 
                         <p className="mt-3 max-w-3xl text-purple-100/70">
-                            Build your team in secret. Your opponent cannot see your
-                            characters, positions, or ratings until the final reveal.
+                            Reveal each round&apos;s character head-to-head,
+                            read your opponent&apos;s draft, and strategically
+                            build the stronger lineup. Positions and ratings
+                            remain hidden until the final showdown.
                         </p>
 
                         <p className="mt-3 text-xs font-black uppercase tracking-[0.25em] text-pink-300/60">
@@ -1126,7 +1367,7 @@ export default function MultiplayerDraftPlayPage() {
                 {/* ===================================================== */}
 
                 {match.status === "drafting" && (
-                    <div className="mt-6 grid gap-6 xl:grid-cols-[300px_1fr]">
+                    <div className="mt-6 grid gap-6 xl:grid-cols-[560px_1fr]">
 
                         {/* ================================================= */}
                         {/* LEFT SIDE */}
@@ -1134,25 +1375,41 @@ export default function MultiplayerDraftPlayPage() {
                         {/* ================================================= */}
 
                         <div>
-                            <h2 className="mb-4 text-xl font-bold text-white">
-                                Current Character
-                            </h2>
 
-                            {currentCharacter ? (
-                                <div
-                                    draggable={
-                                        !pendingPosition &&
-                                        !mySubmitted
-                                    }
-                                    onDragStart={
-                                        handleDragStart
-                                    }
-                                    onDragEnd={
-                                        handleDragEnd
-                                    }
-                                    className={`
+                            <div className="mb-4 flex items-center justify-between">
+                                <h2 className="text-xl font-bold text-white">
+                                    Round Matchup
+                                </h2>
+
+                                <p className="text-xs font-black uppercase tracking-[0.2em] text-pink-300/50">
+                                    Round {match.round}
+                                </p>
+                            </div>
+
+                            <div className="grid gap-4 sm:grid-cols-2">
+
+                                {/* YOUR CHARACTER */}
+                                <div>
+                                    <p className="mb-2 text-xs font-black uppercase tracking-[0.2em] text-pink-300/60">
+                                        Your Roll
+                                    </p>
+
+                                    {currentCharacter ? (
+                                        <div
+                                            draggable={
+                                                bothRollsLocked &&
+                                                !pendingPosition &&
+                                                !mySubmitted
+                                            }
+                                            onDragStart={
+                                                handleDragStart
+                                            }
+                                            onDragEnd={
+                                                handleDragEnd
+                                            }
+                                            className={`
                                         relative
-                                        min-h-[350px]
+                                        min-h-[410px]
                                         overflow-hidden
                                         rounded-3xl
                                         border border-pink-500/30
@@ -1160,144 +1417,323 @@ export default function MultiplayerDraftPlayPage() {
                                         shadow-[0_0_30px_rgba(236,72,153,0.18)]
                                         transition
                                         ${
-                                        mySubmitted
-                                            ? "cursor-not-allowed opacity-50"
-                                            : pendingPosition
-                                                ? "cursor-not-allowed opacity-40"
-                                                : isDraggingCard
-                                                    ? "cursor-grabbing scale-95 opacity-40"
-                                                    : "cursor-grab active:cursor-grabbing"
-                                        }
+                                                mySubmitted
+                                                    ? "cursor-not-allowed opacity-50"
+                                                    : pendingPosition
+                                                        ? "cursor-not-allowed opacity-40"
+                                                        : isDraggingCard
+                                                            ? "cursor-grabbing scale-95 opacity-40"
+                                                            : "cursor-grab active:cursor-grabbing"
+                                            }
                                     `}
-                                >
-                                    <img
-                                        src={currentCharacter.imageUrl}
-                                        alt={currentCharacter.name}
-                                        draggable={false}
-                                        className="pointer-events-none absolute inset-0 h-full w-full object-cover object-[50%_20%]"
-                                    />
+                                        >
+                                            <img
+                                                src={currentCharacter.imageUrl}
+                                                alt={currentCharacter.name}
+                                                draggable={false}
+                                                className="pointer-events-none absolute inset-0 h-full w-full object-cover object-[50%_20%]"
+                                            />
 
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
-
-
-                                    {/* ROUND BADGE */}
-                                    <div
-                                        className="
-                                        absolute left-4 top-4
-                                        rounded-full
-                                        border border-pink-400/30
-                                        bg-black/70
-                                        px-3 py-1.5
-                                        text-[10px] font-black
-                                        uppercase tracking-[0.2em]
-                                        text-pink-200
-                                        backdrop-blur-xl
-                                    "
-                                    >
-                                        Round {match.round}
-                                    </div>
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
 
 
-                                    {/* PRIVATE BADGE */}
-                                    <div
-                                        className="
-                                        absolute right-4 top-4
-                                        rounded-full
-                                        border border-purple-400/20
-                                        bg-purple-500/10
-                                        px-3 py-1.5
-                                        text-[10px] font-black
-                                        uppercase tracking-[0.2em]
-                                        text-purple-200
-                                        backdrop-blur-xl
-                                    "
-                                    >
-                                        🔒 Private
-                                    </div>
+                                            {/* ROUND BADGE */}
+                                            <div
+                                                className="
+                                                    absolute left-4 top-4
+                                                    rounded-full
+                                                    border border-pink-400/30
+                                                    bg-black/70
+                                                    px-3 py-1.5
+                                                    text-[10px] font-black
+                                                    uppercase tracking-[0.2em]
+                                                    text-pink-200
+                                                    backdrop-blur-xl
+                                                "
+                                            >
+                                                Round {match.round}
+                                            </div>
 
 
-                                    <div className="absolute bottom-0 left-0 right-0 p-5">
+                                            {/* PRIVATE BADGE */}
+                                            <div
+                                                className={`
+                                                    absolute right-4 top-4
+                                                    rounded-full
+                                                    border
+                                                    px-3 py-1.5
+                                                    text-[10px] font-black
+                                                    uppercase tracking-[0.2em]
+                                                    backdrop-blur-xl
 
-                                        <p className="text-xs font-bold uppercase tracking-widest text-purple-300">
-                                            Drag to Position
-                                        </p>
+                                                    ${
+                                                    bothRollsLocked
+                                                        ? `
+                                                            border-green-400/25
+                                                            bg-green-500/10
+                                                            text-green-300
+                                                        `
+                                                        : `
+                                                            border-purple-400/20
+                                                            bg-purple-500/10
+                                                            text-purple-200
+                                                        `
+                                                    }
+                                                `}
+                                            >
+                                                {bothRollsLocked
+                                                    ? "⚔ Revealed"
+                                                    : "🔒 Private Roll"}
+                                            </div>
 
-                                        <h3 className="mt-2 text-3xl font-black text-white drop-shadow">
-                                            {currentCharacter.name}
-                                        </h3>
 
-                                        <p className="text-base font-medium text-white/75">
-                                            {currentCharacter.anime}
-                                        </p>
-                                    </div>
+                                            <div className="absolute bottom-0 left-0 right-0 p-5">
+
+                                                <p className="text-xs font-bold uppercase tracking-widest text-purple-300">
+                                                    {bothRollsLocked
+                                                        ? "Drag to Position"
+                                                        : myRollLocked
+                                                            ? "Waiting for Opponent"
+                                                            : "Reroll or Lock"}
+                                                </p>
+                                                <h3 className="mt-2 text-3xl font-black text-white drop-shadow">
+                                                    {currentCharacter.name}
+                                                </h3>
+
+                                                <p className="text-base font-medium text-white/75">
+                                                    {currentCharacter.anime}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    ) : mySubmitted ? (
+                                        <div className="flex min-h-[410px] flex-col items-center justify-center rounded-3xl border border-purple-400/20 bg-black/40">
+
+                                            <div className="flex h-14 w-14 items-center justify-center rounded-full border border-purple-400/20 bg-purple-500/10 text-2xl">
+                                                ✓
+                                            </div>
+
+                                            <p className="mt-4 text-sm font-black uppercase tracking-widest text-purple-200">
+                                                Pick Locked
+                                            </p>
+
+                                            <p className="mt-2 animate-pulse text-xs font-semibold text-white/35">
+                                                Waiting for {opponentName}...
+                                            </p>
+
+                                        </div>
+                                    ) : (
+                                        <div className="flex min-h-[410px] flex-col items-center justify-center rounded-3xl border border-pink-500/20 bg-black/40">
+
+                                            <div className="h-10 w-10 animate-spin rounded-full border-4 border-pink-500/20 border-t-pink-400" />
+
+                                            <p className="mt-4 animate-pulse text-sm font-semibold text-pink-200/50">
+                                                Drawing character...
+                                            </p>
+
+                                        </div>
+                                    )}
                                 </div>
-                            ) : mySubmitted ? (
-                                <div className="flex min-h-[350px] flex-col items-center justify-center rounded-3xl border border-purple-400/20 bg-black/40">
 
-                                    <div className="flex h-14 w-14 items-center justify-center rounded-full border border-purple-400/20 bg-purple-500/10 text-2xl">
-                                        ✓
-                                    </div>
 
-                                    <p className="mt-4 text-sm font-black uppercase tracking-widest text-purple-200">
-                                        Pick Locked
+                                {/* OPPONENT CHARACTER */}
+                                <div>
+                                    <p className="mb-2 text-xs font-black uppercase tracking-[0.2em] text-purple-300/60">
+                                        {opponentName}
                                     </p>
 
-                                    <p className="mt-2 animate-pulse text-xs font-semibold text-white/35">
-                                        Waiting for {opponentName}...
-                                    </p>
+                                    {opponentCurrentCharacter ? (
+                                        <div
+                                            className="
+                                                relative
+                                                min-h-[410px]
+                                                overflow-hidden
+                                                rounded-3xl
+                                                border border-purple-500/30
+                                                bg-black
+                                                shadow-[0_0_30px_rgba(168,85,247,0.18)]
+                                                transition
+                                            "
+                                        >
+                                            <img
+                                                src={opponentCurrentCharacter.imageUrl}
+                                                alt={opponentCurrentCharacter.name}
+                                                draggable={false}
+                                                className="
+                                                    pointer-events-none
+                                                    absolute inset-0
+                                                    h-full w-full
+                                                    object-cover
+                                                    object-[50%_20%]
+                                                "
+                                            />
 
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+
+
+                                            {/* ROUND BADGE */}
+                                            <div
+                                                className="
+                                                    absolute left-4 top-4
+                                                    rounded-full
+                                                    border border-purple-400/30
+                                                    bg-black/70
+                                                    px-3 py-1.5
+                                                    text-[10px] font-black
+                                                    uppercase tracking-[0.2em]
+                                                    text-purple-200
+                                                    backdrop-blur-xl
+                                                "
+                                            >
+                                                Round {match.round}
+                                            </div>
+
+
+                                            {/* OPPONENT BADGE */}
+                                            <div
+                                                className="
+                                                    absolute right-4 top-4
+                                                    rounded-full
+                                                    border border-purple-400/25
+                                                    bg-purple-500/10
+                                                    px-3 py-1.5
+                                                    text-[10px] font-black
+                                                    uppercase tracking-[0.2em]
+                                                    text-purple-200
+                                                    backdrop-blur-xl
+                                                "
+                                            >
+                                                ⚔ Revealed
+                                            </div>
+
+
+                                            {/* CHARACTER INFO */}
+                                            <div className="absolute bottom-0 left-0 right-0 p-5">
+
+                                                <p className="text-xs font-bold uppercase tracking-widest text-purple-300">
+                                                    Opponent Roll
+                                                </p>
+
+                                                <h3 className="mt-2 text-3xl font-black text-white drop-shadow">
+                                                    {opponentCurrentCharacter.name}
+                                                </h3>
+
+                                                <p className="text-base font-medium text-white/75">
+                                                    {opponentCurrentCharacter.anime}
+                                                </p>
+
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div
+                                            className="
+                                                relative
+                                                flex
+                                                min-h-[410px]
+                                                flex-col
+                                                items-center
+                                                justify-center
+                                                overflow-hidden
+                                                rounded-3xl
+                                                border border-purple-500/20
+                                                bg-black/40
+                                            "
+                                        >
+                                            {/* ROUND BADGE */}
+                                            <div
+                                                className="
+                                                    absolute left-4 top-4
+                                                    rounded-full
+                                                    border border-purple-400/20
+                                                    bg-black/70
+                                                    px-3 py-1.5
+                                                    text-[10px] font-black
+                                                    uppercase tracking-[0.2em]
+                                                    text-purple-200/60
+                                                    backdrop-blur-xl
+                                                "
+                                            >
+                                                Round {match.round}
+                                            </div>
+
+
+                                            {/* HIDDEN ICON */}
+                                            <div
+                                                className="
+                                                    flex h-14 w-14
+                                                    items-center justify-center
+                                                    rounded-full
+                                                    border border-purple-400/20
+                                                    bg-purple-500/10
+                                                    text-2xl
+                                                "
+                                            >
+                                                ?
+                                            </div>
+
+                                            <p className="mt-4 text-sm font-black uppercase tracking-widest text-purple-200">
+                                                Opponent Roll Hidden
+                                            </p>
+
+                                            <p className="mt-2 text-center text-xs font-semibold text-white/35">
+                                                {!myRollLocked
+                                                    ? "Lock your character to reveal both rolls."
+                                                    : !opponentRollLocked
+                                                        ? `Waiting for ${opponentName}...`
+                                                        : "Revealing character..."}
+                                            </p>
+                                        </div>
+                                    )}
                                 </div>
-                            ) : (
-                                <div className="flex min-h-[350px] flex-col items-center justify-center rounded-3xl border border-pink-500/20 bg-black/40">
+                            </div>
 
-                                    <div className="h-10 w-10 animate-spin rounded-full border-4 border-pink-500/20 border-t-pink-400" />
+                            {/* ============================================= */}
+                            {/* ROLL ACTIONS */}
+                            {/* ============================================= */}
 
-                                    <p className="mt-4 animate-pulse text-sm font-semibold text-pink-200/50">
-                                        Drawing character...
-                                    </p>
+                            <div className="mt-5 grid gap-4 sm:grid-cols-2">
 
-                                </div>
-                            )}
-
-                            <button
-                                type="button"
-                                onClick={handleReroll}
-                                disabled={
-                                    playerState.rerollUsed ||
-                                    mySubmitted ||
-                                    !!pendingPosition ||
-                                    rerolling ||
-                                    !currentCharacter
-                                }
-                                className={`
-                                    group relative mt-4 w-full
-                                    overflow-hidden
-                                    rounded-3xl
-                                    border
-                                    px-5 py-4
-                                    transition-all duration-300
-                            
-                                    ${
-                                    playerState.rerollUsed
-                                        ? `
-                                            cursor-not-allowed
-                                            border-zinc-300
-                                            bg-zinc-100
-                                            text-zinc-500
-                                            opacity-70
-                                        `
-                                        : mySubmitted ||
-                                        pendingPosition ||
+                                {/* REROLL */}
+                                <button
+                                    type="button"
+                                    onClick={handleReroll}
+                                    disabled={
+                                        playerState.rerollUsed ||
+                                        mySubmitted ||
+                                        !!pendingPosition ||
                                         rerolling ||
-                                        !currentCharacter
+                                        !currentCharacter ||
+                                        myRollLocked
+                                    }
+                                    className={`
+                                        group relative
+                                        overflow-hidden
+                                        rounded-3xl
+                                        border
+                                        px-5 py-5
+                                        transition-all duration-300
+
+                                        ${
+                                        playerState.rerollUsed
                                             ? `
                                                 cursor-not-allowed
-                                                border-yellow-400/30
-                                                bg-yellow-500/10
-                                                text-yellow-100/40
-                                                opacity-50
-                                              `
-                                            : `
+                                                border-zinc-300/20
+                                                bg-zinc-500/10
+                                                text-zinc-400
+                                                opacity-70
+                                            `
+                                            : myRollLocked ||
+                                            mySubmitted ||
+                                            pendingPosition ||
+                                            rerolling ||
+                                            !currentCharacter
+                                                ? `
+                                                    cursor-not-allowed
+                                                    border-yellow-400/20
+                                                    bg-yellow-500/5
+                                                    text-yellow-100/30
+                                                    opacity-50
+                                                `
+                                                : `
                                                 border-yellow-400
                                                 bg-gradient-to-br
                                                 from-yellow-300
@@ -1308,122 +1744,141 @@ export default function MultiplayerDraftPlayPage() {
                                                 hover:-translate-y-1
                                                 hover:cursor-pointer
                                                 hover:shadow-[0_0_30px_rgba(250,204,21,0.75)]
-                                              `
+                                            `
+                                        }
+                                    `}
+                                >
+                                    {!playerState.rerollUsed &&
+                                        !myRollLocked &&
+                                        !mySubmitted &&
+                                        !pendingPosition && (
+                                            <>
+                                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent opacity-0 transition group-hover:opacity-100" />
+
+                                                <div className="absolute -right-6 -top-6 h-16 w-16 rounded-full bg-white/20 blur-xl" />
+                                            </>
+                                        )}
+
+                                    <div className="relative z-10 flex items-center justify-center gap-3">
+
+                                        <span className="text-xl">
+                                            {playerState.rerollUsed
+                                                ? "✓"
+                                                : rerolling
+                                                    ? "⟳"
+                                                    : "🎲"}
+                                        </span>
+
+                                        <div className="text-left">
+
+                                            <p className="text-sm font-black uppercase tracking-widest">
+                                                {playerState.rerollUsed
+                                                    ? "Reroll Used"
+                                                    : rerolling
+                                                        ? "Rewriting Fate..."
+                                                        : "Fate Rewrite"}
+                                            </p>
+
+                                            <p
+                                                className={`text-xs ${
+                                                    playerState.rerollUsed
+                                                        ? "text-zinc-500"
+                                                        : myRollLocked
+                                                            ? "text-yellow-100/30"
+                                                            : "text-purple-950/70"
+                                                }`}
+                                            >
+                                                {playerState.rerollUsed
+                                                    ? "No rerolls remaining"
+                                                    : myRollLocked
+                                                        ? "Roll already locked"
+                                                        : rerolling
+                                                            ? "Drawing a new character"
+                                                            : "One secret chance to redraw"}
+                                            </p>
+
+                                        </div>
+                                    </div>
+                                </button>
+
+                                {/* LOCK ROLL */}
+                                <button
+                                    type="button"
+                                    onClick={handleLockRoll}
+                                    disabled={
+                                        myRollLocked ||
+                                        lockingRoll ||
+                                        playerState.rerollUsed ||
+                                        !currentCharacter
                                     }
-                                `}
-                            >
-                                {!playerState.rerollUsed &&
-                                    !mySubmitted &&
-                                    !pendingPosition && (
-                                        <>
-                                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent opacity-0 transition group-hover:opacity-100" />
+                                    className={`
+                                        relative
+                                        overflow-hidden
+                                        rounded-3xl
+                                        border
+                                        px-5 py-5
+                                        font-black
+                                        transition-all duration-300
 
-                                            <div className="absolute -right-6 -top-6 h-16 w-16 rounded-full bg-white/20 blur-xl" />
-                                        </>
-                                    )}
+                                        ${
+                                        myRollLocked
+                                            ? `
+                                                cursor-not-allowed
+                                                border-green-400/25
+                                                bg-green-500/10
+                                                text-green-300
+                                            `
+                                            : `
+                                                border-pink-400/40
+                                                bg-gradient-to-r
+                                                from-pink-600
+                                                via-fuchsia-600
+                                                to-purple-700
+                                                text-white
+                                                shadow-[0_0_25px_rgba(236,72,153,0.25)]
+                                                hover:-translate-y-1
+                                                hover:cursor-pointer
+                                                hover:shadow-[0_0_35px_rgba(236,72,153,0.4)]
+                                            `
+                                        }
+                                    `}
+                                >
+                                    <div className="flex items-center justify-center gap-3">
 
-                                <div className="relative z-10 flex items-center justify-center gap-3">
-                                    <span className="text-xl">
-                                        {playerState.rerollUsed
-                                            ? "✓"
-                                            : rerolling
-                                                ? "⟳"
-                                                : "🎲"}
-                                    </span>
+                                        <span className="text-xl">
+                                            {myRollLocked
+                                                ? "✓"
+                                                : "🔒"}
+                                        </span>
 
-                                    <div className="text-left">
-                                        <p className="text-sm font-black uppercase tracking-widest">
-                                            {playerState.rerollUsed
-                                                ? "Reroll Used"
-                                                : rerolling
-                                                    ? "Rewriting Fate..."
-                                                    : "Fate Rewrite"}
-                                        </p>
+                                        <div className="text-left">
+                                            <p className="text-sm font-black uppercase tracking-widest">
+                                                {lockingRoll
+                                                    ? playerState.rerollUsed
+                                                        ? "Auto-Locking..."
+                                                        : "Locking..."
+                                                    : myRollLocked
+                                                        ? opponentRollLocked
+                                                            ? "Rolls Revealed"
+                                                            : "Roll Locked"
+                                                        : "Lock Roll"}
+                                            </p>
 
-                                        <p
-                                            className={`text-xs ${
+                                            <p className="text-xs font-medium opacity-60">
+                                                {lockingRoll &&
                                                 playerState.rerollUsed
-                                                    ? "text-zinc-500"
-                                                    : "text-purple-950/70"
-                                            }`}
-                                        >
-                                            {playerState.rerollUsed
-                                                ? "No rerolls remaining"
-                                                : rerolling
-                                                    ? "Drawing a new character"
-                                                    : "One chance to redraw"}
-                                        </p>
-                                    </div>
-                                </div>
-                            </button>
-
-
-                            {/* ============================================= */}
-                            {/* PRIVATE TEAM INFO */}
-                            {/* ============================================= */}
-
-                            <div
-                                className="
-                                relative mt-5 overflow-hidden
-                                rounded-3xl
-                                border border-purple-200/20
-                                bg-gradient-to-br
-                                from-purple-950
-                                via-purple-900
-                                to-black
-                                p-5
-                                text-white
-                                shadow-[0_0_25px_rgba(126,34,206,0.25)]
-                            "
-                            >
-                                <div className="absolute -right-10 -top-10 h-28 w-28 rounded-full bg-yellow-300/10 blur-2xl" />
-
-                                <div className="absolute -bottom-10 -left-10 h-28 w-28 rounded-full bg-fuchsia-400/15 blur-2xl" />
-
-                                <div className="relative z-10">
-
-                                    <p className="text-xs font-black uppercase tracking-[0.25em] text-purple-200">
-                                        Your Power Position
-                                    </p>
-
-                                    <div className="mt-3 flex items-center gap-3">
-
-                                    <span className="text-3xl">
-                                        ⚡
-                                    </span>
-
-                                        <p className="text-xl font-black text-yellow-300">
-                                            {
-                                                playerState.selectedPowerPosition
-                                            }
-                                        </p>
-                                    </div>
-
-                                    <div className="mt-4 h-px bg-white/10" />
-
-                                    <div className="mt-4 flex items-center justify-between">
-
-                                        <div>
-                                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/35">
-                                                Draft Progress
-                                            </p>
-
-                                            <p className="mt-1 text-sm font-bold text-white/70">
-                                                Round {match.round} of 9
-                                            </p>
-                                        </div>
-
-                                        <div className="text-right">
-                                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/35">
-                                                Opponent
-                                            </p>
-
-                                            <p className="mt-1 max-w-[120px] truncate text-sm font-bold text-white/70">
-                                                {opponentName}
+                                                    ? "Fate Rewrite used — locking automatically"
+                                                    : myRollLocked
+                                                        ? opponentRollLocked
+                                                            ? "Choose where to draft your character"
+                                                            : `Waiting for ${opponentName}...`
+                                                        : playerState.rerollUsed
+                                                            ? "Future rolls lock automatically"
+                                                            : "Finalize your character for this round"}
                                             </p>
                                         </div>
                                     </div>
-                                </div>
+                                </button>
                             </div>
                         </div>
 
@@ -1497,6 +1952,7 @@ export default function MultiplayerDraftPlayPage() {
                                                     event.preventDefault();
 
                                                     if (
+                                                        bothRollsLocked &&
                                                         !pick &&
                                                         !pendingPosition &&
                                                         !mySubmitted

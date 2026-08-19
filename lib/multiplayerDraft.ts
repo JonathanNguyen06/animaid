@@ -5,7 +5,7 @@ import {
     onSnapshot, updateDoc, getDoc, query, collection, where, limit, getDocs, deleteDoc
 } from "firebase/firestore";
 import type {
-    DraftMatch, MultiplayerDraftPick, MultiplayerDraftPlayerState,
+    DraftMatch, MultiplayerDraftPick, MultiplayerDraftPlayerState, MultiplayerDraftRoundReveal,
 } from "@/types/multiplayerDraft";
 import { db } from "./firebase";
 import {
@@ -94,6 +94,9 @@ export async function createDraftMatch(
                         forfeitedByUid: null,
                         endReason: null,
 
+                        hostRollLocked: false,
+                        guestRollLocked: false,
+
                         matchmaking: "room",
 
                         createdAt: serverTimestamp(),
@@ -175,6 +178,10 @@ export function listenToDraftMatch(
                     data.endReason ?? null,
                 matchmaking:
                     data.matchmaking ?? "room",
+                hostRollLocked:
+                    data.hostRollLocked ?? false,
+                guestRollLocked:
+                    data.guestRollLocked ?? false,
             };
 
             onMatchChange(match);
@@ -542,6 +549,8 @@ async function tryMatchOpenDraftQueue(
 
                                     createdAt:
                                         serverTimestamp(),
+                                    hostRollLocked: false,
+                                    guestRollLocked: false,
                                 }
                             );
 
@@ -1426,6 +1435,14 @@ export async function submitMultiplayerDraftPick(
                 match.status !==
                 "drafting"
             ) {
+                if (
+                    !match.hostRollLocked ||
+                    !match.guestRollLocked
+                ) {
+                    throw new Error(
+                        "ROLLS_NOT_REVEALED"
+                    );
+                }
                 throw new Error(
                     "NOT_DRAFTING"
                 );
@@ -1687,6 +1704,12 @@ export async function advanceDraftRoundIfReady(
                     round:
                         match.round + 1,
 
+                    hostRollLocked:
+                        false,
+
+                    guestRollLocked:
+                        false,
+
                     hostSubmitted:
                         false,
 
@@ -1759,6 +1782,17 @@ export async function rerollMultiplayerDraftCharacter(
 
             const isGuest =
                 match.guest?.uid === uid;
+
+            const rollLocked =
+                isHost
+                    ? match.hostRollLocked
+                    : match.guestRollLocked;
+
+            if (rollLocked) {
+                throw new Error(
+                    "ROLL_ALREADY_LOCKED"
+                );
+            }
 
             if (!isHost && !isGuest) {
                 throw new Error(
@@ -2139,7 +2173,6 @@ export async function completeDraftMatch(
             const match =
                 matchSnapshot.data();
 
-            // Already finished
             if (
                 match.status ===
                 "complete"
@@ -2156,13 +2189,19 @@ export async function completeDraftMatch(
                 );
             }
 
-            // Keep one client responsible
-            // for final match progression.
             if (
                 match.host.uid !== uid
             ) {
                 throw new Error(
                     "ONLY_HOST_CAN_COMPLETE"
+                );
+            }
+
+            if (
+                !match.guest
+            ) {
+                throw new Error(
+                    "NO_OPPONENT"
                 );
             }
 
@@ -2175,10 +2214,225 @@ export async function completeDraftMatch(
                 );
             }
 
+
+            const hostStateRef =
+                doc(
+                    db,
+                    "draftMatches",
+                    normalizedCode,
+                    "playerStates",
+                    match.host.uid
+                );
+
+            const guestStateRef =
+                doc(
+                    db,
+                    "draftMatches",
+                    normalizedCode,
+                    "playerStates",
+                    match.guest.uid
+                );
+
+
+            const hostStateSnapshot =
+                await transaction.get(
+                    hostStateRef
+                );
+
+            const guestStateSnapshot =
+                await transaction.get(
+                    guestStateRef
+                );
+
+
+            if (
+                !hostStateSnapshot.exists() ||
+                !guestStateSnapshot.exists()
+            ) {
+                throw new Error(
+                    "PLAYER_STATE_NOT_FOUND"
+                );
+            }
+
+
+            const hostState =
+                hostStateSnapshot.data() as
+                    MultiplayerDraftPlayerState;
+
+            const guestState =
+                guestStateSnapshot.data() as
+                    MultiplayerDraftPlayerState;
+
+
+            let hostPositionWins = 0;
+            let guestPositionWins = 0;
+
+
+            /*
+             * Compare the 8 normal positions.
+             */
+            for (
+                const position
+                of draftPositions
+                ) {
+                const hostPick =
+                    hostState.picks.find(
+                        (pick) =>
+                            pick.position ===
+                            position
+                    );
+
+                const guestPick =
+                    guestState.picks.find(
+                        (pick) =>
+                            pick.position ===
+                            position
+                    );
+
+                if (
+                    !hostPick ||
+                    !guestPick
+                ) {
+                    throw new Error(
+                        "INCOMPLETE_DRAFT"
+                    );
+                }
+
+                if (
+                    hostPick.power >
+                    guestPick.power
+                ) {
+                    hostPositionWins++;
+                } else if (
+                    guestPick.power >
+                    hostPick.power
+                ) {
+                    guestPositionWins++;
+                }
+            }
+
+
+            /*
+             * Compare the Power Positions.
+             *
+             * They don't have to be the same
+             * position type. This is simply
+             * Power Position vs Power Position.
+             */
+            const hostPowerPick =
+                hostState.picks.find(
+                    (pick) =>
+                        pick.position ===
+                        hostState
+                            .selectedPowerPosition
+                );
+
+            const guestPowerPick =
+                guestState.picks.find(
+                    (pick) =>
+                        pick.position ===
+                        guestState
+                            .selectedPowerPosition
+                );
+
+
+            if (
+                !hostPowerPick ||
+                !guestPowerPick
+            ) {
+                throw new Error(
+                    "POWER_POSITION_MISSING"
+                );
+            }
+
+
+            if (
+                hostPowerPick.power >
+                guestPowerPick.power
+            ) {
+                hostPositionWins++;
+            } else if (
+                guestPowerPick.power >
+                hostPowerPick.power
+            ) {
+                guestPositionWins++;
+            }
+
+
+            const hostTotalPower =
+                hostState.picks.reduce(
+                    (total, pick) =>
+                        total +
+                        pick.power,
+                    0
+                );
+
+
+            const guestTotalPower =
+                guestState.picks.reduce(
+                    (total, pick) =>
+                        total +
+                        pick.power,
+                    0
+                );
+
+
+            let winnerUid:
+                string | null =
+                null;
+
+
+            /*
+             * Primary:
+             * Position victories.
+             */
+            if (
+                hostPositionWins >
+                guestPositionWins
+            ) {
+                winnerUid =
+                    match.host.uid;
+            } else if (
+                guestPositionWins >
+                hostPositionWins
+            ) {
+                winnerUid =
+                    match.guest.uid;
+            }
+
+            /*
+             * Tiebreak:
+             * Total team power.
+             */
+            else if (
+                hostTotalPower >
+                guestTotalPower
+            ) {
+                winnerUid =
+                    match.host.uid;
+            } else if (
+                guestTotalPower >
+                hostTotalPower
+            ) {
+                winnerUid =
+                    match.guest.uid;
+            }
+
+
+            /*
+             * winnerUid remains null
+             * only for a true draw.
+             */
             transaction.update(
                 matchRef,
                 {
-                    status: "complete",
+                    status:
+                        "complete",
+
+                    winnerUid,
+
+                    endReason:
+                        "normal",
                 }
             );
         }
@@ -2535,11 +2789,25 @@ export async function startDraftRematchIfReady(
                     round:
                         0,
 
+                    // -------------------------
+                    // ROUND STATE
+                    // -------------------------
+
                     hostSubmitted:
                         false,
 
                     guestSubmitted:
                         false,
+
+                    hostRollLocked:
+                        false,
+
+                    guestRollLocked:
+                        false,
+
+                    // -------------------------
+                    // POWER POSITION
+                    // -------------------------
 
                     hostPowerSelected:
                         false,
@@ -2547,11 +2815,19 @@ export async function startDraftRematchIfReady(
                     guestPowerSelected:
                         false,
 
+                    // -------------------------
+                    // ASCENSION
+                    // -------------------------
+
                     hostAscensionSelected:
                         false,
 
                     guestAscensionSelected:
                         false,
+
+                    // -------------------------
+                    // REMATCH FLAGS
+                    // -------------------------
 
                     hostRematchRequested:
                         false,
@@ -2564,6 +2840,19 @@ export async function startDraftRematchIfReady(
 
                     guestRematchReady:
                         false,
+
+                    // -------------------------
+                    // OLD MATCH RESULT
+                    // -------------------------
+
+                    winnerUid:
+                        null,
+
+                    forfeitedByUid:
+                        null,
+
+                    endReason:
+                        null,
                 }
             );
         }
@@ -2593,6 +2882,194 @@ export async function getDraftPlayerState(
     }
 
     return snapshot.data() as MultiplayerDraftPlayerState;
+}
+
+export async function lockDraftRoundCharacter(
+    code: string,
+    uid: string
+) {
+    const normalizedCode =
+        code.trim().toUpperCase();
+
+    const matchRef = doc(
+        db,
+        "draftMatches",
+        normalizedCode
+    );
+
+    const playerStateRef = doc(
+        db,
+        "draftMatches",
+        normalizedCode,
+        "playerStates",
+        uid
+    );
+
+    const revealRef = doc(
+        db,
+        "draftMatches",
+        normalizedCode,
+        "roundReveals",
+        uid
+    );
+
+    await runTransaction(
+        db,
+        async (transaction) => {
+            const matchSnapshot =
+                await transaction.get(
+                    matchRef
+                );
+
+            const playerSnapshot =
+                await transaction.get(
+                    playerStateRef
+                );
+
+            if (!matchSnapshot.exists()) {
+                throw new Error(
+                    "MATCH_NOT_FOUND"
+                );
+            }
+
+            if (!playerSnapshot.exists()) {
+                throw new Error(
+                    "PLAYER_STATE_NOT_FOUND"
+                );
+            }
+
+            const match =
+                matchSnapshot.data();
+
+            const playerState =
+                playerSnapshot.data();
+
+            if (
+                match.status !==
+                "drafting"
+            ) {
+                throw new Error(
+                    "NOT_DRAFTING"
+                );
+            }
+
+            const isHost =
+                match.host.uid === uid;
+
+            const isGuest =
+                match.guest?.uid === uid;
+
+            if (!isHost && !isGuest) {
+                throw new Error(
+                    "NOT_IN_MATCH"
+                );
+            }
+
+            const alreadyLocked =
+                isHost
+                    ? match.hostRollLocked
+                    : match.guestRollLocked;
+
+            if (alreadyLocked) {
+                return;
+            }
+
+            const alreadySubmitted =
+                isHost
+                    ? match.hostSubmitted
+                    : match.guestSubmitted;
+
+            if (alreadySubmitted) {
+                throw new Error(
+                    "ALREADY_SUBMITTED"
+                );
+            }
+
+            if (
+                !playerState.currentCharacterId
+            ) {
+                throw new Error(
+                    "NO_CURRENT_CHARACTER"
+                );
+            }
+
+            /*
+             * This document contains ONLY
+             * information the opponent is
+             * eventually allowed to see.
+             *
+             * rerollUsed remains private.
+             */
+            transaction.set(
+                revealRef,
+                {
+                    uid,
+                    round:
+                    match.round,
+
+                    characterId:
+                    playerState
+                        .currentCharacterId,
+                }
+            );
+
+            transaction.update(
+                matchRef,
+                isHost
+                    ? {
+                        hostRollLocked:
+                            true,
+                    }
+                    : {
+                        guestRollLocked:
+                            true,
+                    }
+            );
+        }
+    );
+}
+
+export function listenToDraftRoundReveal(
+    code: string,
+    uid: string,
+    onChange: (
+        reveal:
+            MultiplayerDraftRoundReveal |
+            null
+    ) => void
+) {
+    const normalizedCode =
+        code.trim().toUpperCase();
+
+    const revealRef = doc(
+        db,
+        "draftMatches",
+        normalizedCode,
+        "roundReveals",
+        uid
+    );
+
+    return onSnapshot(
+        revealRef,
+        (snapshot) => {
+            if (!snapshot.exists()) {
+                onChange(null);
+                return;
+            }
+
+            onChange(
+                snapshot.data() as
+                    MultiplayerDraftRoundReveal
+            );
+        },
+
+        (error) => {
+            console.error(
+                "Failed to listen to round reveal:",
+                error
+            );
+        }
+    );
 }
 
 export async function claimDraftForfeit(

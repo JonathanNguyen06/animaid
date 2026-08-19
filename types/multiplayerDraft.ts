@@ -50,6 +50,9 @@ export type DraftMatch = {
 
     round: number;
 
+    hostRollLocked: boolean;
+    guestRollLocked: boolean;
+
     hostSubmitted: boolean;
     guestSubmitted: boolean;
 
@@ -68,6 +71,12 @@ export type DraftMatch = {
     winnerUid: string | null;
     forfeitedByUid: string | null;
     endReason: DraftMatchEndReason | null;
+};
+
+export type MultiplayerDraftRoundReveal = {
+    uid: string;
+    round: number;
+    characterId: string;
 };
 
 export type MultiplayerDraftPlayerState = {
