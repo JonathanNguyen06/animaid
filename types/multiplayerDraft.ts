@@ -22,6 +22,18 @@ export type DraftMatchPlayer = {
     ready: boolean;
 };
 
+export type DraftMatchmaking =
+    | "room"
+    | "open";
+
+type DraftQueueEntry = {
+    uid: string;
+    displayName: string;
+    status: "waiting" | "matched";
+    matchCode: string | null;
+    matchedWithUid: string | null;
+};
+
 export type DraftMatchEndReason =
     | "normal"
     | "forfeit";
@@ -33,6 +45,8 @@ export type DraftMatch = {
     guest: DraftMatchPlayer | null;
 
     status: DraftMatchStatus;
+
+    matchmaking: DraftMatchmaking;
 
     round: number;
 

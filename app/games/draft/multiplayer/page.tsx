@@ -19,30 +19,22 @@ import {
 } from "@/lib/firebase";
 
 import {
-    createDraftMatch,
-    joinDraftMatch,
+    cancelOpenDraftQueue,
+    clearOpenDraftQueueEntry,
+    createDraftMatch, enterOpenDraftQueue,
+    joinDraftMatch, listenToOpenDraftQueue,
 } from "@/lib/multiplayerDraft";
 
 export default function MultiplayerDraftPage() {
     const router = useRouter();
-
-    const [user, setUser] =
-        useState<User | null>(null);
-
-    const [loading, setLoading] =
-        useState(true);
-
-    const [roomCode, setRoomCode] =
-        useState("");
-
-    const [error, setError] =
-        useState("");
-
-    const [joining, setJoining] =
-        useState(false);
-
-    const [creating, setCreating] =
-        useState(false);
+    const [user, setUser] = useState<User | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [roomCode, setRoomCode] = useState("");
+    const [error, setError] = useState("");
+    const [joining, setJoining] = useState(false);
+    const [creating, setCreating] = useState(false);
+    const [queueing, setQueueing] = useState(false);
+    const [queueError, setQueueError] = useState("");
 
     useEffect(() => {
         const unsubscribe =
@@ -58,7 +50,7 @@ export default function MultiplayerDraftPage() {
     }, []);
 
     async function handleCreateMatch() {
-        if (!user) return;
+        if (!user || queueing) return;
 
         setError("");
         setCreating(true);
@@ -85,8 +77,142 @@ export default function MultiplayerDraftPage() {
         }
     }
 
+    useEffect(() => {
+        if (
+            !user ||
+            !queueing
+        ) {
+            return;
+        }
+
+        const unsubscribe =
+            listenToOpenDraftQueue(
+                user.uid,
+                async (
+                    matchCode
+                ) => {
+                    setQueueing(false);
+
+                    try {
+                        await clearOpenDraftQueueEntry(
+                            user.uid
+                        );
+                    } catch (error) {
+                        console.error(
+                            "Failed to clear matched queue entry:",
+                            error
+                        );
+                    }
+
+                    router.push(
+                        `/games/draft/multiplayer/${matchCode}`
+                    );
+                }
+            );
+
+        return unsubscribe;
+    }, [
+        user,
+        queueing,
+        router,
+    ]);
+
+    async function handleOpenQueue() {
+        if (
+            !user ||
+            queueing
+        ) {
+            return;
+        }
+
+        setError("");
+        setQueueError("");
+        setQueueing(true);
+
+        try {
+            const matchCode =
+                await enterOpenDraftQueue(
+                    user.uid,
+                    user.displayName ??
+                    "Player"
+                );
+
+            /*
+             * We found somebody ourselves.
+             *
+             * Since WE created the match,
+             * we already know its code.
+             */
+            if (matchCode) {
+                setQueueing(false);
+
+                await clearOpenDraftQueueEntry(
+                    user.uid
+                ).catch(() => {});
+
+                router.push(
+                    `/games/draft/multiplayer/${matchCode}`
+                );
+            }
+        } catch (error) {
+            console.error(
+                "Failed to enter open queue:",
+                error
+            );
+
+            setQueueError(
+                "Unable to join matchmaking."
+            );
+
+            setQueueing(false);
+        }
+    }
+
+    async function handleCancelQueue() {
+        if (!user) {
+            return;
+        }
+
+        try {
+            const matchCode =
+                await cancelOpenDraftQueue(
+                    user.uid
+                );
+
+            /*
+             * Matchmaking beat our cancellation.
+             *
+             * Don't abandon the opponent.
+             */
+            if (matchCode) {
+                setQueueing(false);
+
+                await clearOpenDraftQueueEntry(
+                    user.uid
+                ).catch(() => {});
+
+                router.push(
+                    `/games/draft/multiplayer/${matchCode}`
+                );
+
+                return;
+            }
+
+            setQueueing(false);
+        } catch (error) {
+            console.error(
+                "Failed to cancel queue:",
+                error
+            );
+
+            setQueueError(
+                "Unable to cancel matchmaking."
+            );
+        }
+    }
+
     async function handleJoinMatch() {
-        if (!user) return;
+        if (!user || queueing) return;
 
         if (!roomCode.trim()) {
             setError(
@@ -197,10 +323,171 @@ export default function MultiplayerDraftPage() {
                     </p>
                 </div>
 
+                <div
+                    className="
+                        mt-8
+                        overflow-hidden
+                        rounded-3xl
+                        border border-pink-400/25
+                        bg-gradient-to-br
+                        from-pink-500/10
+                        via-fuchsia-500/5
+                        to-purple-500/10
+                        p-6
+                        shadow-[0_0_30px_rgba(236,72,153,0.1)]
+                    "
+                >
+                    {!queueing ? (
+                        <>
+                            <div className="text-center">
+                                <div
+                                    className="
+                                        mx-auto
+                                        flex h-14 w-14
+                                        items-center justify-center
+                                        rounded-2xl
+                                        border border-pink-400/25
+                                        bg-pink-500/10
+                                        text-2xl
+                                        shadow-[0_0_20px_rgba(236,72,153,0.15)]
+                                    "
+                                >
+                                    ⚔️
+                                </div>
+
+                                <p className="mt-4 text-xs font-black uppercase tracking-[0.3em] text-pink-300/60">
+                                    Quick Match
+                                </p>
+
+                                <h2 className="mt-2 text-2xl font-black text-white">
+                                    Open Queue
+                                </h2>
+
+                                <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-white/45">
+                                    Find another player looking
+                                    for a draft and battle
+                                    head-to-head.
+                                </p>
+                            </div>
+
+                            <button
+                                type="button"
+                                onClick={handleOpenQueue}
+                                disabled={
+                                    creating ||
+                                    joining
+                                }
+                                className="
+                                    mt-6 w-full
+                                    rounded-2xl
+                                    bg-gradient-to-r
+                                    from-pink-600
+                                    via-fuchsia-600
+                                    to-purple-700
+                                    px-6 py-4
+                                    font-black text-white
+                                    shadow-[0_0_25px_rgba(236,72,153,0.3)]
+                                    transition
+                                    hover:-translate-y-1
+                                    hover:cursor-pointer
+                                    hover:shadow-[0_0_35px_rgba(236,72,153,0.45)]
+                                    disabled:cursor-not-allowed
+                                    disabled:opacity-50
+                                "
+                            >
+                                Find Opponent
+                            </button>
+                        </>
+                    ) : (
+                        <div className="py-3 text-center">
+                            <div className="relative mx-auto flex h-20 w-20 items-center justify-center">
+                                <div
+                                    className="
+                                        absolute inset-0
+                                        animate-ping
+                                        rounded-full
+                                        border border-pink-400/30
+                                    "
+                                />
+
+                                <div
+                                    className="
+                                        absolute inset-3
+                                        animate-pulse
+                                        rounded-full
+                                        border border-purple-400/30
+                                    "
+                                />
+
+                                <div
+                                    className="
+                                        h-4 w-4
+                                        rounded-full
+                                        bg-pink-400
+                                        shadow-[0_0_20px_rgba(244,114,182,0.9)]
+                                    "
+                                />
+                            </div>
+
+                            <p className="mt-5 text-xs font-black uppercase tracking-[0.35em] text-pink-300/60">
+                                Open Queue
+                            </p>
+
+                            <h2 className="mt-2 text-2xl font-black text-white">
+                                Searching for Opponent
+                            </h2>
+
+                            <p className="mt-2 animate-pulse text-sm text-white/40">
+                                Looking for another player...
+                            </p>
+
+                            <button
+                                type="button"
+                                onClick={handleCancelQueue}
+                                className="
+                                    mt-6
+                                    rounded-2xl
+                                    border border-white/15
+                                    bg-white/5
+                                    px-6 py-3
+                                    text-sm font-black
+                                    text-white/60
+                                    transition
+                                    hover:cursor-pointer
+                                    hover:border-red-400/30
+                                    hover:bg-red-500/10
+                                    hover:text-red-200
+                                "
+                            >
+                                Cancel Queue
+                            </button>
+                        </div>
+                    )}
+
+                    {queueError && (
+                        <p className="mt-4 text-center text-sm font-semibold text-red-300">
+                            {queueError}
+                        </p>
+                    )}
+                </div>
+
+                <div className="mt-7 flex items-center gap-4">
+                    <div className="h-px flex-1 bg-white/10" />
+
+                    <p className="text-xs font-black uppercase tracking-widest text-white/25">
+                        Private Match
+                    </p>
+
+                    <div className="h-px flex-1 bg-white/10" />
+                </div>
+
                 <button
                     type="button"
                     onClick={handleCreateMatch}
-                    disabled={creating}
+                    disabled={
+                        creating ||
+                        queueing
+                    }
                     className="
                         mt-8 w-full
                         rounded-2xl
@@ -270,7 +557,10 @@ export default function MultiplayerDraftPage() {
                 <button
                     type="button"
                     onClick={handleJoinMatch}
-                    disabled={joining}
+                    disabled={
+                        joining ||
+                        queueing
+                    }
                     className="
                         mt-4 w-full
                         rounded-2xl

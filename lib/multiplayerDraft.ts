@@ -2,7 +2,7 @@ import {
     doc,
     runTransaction,
     serverTimestamp,
-    onSnapshot, updateDoc, getDoc
+    onSnapshot, updateDoc, getDoc, query, collection, where, limit, getDocs, deleteDoc
 } from "firebase/firestore";
 import type {
     DraftMatch, MultiplayerDraftPick, MultiplayerDraftPlayerState,
@@ -94,6 +94,8 @@ export async function createDraftMatch(
                         forfeitedByUid: null,
                         endReason: null,
 
+                        matchmaking: "room",
+
                         createdAt: serverTimestamp(),
                     });
                 }
@@ -171,6 +173,8 @@ export function listenToDraftMatch(
                     data.forfeitedByUid ?? null,
                 endReason:
                     data.endReason ?? null,
+                matchmaking:
+                    data.matchmaking ?? "room",
             };
 
             onMatchChange(match);
@@ -182,6 +186,537 @@ export function listenToDraftMatch(
                 error
             );
         }
+    );
+}
+
+type DraftQueueEntry = {
+    uid: string;
+    displayName: string;
+
+    status:
+        | "waiting"
+        | "matched";
+
+    matchCode: string | null;
+    matchedWithUid: string | null;
+};
+
+export async function enterOpenDraftQueue(
+    uid: string,
+    displayName: string
+): Promise<string | null> {
+    const myQueueRef = doc(
+        db,
+        "draftQueue",
+        uid
+    );
+
+    /*
+     * First make sure WE have a queue entry.
+     *
+     * Using a transaction prevents accidentally
+     * replacing a match that found us at the same time.
+     */
+    const existingMatchCode =
+        await runTransaction(
+            db,
+            async (transaction) => {
+                const snapshot =
+                    await transaction.get(
+                        myQueueRef
+                    );
+
+                if (snapshot.exists()) {
+                    const data =
+                        snapshot.data() as
+                            DraftQueueEntry;
+
+                    if (
+                        data.status ===
+                        "matched" &&
+                        data.matchCode
+                    ) {
+                        return data.matchCode;
+                    }
+
+                    if (
+                        data.status ===
+                        "waiting"
+                    ) {
+                        return null;
+                    }
+                }
+
+                transaction.set(
+                    myQueueRef,
+                    {
+                        uid,
+                        displayName,
+
+                        status:
+                            "waiting",
+
+                        matchCode:
+                            null,
+
+                        matchedWithUid:
+                            null,
+
+                        joinedAt:
+                            serverTimestamp(),
+                    }
+                );
+
+                return null;
+            }
+        );
+
+    if (existingMatchCode) {
+        return existingMatchCode;
+    }
+
+    /*
+     * We are now waiting.
+     *
+     * See if somebody else is already
+     * sitting in the queue.
+     */
+    return tryMatchOpenDraftQueue(
+        uid,
+        displayName
+    );
+}
+
+
+async function tryMatchOpenDraftQueue(
+    uid: string,
+    displayName: string
+): Promise<string | null> {
+    const queueQuery =
+        query(
+            collection(
+                db,
+                "draftQueue"
+            ),
+
+            where(
+                "status",
+                "==",
+                "waiting"
+            ),
+
+            limit(10)
+        );
+
+    const queueSnapshot =
+        await getDocs(queueQuery);
+
+    const candidates =
+        queueSnapshot.docs.filter(
+            (snapshot) =>
+                snapshot.id !== uid
+        );
+
+    if (candidates.length === 0) {
+        /*
+         * Nobody is here yet.
+         *
+         * We simply stay in the queue.
+         * A future player will find us.
+         */
+        return null;
+    }
+
+    const myQueueRef =
+        doc(
+            db,
+            "draftQueue",
+            uid
+        );
+
+    /*
+     * Try candidates until one transaction succeeds.
+     */
+    for (
+        const candidateSnapshot
+        of candidates
+        ) {
+        const candidateUid =
+            candidateSnapshot.id;
+
+        const candidateQueueRef =
+            doc(
+                db,
+                "draftQueue",
+                candidateUid
+            );
+
+        /*
+         * Generate a fresh normal room code.
+         */
+        for (
+            let attempt = 0;
+            attempt < 5;
+            attempt++
+        ) {
+            const code =
+                generateDraftCode();
+
+            const matchRef =
+                doc(
+                    db,
+                    "draftMatches",
+                    code
+                );
+
+            try {
+                const matchedCode =
+                    await runTransaction(
+                        db,
+                        async (
+                            transaction
+                        ) => {
+                            /*
+                             * IMPORTANT:
+                             *
+                             * All reads happen before writes.
+                             */
+                            const mySnapshot =
+                                await transaction.get(
+                                    myQueueRef
+                                );
+
+                            const candidateSnapshot =
+                                await transaction.get(
+                                    candidateQueueRef
+                                );
+
+                            const matchSnapshot =
+                                await transaction.get(
+                                    matchRef
+                                );
+
+                            /*
+                             * Someone may have matched us
+                             * while we were searching.
+                             */
+                            if (
+                                mySnapshot.exists()
+                            ) {
+                                const myData =
+                                    mySnapshot.data() as
+                                        DraftQueueEntry;
+
+                                if (
+                                    myData.status ===
+                                    "matched" &&
+                                    myData.matchCode
+                                ) {
+                                    return myData.matchCode;
+                                }
+                            }
+
+                            if (
+                                !mySnapshot.exists() ||
+                                !candidateSnapshot.exists()
+                            ) {
+                                return null;
+                            }
+
+                            const myData =
+                                mySnapshot.data() as
+                                    DraftQueueEntry;
+
+                            const candidateData =
+                                candidateSnapshot.data() as
+                                    DraftQueueEntry;
+
+                            /*
+                             * Either player may have been
+                             * claimed by another transaction.
+                             */
+                            if (
+                                myData.status !==
+                                "waiting" ||
+                                candidateData.status !==
+                                "waiting"
+                            ) {
+                                return null;
+                            }
+
+                            if (
+                                candidateData.uid ===
+                                uid
+                            ) {
+                                return null;
+                            }
+
+                            /*
+                             * Extremely unlikely room-code
+                             * collision.
+                             */
+                            if (
+                                matchSnapshot.exists()
+                            ) {
+                                throw new Error(
+                                    "ROOM_CODE_EXISTS"
+                                );
+                            }
+
+                            /*
+                             * The player performing the match
+                             * becomes host.
+                             *
+                             * The waiting candidate becomes guest.
+                             *
+                             * After this, it is just a NORMAL
+                             * DraftMatch.
+                             */
+                            transaction.set(
+                                matchRef,
+                                {
+                                    matchmaking:
+                                        "open",
+
+                                    host: {
+                                        uid,
+                                        displayName,
+                                        ready:
+                                            false,
+                                    },
+
+                                    guest: {
+                                        uid:
+                                        candidateData.uid,
+
+                                        displayName:
+                                        candidateData.displayName,
+
+                                        ready:
+                                            false,
+                                    },
+
+                                    status:
+                                        "lobby",
+
+                                    round: 0,
+
+                                    hostSubmitted:
+                                        false,
+
+                                    guestSubmitted:
+                                        false,
+
+                                    hostPowerSelected:
+                                        false,
+
+                                    guestPowerSelected:
+                                        false,
+
+                                    hostAscensionSelected:
+                                        false,
+
+                                    guestAscensionSelected:
+                                        false,
+
+                                    hostRematchRequested:
+                                        false,
+
+                                    guestRematchRequested:
+                                        false,
+
+                                    hostRematchReady:
+                                        false,
+
+                                    guestRematchReady:
+                                        false,
+
+                                    winnerUid:
+                                        null,
+
+                                    forfeitedByUid:
+                                        null,
+
+                                    endReason:
+                                        null,
+
+                                    createdAt:
+                                        serverTimestamp(),
+                                }
+                            );
+
+                            /*
+                             * We don't need our queue entry
+                             * anymore because this function
+                             * already knows the match code.
+                             */
+                            transaction.delete(
+                                myQueueRef
+                            );
+
+                            /*
+                             * The OTHER player's page doesn't
+                             * know the code yet.
+                             *
+                             * Tell their listener which match
+                             * they were placed into.
+                             */
+                            transaction.update(
+                                candidateQueueRef,
+                                {
+                                    status:
+                                        "matched",
+
+                                    matchCode:
+                                    code,
+
+                                    matchedWithUid:
+                                    uid,
+                                }
+                            );
+
+                            return code;
+                        }
+                    );
+
+                if (matchedCode) {
+                    return matchedCode;
+                }
+
+                /*
+                 * Candidate was claimed.
+                 * Try another one.
+                 */
+                break;
+            } catch (error) {
+                if (
+                    error instanceof
+                    Error &&
+                    error.message ===
+                    "ROOM_CODE_EXISTS"
+                ) {
+                    continue;
+                }
+
+                throw error;
+            }
+        }
+    }
+
+    /*
+     * Everyone we found was already claimed.
+     *
+     * Stay queued and let the next player
+     * find us.
+     */
+    return null;
+}
+
+export function listenToOpenDraftQueue(
+    uid: string,
+    onMatched: (
+        matchCode: string
+    ) => void
+) {
+    const queueRef =
+        doc(
+            db,
+            "draftQueue",
+            uid
+        );
+
+    return onSnapshot(
+        queueRef,
+        (snapshot) => {
+            if (!snapshot.exists()) {
+                return;
+            }
+
+            const data =
+                snapshot.data() as
+                    DraftQueueEntry;
+
+            if (
+                data.status ===
+                "matched" &&
+                data.matchCode
+            ) {
+                onMatched(
+                    data.matchCode
+                );
+            }
+        },
+
+        (error) => {
+            console.error(
+                "Failed to listen to draft queue:",
+                error
+            );
+        }
+    );
+}
+
+export async function cancelOpenDraftQueue(
+    uid: string
+): Promise<string | null> {
+    const queueRef =
+        doc(
+            db,
+            "draftQueue",
+            uid
+        );
+
+    return runTransaction(
+        db,
+        async (transaction) => {
+            const snapshot =
+                await transaction.get(
+                    queueRef
+                );
+
+            if (!snapshot.exists()) {
+                return null;
+            }
+
+            const data =
+                snapshot.data() as
+                    DraftQueueEntry;
+
+            /*
+             * Too late to cancel.
+             *
+             * The match transaction already
+             * paired us.
+             */
+            if (
+                data.status ===
+                "matched" &&
+                data.matchCode
+            ) {
+                return data.matchCode;
+            }
+
+            transaction.delete(
+                queueRef
+            );
+
+            return null;
+        }
+    );
+}
+
+export async function clearOpenDraftQueueEntry(
+    uid: string
+) {
+    const queueRef =
+        doc(
+            db,
+            "draftQueue",
+            uid
+        );
+
+    await deleteDoc(
+        queueRef
     );
 }
 
