@@ -121,12 +121,30 @@ export const formulaPowerPositions: FormulaPowerPosition[] = [
 ];
 
 export type Ascension =
-    | "Limit Break"
+    | "Comeback Story"
     | "Perfect Chemistry"
     | "Elite Core"
     | "Second Wind"
     | "Power Surge"
-    | "Master Tactician";
+    | "Master Tactician"
+    | "Balanced Formation"
+    | "Underdogs"
+    | "Momentum"
+    | "Star Player"
+    | "Chain Reaction"
+    | "Command Structure"
+    | "Unstoppable Force"
+    | "Utility Network"
+    | "Last Stand"
+    | "Dynamic Duo"
+    | "Perfect Fit"
+    | "Power Through Numbers"
+    | "Anime Alliance"
+    | "Anchor Point"
+    | "Strike Team"
+    | "Wide Formation"
+    | "One for All"
+    | "All for One";
 
 export const ascensionInfo: Record<
     Ascension,
@@ -134,28 +152,124 @@ export const ascensionInfo: Record<
         description: string;
     }
 > = {
-    "Limit Break": {
-        description: "Your lowest-rated character gains +8 power.",
+    "Comeback Story": {
+        description:
+            "Your lowest-rated character gains 25% of their missing Power to 99.",
     },
 
     "Perfect Chemistry": {
-        description: "All Series Link bonuses are doubled.",
+        description:
+            "Your existing Series Link bonuses gain 75% additional effectiveness.",
     },
 
     "Elite Core": {
-        description: "Your 3 highest-rated characters gain +3 power.",
+        description:
+            "Your 3 highest-rated characters gain 3% Power.",
     },
 
     "Second Wind": {
-        description: "Characters below 75 power gain +4 power.",
+        description:
+            "Up to 4 characters below 75 Power gain 4% Power.",
     },
 
     "Power Surge": {
-        description: "Your Power Position character gains +7 power.",
+        description:
+            "Your Power Position character gains 8% Power.",
     },
 
     "Master Tactician": {
-        description: "Your Captain and Strategist gain +4 power.",
+        description:
+            "Your Captain and Strategist gain 5% Power.",
+    },
+
+    "Balanced Formation": {
+        description:
+            "Characters within 10 Power of your team average gain 2% Power.",
+    },
+
+    "Underdogs": {
+        description:
+            "Your 3 lowest-rated characters gain 5% Power.",
+    },
+
+    "Momentum": {
+        description:
+            "All characters rated A or higher gain 2% Power.",
+    },
+
+    "Star Player": {
+        description:
+            "Your highest-rated character gains 8% Power.",
+    },
+
+    "Chain Reaction": {
+        description:
+            "Every Series Link character gains 2% Power, plus another 1% if 3 or more characters share their anime.",
+    },
+
+    "Command Structure": {
+        description:
+            "Your Captain, Vice Captain, and Strategist each gain 3% Power.",
+    },
+
+    "Unstoppable Force": {
+        description:
+            "Your Vanguard, Ace, and Power Position each gain 3% Power.",
+    },
+
+    "Utility Network": {
+        description:
+            "Your Support, Scout, and Strategist each gain 3% Power.",
+    },
+
+    "Last Stand": {
+        description:
+            "All characters below 70 Power gain 25% Power.",
+    },
+
+    "Dynamic Duo": {
+        description:
+            "Your 2 highest-rated characters gain 4% Power.",
+    },
+
+    "Perfect Fit": {
+        description:
+            "Up to 3 S or S+ characters gain 2% Power.",
+    },
+
+    "Power Through Numbers": {
+        description:
+            "If your team has no S+ characters, everyone gains 1.5% Power.",
+    },
+
+    "Anime Alliance": {
+        description:
+            "Characters from your largest same-series group gain 3% Power.",
+    },
+
+    "Anchor Point": {
+        description:
+            "Your Vanguard gains 5% Power and your Support gains 3% Power.",
+    },
+
+    "Strike Team": {
+        description:
+            "Your Assassin, Scout, and Ace each gain 3% Power.",
+    },
+
+    "Wide Formation": {
+        description:
+            "If all 8 core positions are within 20 Power of each other, everyone gains 1.5% Power.",
+    },
+
+    "One for All": {
+        description:
+            "Your Captain gains 1% Power for each teammate rated below them, up to 6%.",
+    },
+
+    "All for One": {
+        description:
+            "Your Captain gains 1% Power for each teammate rated above them, up to 7%.",
     },
 };
 
@@ -194,13 +308,31 @@ function addPower(
     };
 }
 
+function addPercentagePower(
+    pick: DraftPick,
+    percentage: number
+): DraftPick {
+    const bonus = Math.round(
+        pick.power * percentage
+    );
+
+    return addPower(
+        pick,
+        bonus
+    );
+}
+
 export function applyAscension(
     picks: DraftPick[],
     ascension: Ascension,
     powerPosition: PowerPosition | null
 ): DraftPick[] {
     switch (ascension) {
-        case "Limit Break": {
+        case "Comeback Story": {
+            if (picks.length === 0) {
+                return picks;
+            }
+
             const lowestPower = Math.min(
                 ...picks.map((pick) => pick.power)
             );
@@ -208,12 +340,26 @@ export function applyAscension(
             let applied = false;
 
             return picks.map((pick) => {
-                if (!applied && pick.power === lowestPower) {
-                    applied = true;
-                    return addPower(pick, 8);
+                if (
+                    applied ||
+                    pick.power !== lowestPower
+                ) {
+                    return pick;
                 }
 
-                return pick;
+                applied = true;
+
+                const missingPower =
+                    99 - pick.power;
+
+                const bonus = Math.round(
+                    missingPower * 0.25
+                );
+
+                return addPower(
+                    pick,
+                    bonus
+                );
             });
         }
 
@@ -226,46 +372,66 @@ export function applyAscension(
                     return pick;
                 }
 
-                const previousPower = pick.power;
+                const additionalBonus =
+                    Math.round(
+                        synergyBonus * 0.75
+                    );
 
-                const power = Math.min(
-                    99,
-                    pick.basePower + synergyBonus * 2
+                return addPower(
+                    pick,
+                    additionalBonus
                 );
-
-                return {
-                    ...pick,
-
-                    power,
-
-                    grade: getLetterGrade(power),
-
-                    ascensionBonus:
-                        power - previousPower,
-                };
             });
         }
 
         case "Elite Core": {
             const topThree = [...picks]
-                .sort((a, b) => b.power - a.power)
+                .sort(
+                    (a, b) =>
+                        b.power - a.power
+                )
                 .slice(0, 3);
 
-            const topThreePositions = new Set(
-                topThree.map((pick) => pick.position)
+            const positions = new Set(
+                topThree.map(
+                    (pick) => pick.position
+                )
             );
 
             return picks.map((pick) =>
-                topThreePositions.has(pick.position)
-                    ? addPower(pick, 3)
+                positions.has(pick.position)
+                    ? addPercentagePower(
+                        pick,
+                        0.03
+                    )
                     : pick
             );
         }
 
         case "Second Wind": {
+            const eligible = [...picks]
+                .filter(
+                    (pick) =>
+                        pick.power < 75
+                )
+                .sort(
+                    (a, b) =>
+                        a.power - b.power
+                )
+                .slice(0, 4);
+
+            const positions = new Set(
+                eligible.map(
+                    (pick) => pick.position
+                )
+            );
+
             return picks.map((pick) =>
-                pick.power < 75
-                    ? addPower(pick, 4)
+                positions.has(pick.position)
+                    ? addPercentagePower(
+                        pick,
+                        0.04
+                    )
                     : pick
             );
         }
@@ -277,7 +443,10 @@ export function applyAscension(
 
             return picks.map((pick) =>
                 pick.position === powerPosition
-                    ? addPower(pick, 7)
+                    ? addPercentagePower(
+                        pick,
+                        0.08
+                    )
                     : pick
             );
         }
@@ -286,7 +455,503 @@ export function applyAscension(
             return picks.map((pick) =>
                 pick.position === "Captain" ||
                 pick.position === "Strategist"
-                    ? addPower(pick, 4)
+                    ? addPercentagePower(
+                        pick,
+                        0.05
+                    )
+                    : pick
+            );
+        }
+
+        case "Balanced Formation": {
+            if (picks.length === 0) {
+                return picks;
+            }
+
+            const teamAverage =
+                picks.reduce(
+                    (total, pick) =>
+                        total + pick.power,
+                    0
+                ) / picks.length;
+
+            return picks.map((pick) =>
+                Math.abs(
+                    pick.power - teamAverage
+                ) <= 10
+                    ? addPercentagePower(
+                        pick,
+                        0.02
+                    )
+                    : pick
+            );
+        }
+
+        case "Underdogs": {
+            const bottomThree = [...picks]
+                .sort(
+                    (a, b) =>
+                        a.power - b.power
+                )
+                .slice(0, 3);
+
+            const positions = new Set(
+                bottomThree.map(
+                    (pick) => pick.position
+                )
+            );
+
+            return picks.map((pick) =>
+                positions.has(pick.position)
+                    ? addPercentagePower(
+                        pick,
+                        0.05
+                    )
+                    : pick
+            );
+        }
+
+        case "Momentum": {
+            return picks.map((pick) =>
+                pick.power >= 80
+                    ? addPercentagePower(
+                        pick,
+                        0.02
+                    )
+                    : pick
+            );
+        }
+
+        case "Star Player": {
+            if (picks.length === 0) {
+                return picks;
+            }
+
+            const highestPower = Math.max(
+                ...picks.map(
+                    (pick) => pick.power
+                )
+            );
+
+            let applied = false;
+
+            return picks.map((pick) => {
+                if (
+                    applied ||
+                    pick.power !== highestPower
+                ) {
+                    return pick;
+                }
+
+                applied = true;
+
+                return addPercentagePower(
+                    pick,
+                    0.08
+                );
+            });
+        }
+
+        case "Chain Reaction": {
+            const animeCounts =
+                picks.reduce<Record<string, number>>(
+                    (counts, pick) => {
+                        counts[pick.character.anime] =
+                            (counts[
+                                pick.character.anime
+                                ] ?? 0) + 1;
+
+                        return counts;
+                    },
+                    {}
+                );
+
+            return picks.map((pick) => {
+                const sameAnimeCount =
+                    animeCounts[
+                        pick.character.anime
+                        ] ?? 1;
+
+                if (sameAnimeCount < 2) {
+                    return pick;
+                }
+
+                const percentage =
+                    sameAnimeCount >= 3
+                        ? 0.03
+                        : 0.02;
+
+                return addPercentagePower(
+                    pick,
+                    percentage
+                );
+            });
+        }
+
+        case "Command Structure": {
+            return picks.map((pick) =>
+                pick.position === "Captain" ||
+                pick.position ===
+                "Vice Captain" ||
+                pick.position ===
+                "Strategist"
+                    ? addPercentagePower(
+                        pick,
+                        0.03
+                    )
+                    : pick
+            );
+        }
+
+        case "Unstoppable Force": {
+            return picks.map((pick) => {
+                const qualifies =
+                    pick.position === "Vanguard" ||
+                    pick.position === "Ace" ||
+                    (
+                        powerPosition !== null &&
+                        pick.position ===
+                        powerPosition
+                    );
+
+                return qualifies
+                    ? addPercentagePower(
+                        pick,
+                        0.03
+                    )
+                    : pick;
+            });
+        }
+
+        case "Utility Network": {
+            return picks.map((pick) =>
+                pick.position === "Support" ||
+                pick.position === "Scout" ||
+                pick.position ===
+                "Strategist"
+                    ? addPercentagePower(
+                        pick,
+                        0.03
+                    )
+                    : pick
+            );
+        }
+
+        case "Last Stand": {
+            return picks.map((pick) =>
+                pick.power < 70
+                    ? addPercentagePower(
+                        pick,
+                        0.25
+                    )
+                    : pick
+            );
+        }
+
+        case "Dynamic Duo": {
+            const topTwo = [...picks]
+                .sort(
+                    (a, b) =>
+                        b.power - a.power
+                )
+                .slice(0, 2);
+
+            const positions = new Set(
+                topTwo.map(
+                    (pick) => pick.position
+                )
+            );
+
+            return picks.map((pick) =>
+                positions.has(pick.position)
+                    ? addPercentagePower(
+                        pick,
+                        0.04
+                    )
+                    : pick
+            );
+        }
+
+        case "Perfect Fit": {
+            const elitePicks = [...picks]
+                .filter(
+                    (pick) =>
+                        pick.power >= 90
+                )
+                .sort(
+                    (a, b) =>
+                        b.power - a.power
+                )
+                .slice(0, 3);
+
+            const positions = new Set(
+                elitePicks.map(
+                    (pick) => pick.position
+                )
+            );
+
+            return picks.map((pick) =>
+                positions.has(pick.position)
+                    ? addPercentagePower(
+                        pick,
+                        0.02
+                    )
+                    : pick
+            );
+        }
+
+        case "Power Through Numbers": {
+            const hasSPlus =
+                picks.some(
+                    (pick) =>
+                        pick.power >= 95
+                );
+
+            if (hasSPlus) {
+                return picks;
+            }
+
+            return picks.map((pick) =>
+                addPercentagePower(
+                    pick,
+                    0.015
+                )
+            );
+        }
+
+        case "Anime Alliance": {
+            const groups = new Map<
+                string,
+                DraftPick[]
+            >();
+
+            for (const pick of picks) {
+                const anime =
+                    pick.character.anime;
+
+                const current =
+                    groups.get(anime) ?? [];
+
+                current.push(pick);
+
+                groups.set(
+                    anime,
+                    current
+                );
+            }
+
+            const largestGroup =
+                [...groups.entries()]
+                    .filter(
+                        ([, group]) =>
+                            group.length >= 2
+                    )
+                    .sort((a, b) => {
+                        if (
+                            b[1].length !==
+                            a[1].length
+                        ) {
+                            return (
+                                b[1].length -
+                                a[1].length
+                            );
+                        }
+
+                        const aPower =
+                            a[1].reduce(
+                                (total, pick) =>
+                                    total +
+                                    pick.power,
+                                0
+                            );
+
+                        const bPower =
+                            b[1].reduce(
+                                (total, pick) =>
+                                    total +
+                                    pick.power,
+                                0
+                            );
+
+                        return (
+                            bPower -
+                            aPower
+                        );
+                    })[0];
+
+            if (!largestGroup) {
+                return picks;
+            }
+
+            const selectedAnime =
+                largestGroup[0];
+
+            return picks.map((pick) =>
+                pick.character.anime ===
+                selectedAnime
+                    ? addPercentagePower(
+                        pick,
+                        0.03
+                    )
+                    : pick
+            );
+        }
+
+        case "Anchor Point": {
+            return picks.map((pick) => {
+                if (
+                    pick.position === "Vanguard"
+                ) {
+                    return addPercentagePower(
+                        pick,
+                        0.05
+                    );
+                }
+
+                if (
+                    pick.position === "Support"
+                ) {
+                    return addPercentagePower(
+                        pick,
+                        0.03
+                    );
+                }
+
+                return pick;
+            });
+        }
+
+        case "Strike Team": {
+            return picks.map((pick) =>
+                pick.position === "Assassin" ||
+                pick.position === "Scout" ||
+                pick.position === "Ace"
+                    ? addPercentagePower(
+                        pick,
+                        0.03
+                    )
+                    : pick
+            );
+        }
+
+        case "Wide Formation": {
+            const corePicks =
+                picks.filter((pick) =>
+                    draftPositions.includes(
+                        pick.position as DraftPosition
+                    )
+                );
+
+            if (
+                corePicks.length !==
+                draftPositions.length
+            ) {
+                return picks;
+            }
+
+            const powers =
+                corePicks.map(
+                    (pick) => pick.power
+                );
+
+            const highest =
+                Math.max(...powers);
+
+            const lowest =
+                Math.min(...powers);
+
+            if (
+                highest - lowest > 20
+            ) {
+                return picks;
+            }
+
+            return picks.map((pick) =>
+                addPercentagePower(
+                    pick,
+                    0.015
+                )
+            );
+        }
+
+        case "One for All": {
+            const captain =
+                picks.find(
+                    (pick) =>
+                        pick.position ===
+                        "Captain"
+                );
+
+            if (!captain) {
+                return picks;
+            }
+
+            const teammatesBelow =
+                picks.filter(
+                    (pick) =>
+                        pick.position !==
+                        "Captain" &&
+                        pick.power <
+                        captain.power
+                ).length;
+
+            const percentage =
+                Math.min(
+                    teammatesBelow * 0.01,
+                    0.06
+                );
+
+            if (percentage <= 0) {
+                return picks;
+            }
+
+            return picks.map((pick) =>
+                pick.position === "Captain"
+                    ? addPercentagePower(
+                        pick,
+                        percentage
+                    )
+                    : pick
+            );
+        }
+
+        case "All for One": {
+            const captain =
+                picks.find(
+                    (pick) =>
+                        pick.position ===
+                        "Captain"
+                );
+
+            if (!captain) {
+                return picks;
+            }
+
+            const teammatesAbove =
+                picks.filter(
+                    (pick) =>
+                        pick.position !==
+                        "Captain" &&
+                        pick.power >
+                        captain.power
+                ).length;
+
+            const percentage =
+                Math.min(
+                    teammatesAbove * 0.01,
+                    0.07
+                );
+
+            if (percentage <= 0) {
+                return picks;
+            }
+
+            return picks.map((pick) =>
+                pick.position === "Captain"
+                    ? addPercentagePower(
+                        pick,
+                        percentage
+                    )
                     : pick
             );
         }
@@ -295,6 +960,7 @@ export function applyAscension(
             return picks;
     }
 }
+
 
 export function calculateDraftPower(
     character: DraftCharacter,
