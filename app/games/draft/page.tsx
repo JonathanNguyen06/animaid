@@ -1,25 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useState, useRef } from "react";
-import {draftCharacters, DraftCharacter, DraftPosition, PowerPosition, AnyDraftPosition} from "@/data/draftCharacters";
-import {
-    applyAscension,
-    Ascension, ascensionInfo,
-    calculateDraftPower,
-    draftPositions, getLetterGrade, getRandomAscensions,
-    getRandomPowerPositions,
-    powerPositionInfo
-} from "@/data/draftLogic";
-import {
-    auth,
-    getDraftHighScore,
-    saveDraftHighScore,
-    type DraftHighScore,
-} from "@/lib/firebase";
+import {draftCharacters, DraftCharacter, DraftPosition, AnyDraftPosition,} from "@/data/draftCharacters";
+import {calculateDraftPower, draftPositions, getLetterGrade,} from "@/data/draftLogic";
+import {auth, getDraftHighScore, saveDraftHighScore, type DraftHighScore,} from "@/lib/firebase";
 import { onAuthStateChanged, type User } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import type { DraftPick, DraftResult } from "@/types/draft";
-import {createDraftMatch} from "@/lib/multiplayerDraft";
 
 type PowerBurst = {
     id: number;
@@ -606,24 +593,7 @@ export default function DraftPage() {
     const [legendaryReveal, setLegendaryReveal] = useState<DraftPick | null>(null);
     const [isLeavingDraft, setIsLeavingDraft] = useState(false);
     const [showDraftInfo, setShowDraftInfo] = useState(false);
-    const [ascensionChoices, setAscensionChoices] =
-        useState<Ascension[]>([]);
-    const [selectedAscension, setSelectedAscension] =
-        useState<Ascension | null>(null);
-    const [choosingAscension, setChoosingAscension] =
-        useState(false);
-    const [powerPositionChoices] = useState(() =>
-        getRandomPowerPositions(3)
-    );
-
-    const [selectedPowerPosition, setSelectedPowerPosition] =
-        useState<PowerPosition | null>(null);
-
-    const availablePositions = useMemo<AnyDraftPosition[]>(() => {
-        return selectedPowerPosition
-            ? [...draftPositions, selectedPowerPosition]
-            : [...draftPositions];
-    }, [selectedPowerPosition]);
+    const availablePositions = draftPositions;
 
     const totalRounds = availablePositions.length;
 
@@ -639,56 +609,13 @@ export default function DraftPage() {
 
     const filledPositions = picks.map((pick) => pick.position);
     const draftComplete =
-        selectedPowerPosition !== null &&
         picks.length === availablePositions.length;
 
     const totalPower = useMemo(() => {
         return picks.reduce((total, pick) => total + pick.power, 0);
     }, [picks]);
 
-    const averagePower = draftComplete
-        ? Math.round(totalPower / availablePositions.length)
-        : 0;
-
-    const sortedPicks = useMemo(() => {
-        return [...picks].sort(
-            (a, b) =>
-                availablePositions.indexOf(a.position) -
-                availablePositions.indexOf(b.position)
-        );
-    }, [picks, availablePositions]);
-
-    const gridPositions = useMemo<AnyDraftPosition[]>(() => {
-        if (!selectedPowerPosition) {
-            return [...draftPositions];
-        }
-
-        return [
-            ...draftPositions.slice(0, 4),
-            selectedPowerPosition,
-            ...draftPositions.slice(4),
-        ];
-    }, [selectedPowerPosition]);
-
-    async function handleCreateMatch() {
-        if (!user) return;
-
-        try {
-            const code = await createDraftMatch(
-                user.uid,
-                user.displayName ?? "Player"
-            );
-
-            router.push(
-                `/games/draft/multiplayer/${code}`
-            );
-        } catch (error) {
-            console.error(
-                "Failed to create multiplayer match:",
-                error
-            );
-        }
-    }
+    const gridPositions = draftPositions;
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -776,6 +703,82 @@ export default function DraftPage() {
         setIsDraggingCard(false);
     }
 
+    async function finishDraft(finalPicks: DraftPick[]) {
+        const completedTotalPower = finalPicks.reduce(
+            (total, pick) => total + pick.power,
+            0
+        );
+
+        const completedAveragePower = Math.round(
+            completedTotalPower / finalPicks.length
+        );
+
+        const completedGrade = getDraftGrade(
+            completedAveragePower
+        );
+
+        const isNewRecord =
+            !highScore ||
+            completedTotalPower > highScore.totalPower;
+
+        if (isNewRecord && user) {
+            const newHighScore: Omit<
+                DraftHighScore,
+                "userId" | "updatedAt"
+            > = {
+                totalPower: completedTotalPower,
+                averagePower: completedAveragePower,
+                grade: completedGrade,
+
+                lineup: finalPicks.map((pick) => ({
+                    position: pick.position,
+                    power: pick.power,
+                    grade: pick.grade,
+
+                    character: {
+                        id: pick.character.id,
+                        name: pick.character.name,
+                        anime: pick.character.anime,
+                        imageUrl: pick.character.imageUrl ?? "",
+                    },
+                })),
+            };
+
+            await saveDraftHighScore(
+                user.uid,
+                newHighScore
+            );
+
+            setIsNewHighScore(true);
+
+            setHighScore({
+                userId: user.uid,
+                ...newHighScore,
+            });
+        }
+
+        const result: DraftResult = {
+            picks: finalPicks,
+
+            totalPower: completedTotalPower,
+            averagePower: completedAveragePower,
+            grade: completedGrade,
+
+            isNewHighScore: isNewRecord,
+        };
+
+        sessionStorage.setItem(
+            "anime-draft-result",
+            JSON.stringify(result)
+        );
+
+        setIsLeavingDraft(true);
+
+        window.setTimeout(() => {
+            router.push("/games/draft/results");
+        }, 800);
+    }
+
     function confirmPick() {
         if (!pendingPick) return;
 
@@ -852,115 +855,11 @@ export default function DraftPage() {
             updatedPicks.length === availablePositions.length;
 
         if (completedDraft) {
-            setAscensionChoices(getRandomAscensions(3));
-            setChoosingAscension(true);
-            setIsLeavingDraft(false);
-
+            void finishDraft(updatedPicks);
             return;
         }
 
         setCurrentCharacter(getRandomCharacter(newUsedIds));
-    }
-
-    async function chooseAscension(ascension: Ascension) {
-        setSelectedAscension(ascension);
-
-        const finalPicks = applyAscension(
-            picks,
-            ascension,
-            selectedPowerPosition
-        );
-
-        const ascensionBonus = finalPicks.reduce(
-            (total, pick) =>
-                total + (pick.ascensionBonus ?? 0),
-            0
-        );
-
-        const completedTotalPower = finalPicks.reduce(
-            (total, pick) => total + pick.power,
-            0
-        );
-
-        const completedAveragePower = Math.round(
-            completedTotalPower / availablePositions.length
-        );
-
-        const completedGrade = getDraftGrade(
-            completedAveragePower
-        );
-
-        const isNewRecord =
-            !highScore ||
-            completedTotalPower > highScore.totalPower;
-
-        if (isNewRecord && user) {
-            const newHighScore: Omit<
-                DraftHighScore,
-                "userId" | "updatedAt"
-            > = {
-                totalPower: completedTotalPower,
-                averagePower: completedAveragePower,
-                grade: completedGrade,
-
-                lineup: finalPicks.map((pick) => ({
-                    position: pick.position,
-                    power: pick.power,
-                    grade: pick.grade,
-
-                    character: {
-                        id: pick.character.id,
-                        name: pick.character.name,
-                        anime: pick.character.anime,
-                        imageUrl:
-                            pick.character.imageUrl ?? "",
-                    },
-                })),
-            };
-
-            await saveDraftHighScore(
-                user.uid,
-                newHighScore
-            );
-
-            setIsNewHighScore(true);
-
-            setHighScore({
-                userId: user.uid,
-                ...newHighScore,
-            });
-        }
-
-        const result: DraftResult = {
-            picks: finalPicks,
-
-            totalPower: completedTotalPower,
-            averagePower: completedAveragePower,
-            grade: completedGrade,
-
-            ascension: {
-                name: ascension,
-                description:
-                ascensionInfo[ascension].description,
-                totalBonus: ascensionBonus,
-            },
-
-            isNewHighScore:
-                !highScore ||
-                completedTotalPower > highScore.totalPower,
-        };
-
-        sessionStorage.setItem(
-            "anime-draft-result",
-            JSON.stringify(result)
-        );
-
-        setChoosingAscension(false);
-        setIsLeavingDraft(true);
-
-        window.setTimeout(() => {
-            router.push("/games/draft/results");
-        }, 800);
     }
 
     function restartDraft() {
@@ -1016,27 +915,6 @@ export default function DraftPage() {
 
                             <div>
                                 <h3 className="font-semibold text-white">
-                                    Power Position
-                                </h3>
-
-                                <ul className="mt-2 list-disc space-y-1 pl-5">
-                                    <li>
-                                        At the start of the draft, you are shown 3 random
-                                        Power Positions.
-                                    </li>
-                                    <li>
-                                        Choose 1 Power Position to add to the 8 normal
-                                        positions.
-                                    </li>
-                                    <li>
-                                        Power Positions use special scoring rules that can
-                                        favor different types of characters.
-                                    </li>
-                                </ul>
-                            </div>
-
-                            <div>
-                                <h3 className="font-semibold text-white">
                                     Drafting
                                 </h3>
 
@@ -1052,7 +930,7 @@ export default function DraftPage() {
                                         position are permanently locked.
                                     </li>
                                     <li>
-                                        The draft ends once all 9 positions are filled.
+                                        The draft ends once all 8 positions are filled.
                                     </li>
                                 </ul>
                             </div>
@@ -1155,7 +1033,7 @@ export default function DraftPage() {
                                 </h3>
 
                                 <p className="mt-2">
-                                    Fill all 9 positions and finish with the highest total
+                                    Fill all 8 positions and finish with the highest total
                                     team rating possible.
                                 </p>
                             </div>
@@ -1166,26 +1044,6 @@ export default function DraftPage() {
             {legendaryReveal && (
                 <LegendaryPickReveal pick={legendaryReveal} />
             )}
-            <button
-                type="button"
-                onClick={handleCreateMatch}
-                className="
-                mt-3
-                rounded-xl
-                border border-pink-400/30
-                bg-pink-500/15
-                px-4 py-2
-                text-sm font-black
-                text-pink-200
-                transition
-                hover:cursor-pointer
-                hover:border-pink-300/60
-                hover:bg-pink-500/25
-                hover:text-white
-            "
-            >
-                Create Multiplayer Match
-            </button>
 
             {isLeavingDraft && (
                 <div className="pointer-events-none fixed inset-0 z-[90] bg-black/10 backdrop-blur-[1px]">
@@ -1246,149 +1104,7 @@ export default function DraftPage() {
                     Round {currentRound} / {totalRounds}
                 </p>
 
-                {!selectedPowerPosition && (
-                    <div className="mt-8 rounded-3xl border border-yellow-400/20 bg-yellow-500/5 p-6">
-                        <div className="text-center">
-                            <p className="text-xs font-black uppercase tracking-[0.3em] text-yellow-300/70">
-                                Power Position
-                            </p>
-
-                            <h2 className="mt-2 text-2xl font-black text-white">
-                                Choose Your Power Position
-                            </h2>
-
-                            <p className="mt-2 text-sm text-white/50">
-                                Choose one special position to add to your draft.
-                            </p>
-                        </div>
-
-                        <div className="mt-6 grid gap-5 md:grid-cols-3">
-                            {powerPositionChoices.map((position) => {
-                                const info = powerPositionInfo[position];
-
-                                return (
-                                    <button
-                                        key={position}
-                                        type="button"
-                                        onClick={() => setSelectedPowerPosition(position)}
-                                        className="
-                                            group relative overflow-hidden
-                                            rounded-3xl
-                                            border border-yellow-400/25
-                                            bg-black/60
-                                            p-6
-                                            text-left
-                                            transition-all duration-300
-                                            hover:-translate-y-1
-                                            hover:border-yellow-300/70
-                                            hover:bg-yellow-500/10
-                                            hover:shadow-[0_0_30px_rgba(250,204,21,0.18)]
-                                            hover:cursor-pointer
-                                        "
-                                    >
-                                        <div className="absolute -right-10 -top-10 h-28 w-28 rounded-full bg-yellow-400/10 blur-3xl transition group-hover:bg-yellow-400/20" />
-
-                                        <div className="relative z-10">
-                                            <p className="text-xs font-black uppercase tracking-[0.3em] text-yellow-300/60">
-                                                ⚡ Power Position
-                                            </p>
-
-                                            <h3 className="mt-3 text-2xl font-black text-white">
-                                                {position}
-                                            </h3>
-
-                                            <p className="mt-3 min-h-[60px] text-sm leading-6 text-white/55">
-                                                {info.description}
-                                            </p>
-
-                                            <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.03] p-3">
-                                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/35">
-                                                    Scoring
-                                                </p>
-
-                                                <p className="mt-1 text-xs font-bold text-yellow-200/80">
-                                                    {info.scoring}
-                                                </p>
-                                            </div>
-
-                                            <div className="mt-5 text-center text-xs font-black uppercase tracking-[0.2em] text-yellow-300 opacity-60 transition group-hover:opacity-100">
-                                                Select Position
-                                            </div>
-                                        </div>
-                                    </button>
-                                );
-                            })}
-                        </div>
-                    </div>
-                )}
-
-                {choosingAscension && (
-                    <div className="mt-8 rounded-3xl border border-yellow-400/20 bg-yellow-500/5 p-6">
-                        <div className="text-center">
-                            <p className="text-xs font-black uppercase tracking-[0.3em] text-yellow-300/70">
-                                Team Complete
-                            </p>
-
-                            <h2 className="mt-2 text-3xl font-black text-white">
-                                Choose Your Ascension
-                            </h2>
-
-                            <p className="mt-2 text-sm text-white/50">
-                                Choose one final bonus to empower your completed team.
-                            </p>
-                        </div>
-
-                        <div className="mt-6 grid gap-4 md:grid-cols-3">
-                            {ascensionChoices.map((ascension) => {
-                                const info = ascensionInfo[ascension];
-
-                                return (
-                                    <button
-                                        key={ascension}
-                                        type="button"
-                                        onClick={() => chooseAscension(ascension)}
-                                        className="
-                            group relative overflow-hidden
-                            rounded-3xl
-                            border border-yellow-400/25
-                            bg-black/60
-                            p-5
-                            text-left
-                            transition-all duration-300
-                            hover:-translate-y-1
-                            hover:border-yellow-300/70
-                            hover:bg-yellow-500/10
-                            hover:shadow-[0_0_30px_rgba(250,204,21,0.18)]
-                            hover:cursor-pointer
-                        "
-                                    >
-                                        <div className="absolute -right-10 -top-10 h-28 w-28 rounded-full bg-yellow-400/10 blur-3xl transition group-hover:bg-yellow-400/20" />
-
-                                        <div className="relative z-10">
-                                            <p className="text-xs font-black uppercase tracking-[0.25em] text-yellow-300/60">
-                                                Ascension
-                                            </p>
-
-                                            <h3 className="mt-3 text-xl font-black text-white">
-                                                {ascension}
-                                            </h3>
-
-                                            <p className="mt-3 text-sm leading-6 text-white/55">
-                                                {info.description}
-                                            </p>
-
-                                            <div className="mt-5 text-center text-xs font-black uppercase tracking-[0.2em] text-yellow-300 opacity-60 transition group-hover:opacity-100">
-                                                Select Ascension
-                                            </div>
-                                        </div>
-                                    </button>
-                                );
-                            })}
-                        </div>
-                    </div>
-                )}
-
-                {selectedPowerPosition && !choosingAscension && (!draftComplete || isLeavingDraft) && (
+                {(!draftComplete || isLeavingDraft) && (
                     <div
                         className={`mt-6 grid gap-6 xl:grid-cols-[300px_1fr] ${
                             isLeavingDraft
@@ -1490,10 +1206,8 @@ export default function DraftPage() {
                                 Team Positions
                             </h2>
 
-                            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+                            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                                 {gridPositions.map((position) => {
-                                    const isPowerPosition =
-                                        position === selectedPowerPosition;
                                     const pick = picks.find(
                                         (pick) => pick.position === position
                                     );
@@ -1516,28 +1230,16 @@ export default function DraftPage() {
                                             onDragLeave={() => setHoveredPosition(null)}
                                             onDrop={(event) => handleDrop(event, position)}
                                             className={`min-h-[325px] rounded-3xl border-2 border-dashed p-3 transition ${
-                                                isPowerPosition
-                                                    ? "xl:col-start-5 xl:row-start-1 xl:row-span-2 xl:self-center"
-                                                    : ""
-                                            } ${
                                                 pick
                                                     ? "border-pink-500/30 bg-black/40 backdrop-blur-xl"
                                                     : pendingForThisPosition
                                                         ? "border-yellow-400 bg-yellow-500/10 shadow-[0_0_25px_rgba(250,204,21,0.25)]"
                                                         : isHovered
                                                             ? "border-pink-400 bg-pink-500/10 shadow-[0_0_25px_rgba(236,72,153,0.25)]"
-                                                            : isPowerPosition
-                                                                ? "border-yellow-400/40 bg-yellow-500/5 shadow-[0_0_25px_rgba(250,204,21,0.1)]"
-                                                                : "border-pink-500/20 bg-black/20"
+                                                            : "border-pink-500/20 bg-black/20"
                                             }`}
                                         >
-                                            <p
-                                                className={`text-sm font-bold uppercase tracking-widest ${
-                                                    isPowerPosition
-                                                        ? "text-yellow-300"
-                                                        : "text-pink-300/60"
-                                                }`}
-                                            >
+                                            <p className="text-sm font-bold uppercase tracking-widest text-pink-300/60">
                                                 {getPositionIcon(position)} {position}
                                             </p>
 

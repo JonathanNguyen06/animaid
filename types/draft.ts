@@ -27,8 +27,8 @@ export type DraftResult = {
     averagePower: number;
     grade: string;
 
-    ascension: {
-        name: Ascension;
+    ascension?: {
+        name: string;
         description: string;
         totalBonus: number;
     };
