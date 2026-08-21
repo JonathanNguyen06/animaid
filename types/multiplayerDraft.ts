@@ -49,6 +49,7 @@ export type DraftMatch = {
     matchmaking: DraftMatchmaking;
 
     round: number;
+    gameNumber: number;
 
     hostRollLocked: boolean;
     guestRollLocked: boolean;
@@ -119,4 +120,45 @@ export type MultiplayerDraftPick = {
     hasSynergy: boolean;
 
     ascensionBonus?: number;
+};
+
+export type DraftMatchHistoryResult =
+    | "win"
+    | "loss"
+    | "draw";
+
+
+export type DraftMatchHistoryEntry = {
+    id: string;
+
+    matchCode: string;
+    gameNumber: number;
+
+    userId: string;
+
+    opponentUid: string;
+    opponentName: string;
+
+    result:
+        DraftMatchHistoryResult;
+
+    myPositionWins:
+        number | null;
+
+    opponentPositionWins:
+        number | null;
+
+    myTotalPower:
+        number | null;
+
+    opponentTotalPower:
+        number | null;
+
+    endReason:
+        "normal" | "forfeit";
+
+    completedAt?: {
+        seconds: number;
+        nanoseconds: number;
+    };
 };

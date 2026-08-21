@@ -2,10 +2,10 @@ import {
     doc,
     runTransaction,
     serverTimestamp,
-    onSnapshot, updateDoc, getDoc, query, collection, where, limit, getDocs, deleteDoc
+    onSnapshot, updateDoc, getDoc, query, collection, where, limit, getDocs, deleteDoc, orderBy
 } from "firebase/firestore";
 import type {
-    DraftMatch, MultiplayerDraftPick, MultiplayerDraftPlayerState, MultiplayerDraftRoundReveal,
+    DraftMatch, DraftMatchHistoryEntry, MultiplayerDraftPick, MultiplayerDraftPlayerState, MultiplayerDraftRoundReveal,
 } from "@/types/multiplayerDraft";
 import { db } from "./firebase";
 import {
@@ -72,8 +72,8 @@ export async function createDraftMatch(
                         guest: null,
 
                         status: "lobby",
-
                         round: 0,
+                        gameNumber: 1,
 
                         hostSubmitted: false,
                         guestSubmitted: false,
@@ -182,6 +182,8 @@ export function listenToDraftMatch(
                     data.hostRollLocked ?? false,
                 guestRollLocked:
                     data.guestRollLocked ?? false,
+                gameNumber:
+                    data.gameNumber ?? 1,
             };
 
             onMatchChange(match);
@@ -2788,6 +2790,8 @@ export async function startDraftRematchIfReady(
 
                     round:
                         0,
+                    gameNumber:
+                        (match.gameNumber ?? 1) + 1,
 
                     // -------------------------
                     // ROUND STATE
@@ -3164,6 +3168,466 @@ export async function claimDraftForfeit(
                     endReason:
                         "forfeit",
                 }
+            );
+        }
+    );
+}
+
+export async function saveDraftMatchHistory(
+    code: string,
+    uid: string
+) {
+    const normalizedCode =
+        code.trim().toUpperCase();
+
+    const matchRef = doc(
+        db,
+        "draftMatches",
+        normalizedCode
+    );
+
+    const matchSnapshot =
+        await getDoc(
+            matchRef
+        );
+
+    if (!matchSnapshot.exists()) {
+        throw new Error(
+            "MATCH_NOT_FOUND"
+        );
+    }
+
+    const match =
+        matchSnapshot.data();
+
+    if (
+        match.status !==
+        "complete"
+    ) {
+        return;
+    }
+
+    if (!match.guest) {
+        return;
+    }
+
+
+    const isHost =
+        match.host.uid === uid;
+
+    const isGuest =
+        match.guest.uid === uid;
+
+    if (!isHost && !isGuest) {
+        throw new Error(
+            "NOT_IN_MATCH"
+        );
+    }
+
+
+    const opponent =
+        isHost
+            ? match.guest
+            : match.host;
+
+
+    const gameNumber =
+        match.gameNumber ?? 1;
+
+
+    const historyId =
+        `${normalizedCode}-${gameNumber}`;
+
+
+    const historyRef = doc(
+        db,
+        "users",
+        uid,
+        "draftMatchHistory",
+        historyId
+    );
+
+
+    /*
+     * Already saved.
+     *
+     * This makes the function safe to call
+     * multiple times from React effects.
+     */
+    const existingHistory =
+        await getDoc(
+            historyRef
+        );
+
+    if (existingHistory.exists()) {
+        return;
+    }
+
+
+    // ==========================================
+    // FORFEIT
+    // ==========================================
+
+    if (
+        match.endReason ===
+        "forfeit"
+    ) {
+        const result:
+            "win" | "loss" =
+            match.winnerUid === uid
+                ? "win"
+                : "loss";
+
+        await runTransaction(
+            db,
+            async (transaction) => {
+                const existing =
+                    await transaction.get(
+                        historyRef
+                    );
+
+                if (existing.exists()) {
+                    return;
+                }
+
+                transaction.set(
+                    historyRef,
+                    {
+                        matchCode:
+                        normalizedCode,
+
+                        gameNumber,
+
+                        userId:
+                        uid,
+
+                        opponentUid:
+                        opponent.uid,
+
+                        opponentName:
+                        opponent.displayName,
+
+                        result,
+
+                        myPositionWins:
+                            null,
+
+                        opponentPositionWins:
+                            null,
+
+                        myTotalPower:
+                            null,
+
+                        opponentTotalPower:
+                            null,
+
+                        endReason:
+                            "forfeit",
+
+                        completedAt:
+                            serverTimestamp(),
+                    }
+                );
+            }
+        );
+
+        return;
+    }
+
+
+    // ==========================================
+    // NORMAL MATCH
+    // ==========================================
+
+    const hostStateRef = doc(
+        db,
+        "draftMatches",
+        normalizedCode,
+        "playerStates",
+        match.host.uid
+    );
+
+    const guestStateRef = doc(
+        db,
+        "draftMatches",
+        normalizedCode,
+        "playerStates",
+        match.guest.uid
+    );
+
+
+    const [
+        hostSnapshot,
+        guestSnapshot,
+    ] = await Promise.all([
+        getDoc(hostStateRef),
+        getDoc(guestStateRef),
+    ]);
+
+
+    if (
+        !hostSnapshot.exists() ||
+        !guestSnapshot.exists()
+    ) {
+        throw new Error(
+            "PLAYER_STATE_NOT_FOUND"
+        );
+    }
+
+
+    const hostState =
+        hostSnapshot.data() as
+            MultiplayerDraftPlayerState;
+
+    const guestState =
+        guestSnapshot.data() as
+            MultiplayerDraftPlayerState;
+
+
+    let hostPositionWins = 0;
+    let guestPositionWins = 0;
+
+
+    // ==========================================
+    // 8 NORMAL POSITIONS
+    // ==========================================
+
+    for (
+        const position
+        of draftPositions
+        ) {
+        const hostPick =
+            hostState.picks.find(
+                (pick) =>
+                    pick.position ===
+                    position
+            );
+
+        const guestPick =
+            guestState.picks.find(
+                (pick) =>
+                    pick.position ===
+                    position
+            );
+
+        if (
+            !hostPick ||
+            !guestPick
+        ) {
+            continue;
+        }
+
+        if (
+            hostPick.power >
+            guestPick.power
+        ) {
+            hostPositionWins++;
+        } else if (
+            guestPick.power >
+            hostPick.power
+        ) {
+            guestPositionWins++;
+        }
+    }
+
+
+    // ==========================================
+    // POWER POSITION VS POWER POSITION
+    // ==========================================
+
+    const hostPowerPick =
+        hostState.picks.find(
+            (pick) =>
+                pick.position ===
+                hostState
+                    .selectedPowerPosition
+        );
+
+    const guestPowerPick =
+        guestState.picks.find(
+            (pick) =>
+                pick.position ===
+                guestState
+                    .selectedPowerPosition
+        );
+
+
+    if (
+        hostPowerPick &&
+        guestPowerPick
+    ) {
+        if (
+            hostPowerPick.power >
+            guestPowerPick.power
+        ) {
+            hostPositionWins++;
+        } else if (
+            guestPowerPick.power >
+            hostPowerPick.power
+        ) {
+            guestPositionWins++;
+        }
+    }
+
+
+    const hostTotalPower =
+        hostState.picks.reduce(
+            (total, pick) =>
+                total +
+                pick.power,
+            0
+        );
+
+
+    const guestTotalPower =
+        guestState.picks.reduce(
+            (total, pick) =>
+                total +
+                pick.power,
+            0
+        );
+
+
+    const myPositionWins =
+        isHost
+            ? hostPositionWins
+            : guestPositionWins;
+
+
+    const opponentPositionWins =
+        isHost
+            ? guestPositionWins
+            : hostPositionWins;
+
+
+    const myTotalPower =
+        isHost
+            ? hostTotalPower
+            : guestTotalPower;
+
+
+    const opponentTotalPower =
+        isHost
+            ? guestTotalPower
+            : hostTotalPower;
+
+
+    let result:
+        "win" |
+        "loss" |
+        "draw";
+
+
+    if (match.winnerUid === uid) {
+        result = "win";
+    } else if (
+        match.winnerUid === null
+    ) {
+        result = "draw";
+    } else {
+        result = "loss";
+    }
+
+
+    await runTransaction(
+        db,
+        async (transaction) => {
+            const existing =
+                await transaction.get(
+                    historyRef
+                );
+
+            if (existing.exists()) {
+                return;
+            }
+
+            transaction.set(
+                historyRef,
+                {
+                    matchCode:
+                    normalizedCode,
+
+                    gameNumber,
+
+                    userId:
+                    uid,
+
+                    opponentUid:
+                    opponent.uid,
+
+                    opponentName:
+                    opponent.displayName,
+
+                    result,
+
+                    myPositionWins,
+
+                    opponentPositionWins,
+
+                    myTotalPower,
+
+                    opponentTotalPower,
+
+                    endReason:
+                        "normal",
+
+                    completedAt:
+                        serverTimestamp(),
+                }
+            );
+        }
+    );
+}
+
+export function listenToDraftMatchHistory(
+    uid: string,
+    onChange: (
+        history:
+        DraftMatchHistoryEntry[]
+    ) => void
+) {
+    const historyQuery =
+        query(
+            collection(
+                db,
+                "users",
+                uid,
+                "draftMatchHistory"
+            ),
+
+            orderBy(
+                "completedAt",
+                "desc"
+            ),
+
+            limit(8)
+        );
+
+
+    return onSnapshot(
+        historyQuery,
+
+        (snapshot) => {
+            const history =
+                snapshot.docs.map(
+                    (historyDoc) => ({
+                        id:
+                        historyDoc.id,
+
+                        ...historyDoc.data(),
+                    })
+                ) as
+                    DraftMatchHistoryEntry[];
+
+            onChange(
+                history
+            );
+        },
+
+        (error) => {
+            console.error(
+                "Failed to listen to match history:",
+                error
             );
         }
     );

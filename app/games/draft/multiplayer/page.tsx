@@ -22,8 +22,9 @@ import {
     cancelOpenDraftQueue,
     clearOpenDraftQueueEntry,
     createDraftMatch, enterOpenDraftQueue,
-    joinDraftMatch, listenToOpenDraftQueue,
+    joinDraftMatch, listenToDraftMatchHistory, listenToOpenDraftQueue,
 } from "@/lib/multiplayerDraft";
+import {DraftMatchHistoryEntry} from "@/types/multiplayerDraft";
 
 export default function MultiplayerDraftPage() {
     const router = useRouter();
@@ -35,6 +36,7 @@ export default function MultiplayerDraftPage() {
     const [creating, setCreating] = useState(false);
     const [queueing, setQueueing] = useState(false);
     const [queueError, setQueueError] = useState("");
+    const [matchHistory, setMatchHistory,] = useState<DraftMatchHistoryEntry[]>([]);
 
     useEffect(() => {
         const unsubscribe =
@@ -48,6 +50,20 @@ export default function MultiplayerDraftPage() {
 
         return unsubscribe;
     }, []);
+
+    useEffect(() => {
+        if (!user) {
+            setMatchHistory([]);
+            return;
+        }
+
+        return listenToDraftMatchHistory(
+            user.uid,
+            setMatchHistory
+        );
+    }, [
+        user,
+    ]);
 
     async function handleCreateMatch() {
         if (!user || queueing) return;
@@ -300,31 +316,98 @@ export default function MultiplayerDraftPage() {
         );
     }
 
+    const wins =
+        matchHistory.filter(
+            (match) =>
+                match.result === "win"
+        ).length;
+
+    const losses =
+        matchHistory.filter(
+            (match) =>
+                match.result === "loss"
+        ).length;
+
+    const draws =
+        matchHistory.filter(
+            (match) =>
+                match.result === "draw"
+        ).length;
+
     return (
         <main className="relative min-h-[calc(100vh-130px)] overflow-hidden px-4 py-10">
+
+            {/* ========================================================= */}
+            {/* BACKGROUND */}
+            {/* ========================================================= */}
+
             <div className="pointer-events-none fixed inset-0">
+
                 <div className="absolute left-0 top-0 h-[500px] w-[500px] rounded-full bg-pink-500/10 blur-[150px]" />
 
                 <div className="absolute right-0 top-0 h-[500px] w-[500px] rounded-full bg-purple-500/10 blur-[150px]" />
+
+                <div className="absolute bottom-0 left-1/2 h-[400px] w-[400px] -translate-x-1/2 rounded-full bg-fuchsia-500/[0.06] blur-[130px]" />
+
             </div>
 
-            <section className="relative z-10 mx-auto max-w-2xl rounded-3xl border border-pink-500/20 bg-black/50 p-8 shadow-[0_0_40px_rgba(236,72,153,0.12)] backdrop-blur-xl">
-                <div className="text-center">
-                    <p className="text-xs font-black uppercase tracking-[0.35em] text-pink-300/60">
-                        Anime Draft
-                    </p>
 
-                    <h1 className="mt-3 text-4xl font-black text-white">
-                        Multiplayer
-                    </h1>
+            {/* ========================================================= */}
+            {/* PAGE LAYOUT */}
+            {/* ========================================================= */}
 
-                    <p className="mt-3 text-sm text-white/45">
-                        Create a room or join another player's draft.
-                    </p>
-                </div>
+            <div
+                className="
+                relative z-10
+                mx-auto
+                grid
+                max-w-[1250px]
+                gap-6
+                lg:grid-cols-[minmax(0,1fr)_360px]
+                lg:items-start
+            "
+            >
 
-                <div
+                {/* ===================================================== */}
+                {/* LEFT SIDE */}
+                {/* MATCHMAKING */}
+                {/* ===================================================== */}
+
+                <section
                     className="
+                    rounded-3xl
+                    border border-pink-500/20
+                    bg-black/50
+                    p-8
+                    shadow-[0_0_40px_rgba(236,72,153,0.12)]
+                    backdrop-blur-xl
+                "
+                >
+
+                    {/* HEADER */}
+                    <div className="text-center">
+
+                        <p className="text-xs font-black uppercase tracking-[0.35em] text-pink-300/60">
+                            Anime Draft
+                        </p>
+
+                        <h1 className="mt-3 text-4xl font-black text-white">
+                            Multiplayer
+                        </h1>
+
+                        <p className="mt-3 text-sm text-white/45">
+                            Find an opponent or create a private room.
+                        </p>
+
+                    </div>
+
+
+                    {/* ================================================= */}
+                    {/* OPEN QUEUE */}
+                    {/* ================================================= */}
+
+                    <div
+                        className="
                         mt-8
                         overflow-hidden
                         rounded-3xl
@@ -336,12 +419,15 @@ export default function MultiplayerDraftPage() {
                         p-6
                         shadow-[0_0_30px_rgba(236,72,153,0.1)]
                     "
-                >
-                    {!queueing ? (
-                        <>
-                            <div className="text-center">
-                                <div
-                                    className="
+                    >
+
+                        {!queueing ? (
+                            <>
+
+                                <div className="text-center">
+
+                                    <div
+                                        className="
                                         mx-auto
                                         flex h-14 w-14
                                         items-center justify-center
@@ -351,33 +437,36 @@ export default function MultiplayerDraftPage() {
                                         text-2xl
                                         shadow-[0_0_20px_rgba(236,72,153,0.15)]
                                     "
-                                >
-                                    ⚔️
+                                    >
+                                        ⚔️
+                                    </div>
+
+
+                                    <p className="mt-4 text-xs font-black uppercase tracking-[0.3em] text-pink-300/60">
+                                        Quick Match
+                                    </p>
+
+                                    <h2 className="mt-2 text-2xl font-black text-white">
+                                        Open Queue
+                                    </h2>
+
+                                    <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-white/45">
+                                        Find another player looking
+                                        for a draft and battle
+                                        head-to-head.
+                                    </p>
+
                                 </div>
 
-                                <p className="mt-4 text-xs font-black uppercase tracking-[0.3em] text-pink-300/60">
-                                    Quick Match
-                                </p>
 
-                                <h2 className="mt-2 text-2xl font-black text-white">
-                                    Open Queue
-                                </h2>
-
-                                <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-white/45">
-                                    Find another player looking
-                                    for a draft and battle
-                                    head-to-head.
-                                </p>
-                            </div>
-
-                            <button
-                                type="button"
-                                onClick={handleOpenQueue}
-                                disabled={
-                                    creating ||
-                                    joining
-                                }
-                                className="
+                                <button
+                                    type="button"
+                                    onClick={handleOpenQueue}
+                                    disabled={
+                                        creating ||
+                                        joining
+                                    }
+                                    className="
                                     mt-6 w-full
                                     rounded-2xl
                                     bg-gradient-to-r
@@ -385,7 +474,8 @@ export default function MultiplayerDraftPage() {
                                     via-fuchsia-600
                                     to-purple-700
                                     px-6 py-4
-                                    font-black text-white
+                                    font-black
+                                    text-white
                                     shadow-[0_0_25px_rgba(236,72,153,0.3)]
                                     transition
                                     hover:-translate-y-1
@@ -394,63 +484,71 @@ export default function MultiplayerDraftPage() {
                                     disabled:cursor-not-allowed
                                     disabled:opacity-50
                                 "
-                            >
-                                Find Opponent
-                            </button>
-                        </>
-                    ) : (
-                        <div className="py-3 text-center">
-                            <div className="relative mx-auto flex h-20 w-20 items-center justify-center">
-                                <div
-                                    className="
+                                >
+                                    Find Opponent
+                                </button>
+
+                            </>
+                        ) : (
+
+                            <div className="py-3 text-center">
+
+                                <div className="relative mx-auto flex h-20 w-20 items-center justify-center">
+
+                                    <div
+                                        className="
                                         absolute inset-0
                                         animate-ping
                                         rounded-full
                                         border border-pink-400/30
                                     "
-                                />
+                                    />
 
-                                <div
-                                    className="
+                                    <div
+                                        className="
                                         absolute inset-3
                                         animate-pulse
                                         rounded-full
                                         border border-purple-400/30
                                     "
-                                />
+                                    />
 
-                                <div
-                                    className="
+                                    <div
+                                        className="
                                         h-4 w-4
                                         rounded-full
                                         bg-pink-400
                                         shadow-[0_0_20px_rgba(244,114,182,0.9)]
                                     "
-                                />
-                            </div>
+                                    />
 
-                            <p className="mt-5 text-xs font-black uppercase tracking-[0.35em] text-pink-300/60">
-                                Open Queue
-                            </p>
+                                </div>
 
-                            <h2 className="mt-2 text-2xl font-black text-white">
-                                Searching for Opponent
-                            </h2>
 
-                            <p className="mt-2 animate-pulse text-sm text-white/40">
-                                Looking for another player...
-                            </p>
+                                <p className="mt-5 text-xs font-black uppercase tracking-[0.35em] text-pink-300/60">
+                                    Open Queue
+                                </p>
 
-                            <button
-                                type="button"
-                                onClick={handleCancelQueue}
-                                className="
+                                <h2 className="mt-2 text-2xl font-black text-white">
+                                    Searching for Opponent
+                                </h2>
+
+                                <p className="mt-2 animate-pulse text-sm text-white/40">
+                                    Looking for another player...
+                                </p>
+
+
+                                <button
+                                    type="button"
+                                    onClick={handleCancelQueue}
+                                    className="
                                     mt-6
                                     rounded-2xl
                                     border border-white/15
                                     bg-white/5
                                     px-6 py-3
-                                    text-sm font-black
+                                    text-sm
+                                    font-black
                                     text-white/60
                                     transition
                                     hover:cursor-pointer
@@ -458,135 +556,449 @@ export default function MultiplayerDraftPage() {
                                     hover:bg-red-500/10
                                     hover:text-red-200
                                 "
-                            >
-                                Cancel Queue
-                            </button>
-                        </div>
-                    )}
+                                >
+                                    Cancel Queue
+                                </button>
 
-                    {queueError && (
+                            </div>
+                        )}
+
+                        {queueError && (
+                            <p className="mt-4 text-center text-sm font-semibold text-red-300">
+                                {queueError}
+                            </p>
+                        )}
+
+                    </div>
+
+                    {/* ================================================= */}
+                    {/* PRIVATE MATCH DIVIDER */}
+                    {/* ================================================= */}
+
+                    <div className="mt-7 flex items-center gap-4">
+                        <div className="h-px flex-1 bg-white/10" />
+
+                        <p className="text-xs font-black uppercase tracking-widest text-white/25">
+                            Private Match
+                        </p>
+                        <div className="h-px flex-1 bg-white/10" />
+                    </div>
+
+                    {/* ================================================= */}
+                    {/* CREATE MATCH */}
+                    {/* ================================================= */}
+
+                    <button
+                        type="button"
+                        onClick={handleCreateMatch}
+                        disabled={
+                            creating ||
+                            queueing
+                        }
+                        className="
+                            mt-8 w-full
+                            rounded-2xl
+                            bg-gradient-to-r
+                            from-pink-600
+                            via-fuchsia-600
+                            to-purple-700
+                            px-6 py-4
+                            font-black
+                            text-white
+                            shadow-[0_0_25px_rgba(236,72,153,0.3)]
+                            transition
+                            hover:-translate-y-1
+                            hover:cursor-pointer
+                            disabled:cursor-not-allowed
+                            disabled:opacity-50
+                        "
+                    >
+                        {creating
+                            ? "Creating..."
+                            : "Create Match"}
+                    </button>
+
+                    {/* ================================================= */}
+                    {/* OR DIVIDER */}
+                    {/* ================================================= */}
+
+                    <div className="my-7 flex items-center gap-4">
+                        <div className="h-px flex-1 bg-white/10" />
+                        <p className="text-xs font-black uppercase tracking-widest text-white/25">
+                            Or
+                        </p>
+                        <div className="h-px flex-1 bg-white/10" />
+                    </div>
+
+                    {/* ================================================= */}
+                    {/* JOIN MATCH */}
+                    {/* ================================================= */}
+
+                    <label className="text-xs font-black uppercase tracking-[0.2em] text-white/40">
+                        Room Code
+                    </label>
+
+                    <input
+                        value={roomCode}
+                        onChange={(event) =>
+                            setRoomCode(
+                                event.target.value
+                                    .toUpperCase()
+                                    .slice(
+                                        0,
+                                        6
+                                    )
+                            )
+                        }
+                        placeholder="ABC123"
+                        maxLength={6}
+                        className="
+                            mt-2 w-full
+                            rounded-2xl
+                            border border-white/10
+                            bg-black/50
+                            px-5 py-4
+                            text-center
+                            text-2xl
+                            font-black
+                            uppercase
+                            tracking-[0.3em]
+                            text-white
+                            outline-none
+                            transition
+                            placeholder:text-white/15
+                            focus:border-pink-400/50
+                            focus:shadow-[0_0_20px_rgba(236,72,153,0.12)]
+                        "
+                    />
+
+                    <button
+                        type="button"
+                        onClick={handleJoinMatch}
+                        disabled={
+                            joining ||
+                            queueing
+                        }
+                        className="
+                            mt-4 w-full
+                            rounded-2xl
+                            border border-yellow-300/30
+                            bg-yellow-300/10
+                            px-6 py-4
+                            font-black
+                            text-yellow-200
+                            transition
+                            hover:cursor-pointer
+                            hover:border-yellow-300/60
+                            hover:bg-yellow-300/15
+                            disabled:cursor-not-allowed
+                            disabled:opacity-50
+                        "
+                    >
+                        {joining
+                            ? "Joining..."
+                            : "Join Match"}
+                    </button>
+
+                    {error && (
                         <p className="mt-4 text-center text-sm font-semibold text-red-300">
-                            {queueError}
+                            {error}
                         </p>
                     )}
-                </div>
+                </section>
 
-                <div className="mt-7 flex items-center gap-4">
-                    <div className="h-px flex-1 bg-white/10" />
+                {/* ===================================================== */}
+                {/* RIGHT SIDE */}
+                {/* MATCH HISTORY */}
+                {/* ===================================================== */}
 
-                    <p className="text-xs font-black uppercase tracking-widest text-white/25">
-                        Private Match
-                    </p>
-
-                    <div className="h-px flex-1 bg-white/10" />
-                </div>
-
-                <button
-                    type="button"
-                    onClick={handleCreateMatch}
-                    disabled={
-                        creating ||
-                        queueing
-                    }
+                <aside
                     className="
-                        mt-8 w-full
-                        rounded-2xl
-                        bg-gradient-to-r
-                        from-pink-600
-                        via-fuchsia-600
-                        to-purple-700
-                        px-6 py-4
-                        font-black text-white
-                        shadow-[0_0_25px_rgba(236,72,153,0.3)]
-                        transition
-                        hover:-translate-y-1
-                        hover:cursor-pointer
-                        disabled:cursor-not-allowed
-                        disabled:opacity-50
-                    "
-                >
-                    {creating
-                        ? "Creating..."
-                        : "Create Match"}
-                </button>
-
-                <div className="my-7 flex items-center gap-4">
-                    <div className="h-px flex-1 bg-white/10" />
-
-                    <p className="text-xs font-black uppercase tracking-widest text-white/25">
-                        Or
-                    </p>
-
-                    <div className="h-px flex-1 bg-white/10" />
-                </div>
-
-                <label className="text-xs font-black uppercase tracking-[0.2em] text-white/40">
-                    Room Code
-                </label>
-
-                <input
-                    value={roomCode}
-                    onChange={(event) =>
-                        setRoomCode(
-                            event.target.value
-                                .toUpperCase()
-                                .slice(0, 6)
-                        )
-                    }
-                    placeholder="ABC123"
-                    maxLength={6}
-                    className="
-                        mt-2 w-full
-                        rounded-2xl
-                        border border-white/10
+                        h-fit
+                        overflow-hidden
+                        rounded-3xl
+                        border border-purple-400/20
                         bg-black/50
-                        px-5 py-4
-                        text-center
-                        text-2xl font-black
-                        uppercase
-                        tracking-[0.3em]
-                        text-white
-                        outline-none
-                        transition
-                        placeholder:text-white/15
-                        focus:border-pink-400/50
-                        focus:shadow-[0_0_20px_rgba(236,72,153,0.12)]
-                    "
-                />
-
-                <button
-                    type="button"
-                    onClick={handleJoinMatch}
-                    disabled={
-                        joining ||
-                        queueing
-                    }
-                    className="
-                        mt-4 w-full
-                        rounded-2xl
-                        border border-yellow-300/30
-                        bg-yellow-300/10
-                        px-6 py-4
-                        font-black text-yellow-200
-                        transition
-                        hover:cursor-pointer
-                        hover:border-yellow-300/60
-                        hover:bg-yellow-300/15
-                        disabled:cursor-not-allowed
-                        disabled:opacity-50
+                        shadow-[0_0_35px_rgba(168,85,247,0.1)]
+                        backdrop-blur-xl
                     "
                 >
-                    {joining
-                        ? "Joining..."
-                        : "Join Match"}
-                </button>
 
-                {error && (
-                    <p className="mt-4 text-center text-sm font-semibold text-red-300">
-                        {error}
-                    </p>
-                )}
-            </section>
+                    {/* HEADER */}
+                    <div className="border-b border-white/10 p-5">
+                        <div className="flex items-start justify-between gap-4">
+                            <div>
+                                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-purple-300/50">
+                                    Multiplayer
+                                </p>
+                                <h2 className="mt-1 text-xl font-black text-white">
+                                    Match History
+                                </h2>
+                            </div>
+
+                            <div
+                                className="
+                                    flex h-10 w-10
+                                    items-center justify-center
+                                    rounded-xl
+                                    border border-purple-400/20
+                                    bg-purple-500/10
+                                    text-lg
+                                "
+                            >
+                                ⚔️
+                            </div>
+                        </div>
+
+
+                        {/* ============================================= */}
+                        {/* RECORD */}
+                        {/* ============================================= */}
+
+                        <div className="mt-5 grid grid-cols-3 gap-2">
+                            {/* WINS */}
+                            <div
+                                className="
+                                    rounded-xl
+                                    border border-green-400/15
+                                    bg-green-500/[0.05]
+                                    px-3 py-2
+                                    text-center
+                                "
+                            >
+                                <p className="text-xl font-black text-green-300">
+                                    {wins}
+                                </p>
+                                <p className="text-[9px] font-black uppercase tracking-widest text-green-300/40">
+                                    Wins
+                                </p>
+                            </div>
+
+                            {/* LOSSES */}
+                            <div
+                                className="
+                                    rounded-xl
+                                    border border-red-400/15
+                                    bg-red-500/[0.05]
+                                    px-3 py-2
+                                    text-center
+                                "
+                            >
+                                <p className="text-xl font-black text-red-300">
+                                    {losses}
+                                </p>
+                                <p className="text-[9px] font-black uppercase tracking-widest text-red-300/40">
+                                    Losses
+                                </p>
+                            </div>
+
+                            {/* DRAWS */}
+                            <div
+                                className="
+                                    rounded-xl
+                                    border border-white/10
+                                    bg-white/[0.025]
+                                    px-3 py-2
+                                    text-center
+                                "
+                            >
+                                <p className="text-xl font-black text-white/60">
+                                    {draws}
+                                </p>
+                                <p className="text-[9px] font-black uppercase tracking-widest text-white/25">
+                                    Draws
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* ============================================= */}
+                    {/* HISTORY LIST */}
+                    {/* ============================================= */}
+
+                    <div className="max-h-[600px] overflow-y-auto p-3">
+                        {matchHistory.length === 0 ? (
+                            <div className="px-4 py-14 text-center">
+                                <div
+                                    className="
+                                        mx-auto
+                                        flex h-12 w-12
+                                        items-center justify-center
+                                        rounded-full
+                                        border border-white/10
+                                        bg-white/[0.03]
+                                        text-xl
+                                    "
+                                >
+                                    ⚔
+                                </div>
+                                <p className="mt-4 text-sm font-black text-white/50">
+                                    No matches yet
+                                </p>
+                                <p className="mt-1 text-xs leading-5 text-white/25">
+                                    Your recent multiplayer battles
+                                    will appear here.
+                                </p>
+                            </div>
+
+                        ) : (
+
+                            <div className="space-y-2">
+                                {matchHistory.map(
+                                    (history) => {
+
+                                        const isWin =
+                                            history.result ===
+                                            "win";
+
+                                        const isLoss =
+                                            history.result ===
+                                            "loss";
+
+                                        return (
+                                            <div
+                                                key={
+                                                    history.id
+                                                }
+                                                className={`
+                                                rounded-2xl
+                                                border
+                                                p-4
+                                                transition
+
+                                                ${
+                                                    isWin
+                                                        ? `
+                                                            border-green-400/15
+                                                            bg-green-500/[0.04]
+                                                        `
+                                                        : isLoss
+                                                            ? `
+                                                                border-red-400/15
+                                                                bg-red-500/[0.04]
+                                                            `
+                                                            : `
+                                                                border-white/10
+                                                                bg-white/[0.025]
+                                                            `
+                                                }
+                                            `}
+                                            >
+
+                                                {/* ================================= */}
+                                                {/* RESULT + SCORE */}
+                                                {/* ================================= */}
+
+                                                <div className="flex items-center justify-between gap-3">
+                                                    <div className="min-w-0">
+                                                        <p
+                                                            className={`
+                                                            text-[10px]
+                                                            font-black
+                                                            uppercase
+                                                            tracking-[0.2em]
+
+                                                            ${
+                                                                isWin
+                                                                    ? "text-green-300"
+                                                                    : isLoss
+                                                                        ? "text-red-300"
+                                                                        : "text-white/40"
+                                                            }
+                                                        `}
+                                                        >
+                                                            {
+                                                                history.result
+                                                            }
+                                                        </p>
+
+                                                        <p className="mt-1 truncate text-sm font-black text-white">
+                                                            vs.{" "}
+                                                            {
+                                                                history.opponentName
+                                                            }
+                                                        </p>
+                                                    </div>
+
+                                                    {/* SCORE */}
+                                                    {history.endReason ===
+                                                    "forfeit" ? (
+                                                        <div
+                                                            className="
+                                                                rounded-lg
+                                                                border border-yellow-400/15
+                                                                bg-yellow-500/[0.05]
+                                                                px-2.5 py-1.5
+                                                            "
+                                                        >
+                                                            <p className="text-[9px] font-black uppercase tracking-widest text-yellow-200/60">
+                                                                Forfeit
+                                                            </p>
+                                                        </div>
+
+                                                    ) : (
+
+                                                        <div className="text-right">
+                                                            <p className="text-xl font-black text-white">
+                                                                {
+                                                                    history.myPositionWins
+                                                                }
+
+                                                                <span className="mx-1 text-white/20">
+                                                                -
+                                                            </span>
+                                                                {
+                                                                    history.opponentPositionWins
+                                                                }
+                                                            </p>
+                                                            <p className="text-[8px] font-black uppercase tracking-widest text-white/25">
+                                                                Positions
+                                                            </p>
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                {/* ================================= */}
+                                                {/* META */}
+                                                {/* ================================= */}
+
+                                                <div className="mt-3 flex items-center justify-between gap-3 border-t border-white/5 pt-3">
+
+                                                    <p className="truncate text-[9px] font-bold uppercase tracking-widest text-white/20">
+                                                        {
+                                                            history.matchCode
+                                                        }
+                                                        {" · "}
+                                                        Game{" "}
+                                                        {
+                                                            history.gameNumber
+                                                        }
+                                                    </p>
+
+                                                    {history.endReason ===
+                                                        "normal" && (
+
+                                                            <p className="shrink-0 text-[9px] font-bold text-white/30">
+                                                                {
+                                                                    history.myTotalPower
+                                                                }
+                                                                {" - "}
+                                                                {
+                                                                    history.opponentTotalPower
+                                                                }
+                                                                {" PWR"}
+                                                            </p>
+                                                        )}
+                                                </div>
+                                            </div>
+                                        );
+                                    }
+                                )}
+                            </div>
+                        )}
+                    </div>
+                </aside>
+            </div>
         </main>
     );
 }

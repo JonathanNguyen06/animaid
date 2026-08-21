@@ -8,7 +8,7 @@ import {
     completeDraftMatch, getDraftPlayerState,
     listenToDraftMatch,
     prepareDraftRematch,
-    requestDraftRematch, startDraftRematchIfReady,
+    requestDraftRematch, saveDraftMatchHistory, startDraftRematchIfReady,
 } from "@/lib/multiplayerDraft";
 import {draftCharacters,} from "@/data/draftCharacters";
 import {draftPositions, ascensionInfo, getLetterGrade,} from "@/data/draftLogic";
@@ -628,6 +628,7 @@ export default function MultiplayerDraftResultsPage() {
     const [showAscensionImpact, setShowAscensionImpact,] = useState(false);
     const [requestingRematch, setRequestingRematch,] = useState(false);
     const [finalTeamsLoaded, setFinalTeamsLoaded,] = useState(false);
+    const [historySaved, setHistorySaved,] = useState(false);
 
 
     // ---------------------------------------------------------
@@ -1067,6 +1068,75 @@ export default function MultiplayerDraftResultsPage() {
         code,
         match?.status,
         router,
+    ]);
+
+    useEffect(() => {
+        if (
+            !user ||
+            !code ||
+            !match
+        ) {
+            return;
+        }
+
+        if (
+            match.status !==
+            "complete"
+        ) {
+            return;
+        }
+
+        if (historySaved) {
+            return;
+        }
+
+        let cancelled = false;
+
+        async function saveHistory() {
+            try {
+                await saveDraftMatchHistory(
+                    code,
+                    user!.uid
+                );
+
+                if (!cancelled) {
+                    setHistorySaved(
+                        true
+                    );
+                }
+            } catch (error) {
+                console.error(
+                    "Failed to save match history:",
+                    error
+                );
+            }
+        }
+
+        saveHistory();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [
+        user,
+        code,
+        match?.status,
+        match?.gameNumber,
+        historySaved,
+    ]);
+
+    useEffect(() => {
+        if (
+            match?.status ===
+            "power-selection"
+        ) {
+            setHistorySaved(
+                false
+            );
+        }
+    }, [
+        match?.status,
+        match?.gameNumber,
     ]);
 
     // ---------------------------------------------------------
