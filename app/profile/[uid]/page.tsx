@@ -7,7 +7,6 @@ import Image from "next/image";
 import {
     auth,
     db,
-    getUserCharacters,
     getDraftHighScore,
     type DraftHighScore,
 } from "@/lib/firebase";
@@ -20,7 +19,6 @@ type UserProfile = {
     photoURL?: string;
 
     dailyStreak?: number;
-    higherLowerBestStreak?: number;
 };
 
 type WishlistAnime = {
@@ -62,11 +60,6 @@ export default function ProfilePage() {
     const [draftHighScore, setDraftHighScore] = useState<DraftHighScore | null>(null);
     const [showDraftLineup, setShowDraftLineup] = useState(false);
 
-    const totalCollectionPower = characters.reduce(
-        (sum, character) => sum + character.powerLevel,
-        0
-    );
-
     useEffect(() => {
         async function loadProfile() {
             if (!uid) {
@@ -89,14 +82,6 @@ export default function ProfilePage() {
                 setProfile(profileSnap.data() as UserProfile);
                 const savedDraftHighScore = await getDraftHighScore(uid);
                 setDraftHighScore(savedDraftHighScore);
-
-                const ownedCharacters = await getUserCharacters(uid);
-
-                const sortedCharacters = (ownedCharacters as OwnedCharacter[]).sort(
-                    (a, b) => b.powerLevel - a.powerLevel
-                );
-
-                setCharacters(sortedCharacters);
 
                 const currentUser = auth.currentUser;
 
@@ -217,15 +202,6 @@ export default function ProfilePage() {
                         </h2>
 
                         <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                            <div className="rounded-2xl border border-pink-500/20 bg-white/[0.03] p-5 backdrop-blur-xl">
-                                <p className="text-xs font-bold uppercase tracking-widest text-pink-300/60">
-                                    Collection Power
-                                </p>
-
-                                <p className="mt-2 text-3xl font-bold text-white">
-                                    {totalCollectionPower.toLocaleString()}
-                                </p>
-                            </div>
 
                             <div className="rounded-2xl border border-orange-400/20 bg-orange-500/10 p-5 shadow-[0_0_18px_rgba(251,146,60,0.10)] backdrop-blur-xl">
                                 <p className="text-xs font-bold uppercase tracking-widest text-orange-200/60">
@@ -234,16 +210,6 @@ export default function ProfilePage() {
 
                                 <p className="mt-2 text-3xl font-bold text-orange-200">
                                     🔥 {profile.dailyStreak ?? 0}
-                                </p>
-                            </div>
-
-                            <div className="rounded-2xl border border-emerald-400/20 bg-emerald-500/10 p-5 shadow-[0_0_18px_rgba(16,185,129,0.10)] backdrop-blur-xl">
-                                <p className="text-xs font-bold uppercase tracking-widest text-emerald-200/60">
-                                    Best Higher / Lower
-                                </p>
-
-                                <p className="mt-2 text-3xl font-bold text-emerald-200">
-                                    {profile.higherLowerBestStreak ?? 0}
                                 </p>
                             </div>
 
@@ -366,61 +332,6 @@ export default function ProfilePage() {
                                         </div>
                                     ))}
                                 </div>
-                            </div>
-                        )}
-                    </section>
-
-                    <section className="relative z-10 mt-6 rounded-3xl border border-pink-500/20 bg-black/40 p-6 shadow-[0_0_25px_rgba(236,72,153,0.08)] backdrop-blur-xl">
-                        <div>
-                            <p className="text-xs font-bold uppercase tracking-widest text-pink-300/60">
-                                Collection
-                            </p>
-
-                            <h2 className="mt-2 text-2xl font-bold text-white">
-                                Character Collection
-                            </h2>
-                        </div>
-
-                        {characters.length === 0 ? (
-                            <p className="mt-5 rounded-2xl border border-pink-500/20 bg-white/[0.03] p-4 text-purple-100/70">
-                                This user has not collected any characters yet.
-                            </p>
-                        ) : (
-                            <div className="relative z-10 mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                                {characters.slice(0, 8).map((character) => (
-                                    <Link
-                                        key={character.id}
-                                        href={`/anime?id=${character.animeId}`}
-                                        className="relative z-10 overflow-hidden rounded-2xl border border-pink-500/20 bg-white/[0.03] transition hover:-translate-y-1 hover:border-pink-400/40 hover:bg-pink-500/10 hover:shadow-[0_0_18px_rgba(236,72,153,0.12)]"
-                                    >
-                                        {character.imageUrl && (
-                                            <img
-                                                src={character.imageUrl}
-                                                alt={character.name}
-                                                className="h-44 w-full object-cover object-[center_5%]"
-                                            />
-                                        )}
-
-                                        <div className="p-3 text-left">
-                                        <span className="rounded-full border border-pink-500/20 bg-pink-500/10 px-2 py-1 text-[10px] font-bold uppercase text-pink-200">
-                                            {character.rarity}
-                                        </span>
-
-                                            <h3 className="mt-2 line-clamp-1 text-sm font-bold text-white">
-                                                {character.name}
-                                            </h3>
-
-                                            <p className="mt-1 line-clamp-1 text-xs text-purple-100/60">
-                                                {character.animeTitle ??
-                                                    "Unknown Anime"}
-                                            </p>
-
-                                            <p className="mt-2 text-xs font-semibold text-pink-200">
-                                                Power: {character.powerLevel}
-                                            </p>
-                                        </div>
-                                    </Link>
-                                ))}
                             </div>
                         )}
                     </section>

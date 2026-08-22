@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import Loading from "@/app/components/Loading";
 import AnimeGuessAutocomplete from "@/app/components/AnimeGuessAutocomplete";
 import {
-    claimDailyPack,
     getDailyProgress,
     observeAuth,
     saveDailyProgress,
@@ -110,21 +109,6 @@ export default function DailyPage() {
 
         loadDailyAnime();
     }, [authLoading, user, today]);
-
-    async function handleClaimPack() {
-        if (!user) {
-            setGuessError("You must be signed in to claim a pack.");
-            return;
-        }
-
-        try {
-            await claimDailyPack(user.uid, today);
-
-            setRewardClaimed(true);
-        } catch (error: any) {
-            setGuessError(error?.message ?? "Failed to claim pack.");
-        }
-    }
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
@@ -347,7 +331,7 @@ export default function DailyPage() {
                 </h1>
 
                 <p className="mx-auto mt-3 max-w-2xl text-purple-100/70">
-                    Guess today’s anime in 6 tries. Complete the challenge to earn a character pack.
+                    Test your anime knowledge with a new guessing challenge every day.
                 </p>
 
                 <button
@@ -575,22 +559,6 @@ export default function DailyPage() {
                             </Link>
                         </div>
                     )}
-
-                    {/*{won && !rewardClaimed && (*/}
-                    {/*    <button*/}
-                    {/*        type="button"*/}
-                    {/*        onClick={handleClaimPack}*/}
-                    {/*        className="mt-4 w-full rounded-2xl border border-pink-500/20 bg-pink-500/10 px-5 py-3 font-semibold text-pink-200 shadow-[0_0_15px_rgba(236,72,153,0.08)] transition hover:border-pink-400/40 hover:bg-pink-500/20 hover:cursor-pointer"*/}
-                    {/*    >*/}
-                    {/*        Claim Character Pack*/}
-                    {/*    </button>*/}
-                    {/*)}*/}
-
-                    {/*{won && rewardClaimed && (*/}
-                    {/*    <div className="mt-4 rounded-2xl border border-green-400/20 bg-green-500/10 px-4 py-3 text-sm font-semibold text-green-200 backdrop-blur-xl">*/}
-                    {/*        Character pack added to your collection of packs!*/}
-                    {/*    </div>*/}
-                    {/*)}*/}
 
                     <div className="mt-8">
                         <Link

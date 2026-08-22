@@ -1,7 +1,6 @@
 "use client";
 
 import {useEffect, useState} from "react";
-import SearchBar from "@/app/components/Searchbar";
 import { auth, db, observeAuth } from "@/lib/firebase";
 import {
     collection,
@@ -15,6 +14,7 @@ import AddFriendButton from "@/app/components/AddFriendButton";
 import FriendRequestsPanel from "@/app/components/FriendRequestsPanel";
 import Link from "next/link";
 import Image from "next/image"
+import SearchBar from "@/app/components/Searchbar";
 
 type UserProfile = {
     uid: string;
@@ -194,20 +194,20 @@ export default function FriendsPage() {
                     type="button"
                     onClick={() => setShowRequests(!showRequests)}
                     className="
-                relative
-                cursor-pointer
-                rounded-xl
-                border border-pink-500/20
-                bg-black/40
-                px-4 py-2
-                text-sm font-semibold
-                text-pink-200
-                backdrop-blur-xl
-                transition
-                hover:border-pink-400/40
-                hover:bg-pink-500/10
-                shadow-[0_0_15px_rgba(236,72,153,0.12)]
-                "
+                        relative
+                        cursor-pointer
+                        rounded-xl
+                        border border-pink-500/20
+                        bg-black/40
+                        px-4 py-2
+                        text-sm font-semibold
+                        text-pink-200
+                        backdrop-blur-xl
+                        transition
+                        hover:border-pink-400/40
+                        hover:bg-pink-500/10
+                        shadow-[0_0_15px_rgba(236,72,153,0.12)]
+                    "
                 >
                     {showRequests ? "Hide Requests" : "View Requests"}
 

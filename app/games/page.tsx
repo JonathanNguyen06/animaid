@@ -7,29 +7,22 @@ import { motion, AnimatePresence } from "framer-motion";
 
 const games = [
     {
-        title: "Daily Quest",
-        description: "Guess today’s anime in 6 tries and earn a character pack.",
-        href: "/daily",
-        status: "Available Daily",
-        imageLabel: "Daily Quest Image",
-        imageLink: "/game-images/daily-game.png",
-    },
-    {
-        title: "Higher or Lower",
+        title: "Draft",
         description:
-            "Compare animes based on their ratings or popularity, or characters based on popularity.",
-        href: "/games/higher-lower",
-        status: "Unavailable",
-        imageLabel: "Higher or Lower Image",
-        imageLink: "/game-images/higher-or-lower.jpg",
+            "Build an anime squad from random characters, assign strategic roles, create synergies, and chase the strongest lineup.",
+        href: "/games/draft",
+        status: "Featured",
+        imageLabel: "Anime Draft",
+        imageLink: "/game-images/draft.avif",
     },
     {
-        title: "Blind Draft",
-        description: "Create the best anime squad with random characters.",
-        href: "/games/draft",
-        status: "Available",
-        imageLabel: "Mystery Game Image",
-        imageLink: "/game-images/draft.avif",
+        title: "Daily Quest",
+        description:
+            "Test your anime knowledge with a new guessing challenge every day.",
+        href: "/daily",
+        status: "Daily",
+        imageLabel: "Daily Quest",
+        imageLink: "/game-images/daily-game.png",
     },
 ];
 
@@ -117,7 +110,7 @@ export default function GamesPage() {
 
                                 <div className="text-center">
                                     <p className="text-xs font-black uppercase tracking-[0.3em] text-pink-300/60">
-                                        Blind Draft
+                                        Anime Draft
                                     </p>
 
                                     <h2 className="mt-3 text-4xl font-black text-white">
@@ -235,7 +228,7 @@ export default function GamesPage() {
                                             </div>
 
                                             <h3 className="mt-2 text-3xl font-black text-white">
-                                                Versus Draft
+                                                Multiplayer Draft
                                             </h3>
 
                                             <p className="mt-3 text-sm leading-6 text-purple-100/60">
@@ -262,21 +255,21 @@ export default function GamesPage() {
             </AnimatePresence>
 
             <section className="relative z-10 mb-8 text-center">
-                <p className="text-xs font-bold uppercase tracking-widest text-pink-300/60">
-                    Game Modes
+                <p className="text-xs font-black uppercase tracking-[0.3em] text-pink-300/60">
+                    Play AnimAid
                 </p>
 
-                <h1 className="mt-3 text-5xl font-bold text-white">
-                    Choose Your Challenge
+                <h1 className="mt-3 text-5xl font-black text-white">
+                    Build. Draft. Battle.
                 </h1>
 
                 <p className="mx-auto mt-3 max-w-2xl text-purple-100/70">
-                    Play anime-themed challenges, earn packs, and grow your
-                    character collection.
+                    Build anime lineups, master your draft strategy, and challenge
+                    other players head-to-head.
                 </p>
             </section>
 
-            <section className="relative z-10 grid flex-1 gap-6 lg:grid-cols-3">
+            <section className="relative z-10 grid flex-1 gap-6 lg:grid-cols-[1.35fr_0.65fr]">
                 {games.map((game, index) => (
                     <motion.div
                         key={game.title}
@@ -287,24 +280,27 @@ export default function GamesPage() {
                             delay: index * 0.15,
                         }}
                     >
-                        {game.title === "Blind Draft" ? (
+                        {game.title === "Draft" ? (
                             <button
                                 type="button"
-                                onClick={() => setShowDraftModes(true)}
+                                onClick={() =>
+                                    setShowDraftModes(true)
+                                }
                                 className="
                                     group relative z-10 flex
-                                    min-h-[520px] w-full overflow-hidden
+                                    min-h-[520px] w-full
+                                    overflow-hidden
                                     rounded-3xl
-                                    border border-pink-500/20
+                                    border border-pink-500/25
                                     bg-black/40
                                     text-left
-                                    shadow-[0_0_25px_rgba(236,72,153,0.08)]
+                                    shadow-[0_0_35px_rgba(236,72,153,0.12)]
                                     backdrop-blur-xl
                                     transition
                                     hover:-translate-y-1
                                     hover:cursor-pointer
-                                    hover:border-pink-400/40
-                                    hover:shadow-[0_0_35px_rgba(236,72,153,0.18)]
+                                    hover:border-pink-400/50
+                                    hover:shadow-[0_0_45px_rgba(236,72,153,0.22)]
                                 "
                             >
                                 <GameCardContent game={game} />

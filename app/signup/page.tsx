@@ -72,7 +72,7 @@ export default function SignupPage() {
                 </h1>
 
                 <p className="mt-3 text-purple-100/70">
-                    Join Animaid and start building your anime collection.
+                    Join Animaid and make your way to the top!
                 </p>
             </section>
 

@@ -43,7 +43,7 @@ export default function DailyQuestReminder() {
                 </h3>
 
                 <p className="mt-2 text-sm text-purple-100/60">
-                    Complete today's challenge to earn a character pack.
+                    Complete today's challenge!
                 </p>
 
                 <div

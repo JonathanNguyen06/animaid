@@ -9,7 +9,7 @@ import {
     getDoc,
     getDocs,
     serverTimestamp,
-    setDoc,
+    setDoc, writeBatch,
 } from "firebase/firestore";
 
 type FriendRequest = {
@@ -54,37 +54,84 @@ export default function FriendRequestsPanel() {
 
     async function acceptRequest(request: FriendRequest) {
         const user = auth.currentUser;
+
         if (!user) return;
 
-        const myProfileSnap = await getDoc(doc(db, "users", user.uid));
+        try {
+            const myProfileSnap = await getDoc(
+                doc(db, "users", user.uid)
+            );
 
-        if (!myProfileSnap.exists()) return;
+            if (!myProfileSnap.exists()) {
+                return;
+            }
 
-        const myProfile = myProfileSnap.data() as UserProfile;
+            const myProfile =
+                myProfileSnap.data() as UserProfile;
 
-        const myFriendRef = doc(db, "users", user.uid, "friends", request.fromUid);
-        const theirFriendRef = doc(db, "users", request.fromUid, "friends", user.uid);
-        const requestRef = doc(db, "users", user.uid, "friendRequests", request.fromUid);
+            const myFriendRef = doc(
+                db,
+                "users",
+                user.uid,
+                "friends",
+                request.fromUid
+            );
 
-        await setDoc(myFriendRef, {
-            uid: request.fromUid,
-            username: request.fromUsername ?? "",
-            photoURL: request.fromPhotoURL ?? "",
-            created_at: serverTimestamp(),
-        });
+            const theirFriendRef = doc(
+                db,
+                "users",
+                request.fromUid,
+                "friends",
+                user.uid
+            );
 
-        await setDoc(theirFriendRef, {
-            uid: user.uid,
-            username: myProfile.username ?? "",
-            photoURL: myProfile.photoURL ?? "",
-            created_at: serverTimestamp(),
-        });
+            const requestRef = doc(
+                db,
+                "users",
+                user.uid,
+                "friendRequests",
+                request.fromUid
+            );
 
-        await deleteDoc(requestRef);
+            const batch = writeBatch(db);
 
-        setRequests((prev) =>
-            prev.filter((item) => item.fromUid !== request.fromUid)
-        );
+            batch.set(myFriendRef, {
+                uid: request.fromUid,
+                username:
+                    request.fromUsername ?? "",
+                photoURL:
+                    request.fromPhotoURL ?? "",
+                created_at:
+                    serverTimestamp(),
+            });
+
+            batch.set(theirFriendRef, {
+                uid: user.uid,
+                username:
+                    myProfile.username ?? "",
+                photoURL:
+                    myProfile.photoURL ?? "",
+                created_at:
+                    serverTimestamp(),
+            });
+
+            batch.delete(requestRef);
+
+            await batch.commit();
+
+            setRequests((prev) =>
+                prev.filter(
+                    (item) =>
+                        item.fromUid !==
+                        request.fromUid
+                )
+            );
+        } catch (error) {
+            console.error(
+                "Failed to accept friend request:",
+                error
+            );
+        }
     }
 
     async function declineRequest(request: FriendRequest) {

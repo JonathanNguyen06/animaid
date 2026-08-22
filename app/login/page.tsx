@@ -101,7 +101,7 @@ export default function LoginPage() {
                 </h1>
 
                 <p className="mt-3 text-purple-100/70">
-                    Continue your anime collection and games.
+                    Continue your journey to the top!
                 </p>
             </section>
 
