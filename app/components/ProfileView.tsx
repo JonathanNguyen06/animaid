@@ -25,6 +25,7 @@ import {
 } from "@/lib/firebase";
 
 import AddFriendButton from "@/app/components/AddFriendButton";
+import ChallengeFriendButton from "@/app/components/ChallengeFriendButton";
 
 
 type UserProfile = {
@@ -569,18 +570,32 @@ export default function ProfileView({
 
                                 </div>
                             ) : (
-                                <AddFriendButton
-                                    targetUser={{
-                                        uid:
-                                        profile.uid,
+                                <div className="flex flex-wrap gap-2">
+                                    <AddFriendButton
+                                        targetUser={{
+                                            uid:
+                                            profile.uid,
 
-                                        username:
-                                        profile.username,
+                                            username:
+                                            profile.username,
 
-                                        photoURL:
-                                        profile.photoURL,
-                                    }}
-                                />
+                                            photoURL:
+                                            profile.photoURL,
+                                        }}
+                                    />
+                                    <ChallengeFriendButton
+                                        targetUser={{
+                                            uid:
+                                            profile.uid,
+
+                                            username:
+                                            profile.username,
+
+                                            photoURL:
+                                            profile.photoURL,
+                                        }}
+                                    />
+                                </div>
                             )}
 
                         </div>

@@ -29,6 +29,8 @@ import Image from "next/image";
 import AddFriendButton from "@/app/components/AddFriendButton";
 import FriendRequestsPanel from "@/app/components/FriendRequestsPanel";
 import SearchBar from "@/app/components/Searchbar";
+import ChallengeFriendButton from "@/app/components/ChallengeFriendButton";
+import DraftChallengesPanel from "@/app/components/DraftChallengesPanel";
 
 
 type UserProfile = {
@@ -502,6 +504,7 @@ export default function FriendsPage() {
                     </section>
                 )}
 
+                <DraftChallengesPanel />
 
                 {/* ================================================= */}
                 {/* SEARCH CARD */}
@@ -814,32 +817,38 @@ export default function FriendsPage() {
                                         (
                                             friend
                                         ) => (
-                                            <Link
-                                                href={`/profile/${friend.uid}`}
-                                                key={
-                                                    friend.uid
-                                                }
+                                            <div
+                                                key={friend.uid}
                                                 className="
-                                                    group
+                                                    flex
+                                                    items-center
+                                                    justify-between
+                                                    gap-4
                                                     rounded-2xl
                                                     border border-white/10
                                                     bg-white/[0.025]
                                                     p-4
                                                     transition
-                                                    hover:-translate-y-0.5
                                                     hover:border-purple-400/30
                                                     hover:bg-purple-500/[0.06]
-                                                    hover:shadow-[0_0_20px_rgba(168,85,247,0.08)]
                                                 "
                                             >
 
-                                                <PlayerIdentity
-                                                    user={
-                                                        friend
-                                                    }
+                                                <Link
+                                                    href={`/profile/${friend.uid}`}
+                                                    className="min-w-0 flex-1"
+                                                >
+                                                    <PlayerIdentity
+                                                        user={friend}
+                                                    />
+                                                </Link>
+
+
+                                                <ChallengeFriendButton
+                                                    targetUser={friend}
                                                 />
 
-                                            </Link>
+                                            </div>
                                         )
                                     )}
 

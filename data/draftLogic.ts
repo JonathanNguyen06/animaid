@@ -1150,3 +1150,114 @@ export const powerPositionInfo: Record<
         scoring: "Uses all 6 attributes with bonuses for elite stats",
     },
 };
+
+export type AscensionPreviewEntry = {
+    position: DraftPick["position"];
+
+    affected: boolean;
+
+    beforePower: number;
+    afterPower: number;
+
+    powerGain: number;
+
+    beforeGrade: string;
+    afterGrade: string;
+};
+
+
+export function getAscensionPreview(
+    picks: DraftPick[],
+    ascension: Ascension,
+    powerPosition: PowerPosition | null
+): AscensionPreviewEntry[] {
+    if (picks.length === 0) {
+        return [];
+    }
+
+    /*
+     * IMPORTANT:
+     *
+     * We use the REAL applyAscension function.
+     * Nothing is saved. This is only a local
+     * simulation for the UI.
+     */
+
+    const previewPicks =
+        applyAscension(
+            picks,
+            ascension,
+            powerPosition
+        );
+
+
+    return picks.map(
+        (originalPick) => {
+            const previewPick =
+                previewPicks.find(
+                    (pick) =>
+                        pick.position ===
+                        originalPick.position
+                );
+
+
+            /*
+             * Should never happen because
+             * applyAscension preserves picks,
+             * but this keeps the helper safe.
+             */
+            if (!previewPick) {
+                return {
+                    position:
+                    originalPick.position,
+
+                    affected:
+                        false,
+
+                    beforePower:
+                    originalPick.power,
+
+                    afterPower:
+                    originalPick.power,
+
+                    powerGain:
+                        0,
+
+                    beforeGrade:
+                    originalPick.grade,
+
+                    afterGrade:
+                    originalPick.grade,
+                };
+            }
+
+
+            const powerGain =
+                previewPick.power -
+                originalPick.power;
+
+
+            return {
+                position:
+                originalPick.position,
+
+                affected:
+                    powerGain > 0,
+
+                beforePower:
+                originalPick.power,
+
+                afterPower:
+                previewPick.power,
+
+                powerGain,
+
+                beforeGrade:
+                originalPick.grade,
+
+                afterGrade:
+                previewPick.grade,
+            };
+        }
+    );
+}

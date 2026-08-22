@@ -1,5 +1,5 @@
 "use client";
-import {useEffect, useRef, useState,} from "react";
+import {useEffect, useMemo, useRef, useState,} from "react";
 import {useParams, useRouter,} from "next/navigation";
 import {onAuthStateChanged, type User,} from "firebase/auth";
 import {auth,} from "@/lib/firebase";
@@ -12,11 +12,12 @@ import {
     submitMultiplayerDraftPick, advanceDraftRoundIfReady, rerollMultiplayerDraftCharacter, selectMultiplayerAscension,
     completeDraftMatch, claimDraftForfeit, listenToDraftRoundReveal, lockDraftRoundCharacter
 } from "@/lib/multiplayerDraft";
-import {Ascension, ascensionInfo, draftPositions, powerPositionInfo,} from "@/data/draftLogic";
+import {Ascension, ascensionInfo, draftPositions, getAscensionPreview, powerPositionInfo,} from "@/data/draftLogic";
 import type {DraftMatch, MultiplayerDraftPlayerState,} from "@/types/multiplayerDraft";
 import type {AnyDraftPosition, DraftPosition, PowerPosition,} from "@/data/draftCharacters";
 import {draftCharacters,} from "@/data/draftCharacters";
 import {listenToDraftPresence, registerDraftPresence,} from "@/lib/draftPresence";
+import {DraftPick} from "@/types/draft";
 
 export default function MultiplayerDraftPlayPage() {
     const router = useRouter();
@@ -42,6 +43,7 @@ export default function MultiplayerDraftPlayPage() {
     const opponentOnlineRef = useRef<boolean | null>(null);
     const [opponentVisibleCharacterId, setOpponentVisibleCharacterId,] = useState<string | null>(null);
     const [lockingRoll, setLockingRoll,] = useState(false);
+    const [hoveredAscension, setHoveredAscension,] = useState<Ascension | null>(null);
 
     const positionIcons:
         Record<DraftPosition, string> = {
@@ -970,6 +972,137 @@ export default function MultiplayerDraftPlayPage() {
 
     const multiplayerPicks =
         playerState.picks ?? [];
+
+    const ascensionPreviewPicks: DraftPick[] =
+        multiplayerPicks.flatMap(
+            (pick) => {
+                const character =
+                    draftCharacters.find(
+                        (character) =>
+                            character.id ===
+                            pick.characterId
+                    );
+
+                if (!character) {
+                    return [];
+                }
+
+                return [
+                    {
+                        character,
+
+                        position:
+                        pick.position,
+
+                        basePower:
+                        pick.basePower,
+
+                        power:
+                        pick.power,
+
+                        grade:
+                        pick.grade,
+
+                        hasSynergy:
+                        pick.hasSynergy,
+
+                        ascensionBonus:
+                            pick.ascensionBonus ??
+                            0,
+                    },
+                ];
+            }
+        );
+
+    const ascensionPreviews =
+        new Map<
+            Ascension,
+            ReturnType<
+                typeof getAscensionPreview
+            >
+        >();
+
+    for (
+        const ascension of
+        playerState.ascensionChoices
+        ) {
+        ascensionPreviews.set(
+            ascension,
+
+            getAscensionPreview(
+                ascensionPreviewPicks,
+                ascension,
+                playerState.selectedPowerPosition
+            )
+        );
+    }
+
+    const hoveredPreview =
+        hoveredAscension
+            ? ascensionPreviews.get(
+            hoveredAscension
+        ) ?? []
+            : [];
+
+    const hoveredPreviewByPosition =
+        new Map(
+            hoveredPreview.map(
+                (preview) => [
+                    preview.position,
+                    preview,
+                ]
+            )
+        );
+
+    const isPreviewingAscension =
+        hoveredAscension !== null;
+
+    const ascensionTotalPower =
+        multiplayerPicks.reduce(
+            (total, pick) =>
+                total + pick.power,
+            0
+        );
+
+    const ascensionAveragePower =
+        multiplayerPicks.length > 0
+            ? Math.round(
+                ascensionTotalPower /
+                multiplayerPicks.length
+            )
+            : 0;
+
+    const ascensionHighestPower =
+        multiplayerPicks.length > 0
+            ? Math.max(
+                ...multiplayerPicks.map(
+                    (pick) => pick.power
+                )
+            )
+            : 0;
+
+    const balancedFormationCount =
+        multiplayerPicks.filter(
+            (pick) =>
+                Math.abs(
+                    pick.power -
+                    ascensionAveragePower
+                ) <= 10
+        ).length;
+
+
+    const momentumCount =
+        multiplayerPicks.filter(
+            (pick) =>
+                [
+                    "A",
+                    "A+",
+                    "S",
+                    "S+",
+                ].includes(
+                    pick.grade
+                )
+        ).length;
 
     const filledPositions =
         multiplayerPicks.map(
@@ -2237,6 +2370,303 @@ export default function MultiplayerDraftPlayPage() {
                             </p>
                         </div>
 
+                        {/* ===================================================== */}
+                        {/* ASCENSION LINEUP PREVIEW */}
+                        {/* ===================================================== */}
+
+                        <div
+                            className="
+                                mt-7
+                                overflow-hidden
+                                rounded-3xl
+                                border border-white/10
+                                bg-black/35
+                                p-5
+                                shadow-[0_0_30px_rgba(0,0,0,0.18)]
+                            "
+                        >
+
+                            {/* ================================================= */}
+                            {/* TEAM SUMMARY */}
+                            {/* ================================================= */}
+
+                            <div
+                                className="
+                                    flex
+                                    flex-col
+                                    gap-4
+                                    lg:flex-row
+                                    lg:items-end
+                                    lg:justify-between
+                                "
+                            >
+
+                                <div>
+
+                                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-pink-300/50">
+                                        Your Completed Team
+                                    </p>
+
+                                    <h3 className="mt-1 text-2xl font-black text-white">
+                                        Ascension Analysis
+                                    </h3>
+
+                                    <p className="mt-1 text-sm text-white/35">
+                                        Review your lineup before locking in your final bonus.
+                                    </p>
+
+                                </div>
+
+
+                                <div className="flex flex-wrap gap-2">
+
+                                    {/* TEAM POWER */}
+
+                                    <div
+                                        className="
+                                            rounded-xl
+                                            border border-white/10
+                                            bg-white/[0.03]
+                                            px-4 py-2
+                                        "
+                                    >
+                                        <p className="text-[8px] font-black uppercase tracking-widest text-white/30">
+                                            Team Power
+                                        </p>
+
+                                        <p className="mt-0.5 text-lg font-black text-white">
+                                            {ascensionTotalPower}
+                                        </p>
+                                    </div>
+
+
+                                    {/* AVERAGE */}
+
+                                    <div
+                                        className="
+                                            rounded-xl
+                                            border border-purple-400/15
+                                            bg-purple-500/[0.05]
+                                            px-4 py-2
+                                        "
+                                    >
+                                        <p className="text-[8px] font-black uppercase tracking-widest text-purple-300/40">
+                                            Average
+                                        </p>
+
+                                        <p className="mt-0.5 text-lg font-black text-purple-200">
+                                            {ascensionAveragePower}
+                                        </p>
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+
+                            {/* ================================================= */}
+                            {/* LINEUP */}
+                            {/* ================================================= */}
+
+                            <div
+                                className="
+                                    mt-5
+                                    grid
+                                    grid-cols-2
+                                    gap-3
+                                    sm:grid-cols-3
+                                    lg:grid-cols-5
+                                    2xl:grid-cols-9
+                                "
+                            >
+
+                                {multiplayerPicks.map(
+                                    (pick) => {
+                                        const character =
+                                            draftCharacters.find(
+                                                (character) =>
+                                                    character.id ===
+                                                    pick.characterId
+                                            );
+
+                                        const preview =
+                                            hoveredPreviewByPosition.get(
+                                                pick.position
+                                            );
+
+                                        const isAffected =
+                                            preview?.affected ??
+                                            false;
+
+                                        if (!character) {
+                                            return null;
+                                        }
+
+                                        const gradeStyle =
+                                            getGradeStyle(
+                                                pick.grade
+                                            );
+
+                                        return (
+                                            <div
+                                                key={pick.position}
+                                                className={`
+                                                    group
+                                                    relative
+                                                    min-h-[250px]
+                                                    overflow-hidden
+                                                    rounded-2xl
+                                                    border
+                                                    bg-black
+                                            
+                                                    transition-all
+                                                    duration-300
+
+                                                    ${
+                                                    !isPreviewingAscension
+                                                        ? gradeStyle.border
+
+                                                        : isAffected
+                                                            ? `
+                                                                z-10
+                                                                scale-[1.035]
+                                                                border-yellow-300
+                                                                opacity-100
+                                                                ring-2
+                                                                ring-yellow-300/40
+                                                                shadow-[0_0_35px_rgba(250,204,21,0.55)]
+                                                            `
+
+                                                            : `
+                                                                scale-[0.98]
+                                                                border-white/10
+                                                                opacity-30
+                                                                grayscale-[0.35]
+                                                            `
+                                                    }
+                                                `}
+                                            >
+
+                                                {/* IMAGE */}
+
+                                                <img
+                                                    src={
+                                                        character.imageUrl
+                                                    }
+                                                    alt={
+                                                        character.name
+                                                    }
+                                                    draggable={
+                                                        false
+                                                    }
+                                                    className="
+                                                        pointer-events-none
+                                                        absolute
+                                                        inset-0
+                                                        h-full
+                                                        w-full
+                                                        object-cover
+                                                        object-[50%_20%]
+                                                    "
+                                                />
+
+
+                                                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/45 to-black/5" />
+
+
+                                                {/* POSITION */}
+
+                                                <div
+                                                    className="
+                                                        absolute
+                                                        left-2
+                                                        top-2
+                                                        rounded-full
+                                                        border border-white/10
+                                                        bg-black/65
+                                                        px-2
+                                                        py-1
+                                                        backdrop-blur-md
+                                                    "
+                                                >
+                                                    <p className="text-[8px] font-black uppercase tracking-wider text-white/70">
+                                                        {getPositionIcon(
+                                                            pick.position
+                                                        )}{" "}
+                                                        {
+                                                            pick.position
+                                                        }
+                                                    </p>
+                                                </div>
+
+
+                                                {/* CHARACTER INFO */}
+
+                                                <div className="absolute inset-x-0 bottom-0 p-3">
+                                                    <h4 className="line-clamp-1 text-sm font-black text-white">
+                                                        {
+                                                            character.name
+                                                        }
+                                                    </h4>
+
+
+                                                    <p className="mt-0.5 line-clamp-1 text-[9px] font-medium text-white/45">
+                                                        {
+                                                            character.anime
+                                                        }
+                                                    </p>
+
+
+                                                    <div className="mt-2 flex items-end justify-between">
+
+                                                        <p
+                                                            className={`
+                                                                text-2xl
+                                                                font-black
+                                                                italic
+                                                                ${gradeStyle.grade}
+                                                            `}
+                                                        >
+                                                            {
+                                                                pick.grade
+                                                            }
+                                                        </p>
+
+
+                                                        <div className="text-right">
+
+                                                            <p className="text-lg font-black text-white">
+                                                                {
+                                                                    pick.power
+                                                                }
+                                                            </p>
+
+                                                            <p className="text-[7px] font-black uppercase tracking-widest text-white/30">
+                                                                Power
+                                                            </p>
+
+                                                        </div>
+
+                                                    </div>
+
+
+                                                    {pick.hasSynergy && (
+                                                        <p className="mt-2 text-[8px] font-black uppercase tracking-widest text-pink-300">
+                                                            ✦ Series Link
+                                                        </p>
+                                                    )}
+
+                                                </div>
+
+                                            </div>
+                                        );
+                                    }
+                                )}
+
+                            </div>
+
+                        </div>
+
 
                         {!playerState.selectedAscension ? (
 
@@ -2257,31 +2687,65 @@ export default function MultiplayerDraftPlayPage() {
                                             <button
                                                 key={ascension}
                                                 type="button"
+
                                                 disabled={
                                                     selectingAscension
                                                 }
+
+                                                onMouseEnter={() =>
+                                                    setHoveredAscension(
+                                                        ascension
+                                                    )
+                                                }
+
+                                                onMouseLeave={() =>
+                                                    setHoveredAscension(
+                                                        null
+                                                    )
+                                                }
+
+                                                onFocus={() =>
+                                                    setHoveredAscension(
+                                                        ascension
+                                                    )
+                                                }
+
+                                                onBlur={() =>
+                                                    setHoveredAscension(
+                                                        null
+                                                    )
+                                                }
+
                                                 onClick={() =>
                                                     handleSelectAscension(
                                                         ascension
                                                     )
                                                 }
+
                                                 className="
-                                    group relative
-                                    overflow-hidden
-                                    rounded-3xl
-                                    border border-yellow-400/25
-                                    bg-black/60
-                                    p-5
-                                    text-left
-                                    transition-all duration-300
-                                    hover:-translate-y-1
-                                    hover:border-yellow-300/70
-                                    hover:bg-yellow-500/10
-                                    hover:shadow-[0_0_30px_rgba(250,204,21,0.18)]
-                                    hover:cursor-pointer
-                                    disabled:pointer-events-none
-                                    disabled:opacity-50
-                                "
+                                                    group relative
+                                                    overflow-hidden
+                                                    rounded-3xl
+                                                    border border-yellow-400/25
+                                                    bg-black/60
+                                                    p-5
+                                                    text-left
+                                                    transition-all duration-300
+
+                                                    hover:-translate-y-1
+                                                    hover:border-yellow-300/70
+                                                    hover:bg-yellow-500/10
+                                                    hover:shadow-[0_0_30px_rgba(250,204,21,0.18)]
+                                                    hover:cursor-pointer
+
+                                                    focus:border-yellow-300/70
+                                                    focus:bg-yellow-500/10
+                                                    focus:outline-none
+                                                    focus:shadow-[0_0_30px_rgba(250,204,21,0.18)]
+
+                                                    disabled:pointer-events-none
+                                                    disabled:opacity-50
+                                                "
                                             >
 
                                                 <div className="absolute -right-10 -top-10 h-28 w-28 rounded-full bg-yellow-400/10 blur-3xl transition group-hover:bg-yellow-400/20" />
@@ -2302,10 +2766,47 @@ export default function MultiplayerDraftPlayPage() {
                                                         }
                                                     </p>
 
-                                                    <div className="mt-5 text-center text-xs font-black uppercase tracking-[0.2em] text-yellow-300 opacity-60 transition group-hover:opacity-100">
-                                                        {selectingAscension
-                                                            ? "Locking In..."
-                                                            : "Select Ascension"}
+                                                    <div className="mt-5 border-t border-white/[0.06] pt-4">
+
+                                                        {(() => {
+                                                            const preview =
+                                                                ascensionPreviews.get(
+                                                                    ascension
+                                                                ) ?? [];
+
+                                                            const affectedCount =
+                                                                preview.filter(
+                                                                    (item) =>
+                                                                        item.affected
+                                                                ).length;
+
+                                                            return (
+                                                                <div className="flex items-center justify-between gap-3">
+
+                                                                    <p className="text-[10px] font-black uppercase tracking-widest text-white/30">
+                                                                        {affectedCount === 0
+                                                                            ? "No Current Targets"
+                                                                            : `${affectedCount} Target${
+                                                                                affectedCount === 1
+                                                                                    ? ""
+                                                                                    : "s"
+                                                                            }`}
+                                                                    </p>
+
+                                                                    <p className="text-[10px] font-black uppercase tracking-widest text-yellow-300/50">
+                                                                        Preview
+                                                                    </p>
+
+                                                                </div>
+                                                            );
+                                                        })()}
+
+                                                        <div className="mt-3 text-center text-xs font-black uppercase tracking-[0.2em] text-yellow-300 opacity-50 transition group-hover:opacity-100">
+                                                            {selectingAscension
+                                                                ? "Locking In..."
+                                                                : "Hover to Preview"}
+                                                        </div>
+
                                                     </div>
                                                 </div>
                                             </button>
@@ -2323,14 +2824,14 @@ export default function MultiplayerDraftPlayPage() {
 
                                 <div
                                     className="
-                        relative overflow-hidden
-                        rounded-3xl
-                        border border-yellow-300/30
-                        bg-black/60
-                        p-7
-                        text-center
-                        shadow-[0_0_35px_rgba(250,204,21,0.15)]
-                    "
+                                        relative overflow-hidden
+                                        rounded-3xl
+                                        border border-yellow-300/30
+                                        bg-black/60
+                                        p-7
+                                        text-center
+                                        shadow-[0_0_35px_rgba(250,204,21,0.15)]
+                                    "
                                 >
 
                                     <div className="absolute left-1/2 top-0 h-40 w-72 -translate-x-1/2 rounded-full bg-yellow-400/10 blur-[70px]" />
