@@ -2,12 +2,12 @@ import {
     doc,
     runTransaction,
     serverTimestamp,
-    onSnapshot, updateDoc, getDoc, query, collection, where, limit, getDocs, deleteDoc, orderBy
+    onSnapshot, getDoc, query, collection, where, limit, getDocs, deleteDoc, orderBy
 } from "firebase/firestore";
 import type {
     DraftMatch, DraftMatchHistoryEntry, MultiplayerDraftPick, MultiplayerDraftPlayerState, MultiplayerDraftRoundReveal,
 } from "@/types/multiplayerDraft";
-import { db } from "./firebase";
+import {db} from "./firebase";
 import {
     applyAscension, Ascension,
     calculateDraftPower,
@@ -18,6 +18,8 @@ import {
 } from "@/data/draftLogic";
 import {PowerPosition, draftCharacters, AnyDraftPosition} from "@/data/draftCharacters";
 import {DraftPick} from "@/types/draft";
+import {getDatabase, onDisconnect, ref, remove, set} from "firebase/database";
+import {get as getRealtime, serverTimestamp as realtimeServerTimestamp} from "@firebase/database";
 
 function generateDraftCode(length = 6) {
     const characters =
@@ -98,6 +100,9 @@ export async function createDraftMatch(
                         guestRollLocked: false,
 
                         matchmaking: "room",
+
+                        lobbyReadyStartedAt:
+                            null,
 
                         createdAt: serverTimestamp(),
                     });
@@ -184,6 +189,9 @@ export function listenToDraftMatch(
                     data.guestRollLocked ?? false,
                 gameNumber:
                     data.gameNumber ?? 1,
+                lobbyReadyStartedAt:
+                    data.lobbyReadyStartedAt ??
+                    null,
             };
 
             onMatchChange(match);
@@ -210,6 +218,117 @@ type DraftQueueEntry = {
     matchedWithUid: string | null;
 };
 
+const realtimeDb =
+    getDatabase();
+
+async function startOpenDraftQueuePresence(
+    uid: string
+) {
+    const presenceRef =
+        ref(
+            realtimeDb,
+            `draftQueuePresence/${uid}`
+        );
+
+    /*
+     * IMPORTANT:
+     *
+     * Register the disconnect operation BEFORE
+     * saying we're online.
+     *
+     * That prevents a race where the browser
+     * disconnects between the two operations.
+     */
+    await onDisconnect(
+        presenceRef
+    ).remove();
+
+
+    await set(
+        presenceRef,
+        {
+            queued:
+                true,
+
+            connectedAt:
+                realtimeServerTimestamp(),
+        }
+    );
+}
+
+
+async function clearOpenDraftQueuePresence(
+    uid: string
+) {
+    const presenceRef =
+        ref(
+            realtimeDb,
+            `draftQueuePresence/${uid}`
+        );
+
+    /*
+     * We don't really care if cancelling the
+     * disconnect registration fails here.
+     *
+     * Removing the node twice is harmless.
+     */
+    try {
+        await onDisconnect(
+            presenceRef
+        ).cancel();
+    } catch {
+        // Ignore cleanup failure.
+    }
+
+
+    await remove(
+        presenceRef
+    );
+}
+
+
+async function isOpenDraftQueuePlayerConnected(
+    uid: string
+) {
+    try {
+        const snapshot =
+            await getRealtime(
+                ref(
+                    realtimeDb,
+                    `draftQueuePresence/${uid}`
+                )
+            );
+
+
+        if (!snapshot.exists()) {
+            return false;
+        }
+
+
+        const value =
+            snapshot.val();
+
+
+        return (
+            value?.queued ===
+            true
+        );
+    } catch (error) {
+        console.error(
+            "Failed to check queue presence:",
+            error
+        );
+
+        /*
+         * Fail closed.
+         *
+         * If we cannot prove they're online,
+         * don't create a match with them.
+         */
+        return false;
+    }
+}
+
 export async function enterOpenDraftQueue(
     uid: string,
     displayName: string
@@ -220,80 +339,134 @@ export async function enterOpenDraftQueue(
         uid
     );
 
+
     /*
-     * First make sure WE have a queue entry.
+     * FIRST:
      *
-     * Using a transaction prevents accidentally
-     * replacing a match that found us at the same time.
+     * Establish live connection presence.
      */
-    const existingMatchCode =
-        await runTransaction(
-            db,
-            async (transaction) => {
-                const snapshot =
-                    await transaction.get(
-                        myQueueRef
+    await startOpenDraftQueuePresence(
+        uid
+    );
+
+
+    try {
+        /*
+         * Make sure WE have a queue entry.
+         *
+         * The transaction prevents us from
+         * overwriting a match that found us
+         * at the same time.
+         */
+        const existingMatchCode =
+            await runTransaction(
+                db,
+                async (
+                    transaction
+                ) => {
+                    const snapshot =
+                        await transaction.get(
+                            myQueueRef
+                        );
+
+
+                    if (
+                        snapshot.exists()
+                    ) {
+                        const data =
+                            snapshot.data() as
+                                DraftQueueEntry;
+
+
+                        if (
+                            data.status ===
+                            "matched" &&
+                            data.matchCode
+                        ) {
+                            return data.matchCode;
+                        }
+
+
+                        if (
+                            data.status ===
+                            "waiting"
+                        ) {
+                            return null;
+                        }
+                    }
+
+
+                    transaction.set(
+                        myQueueRef,
+                        {
+                            uid,
+                            displayName,
+
+                            status:
+                                "waiting",
+
+                            matchCode:
+                                null,
+
+                            matchedWithUid:
+                                null,
+
+                            joinedAt:
+                                serverTimestamp(),
+                        }
                     );
 
-                if (snapshot.exists()) {
-                    const data =
-                        snapshot.data() as
-                            DraftQueueEntry;
 
-                    if (
-                        data.status ===
-                        "matched" &&
-                        data.matchCode
-                    ) {
-                        return data.matchCode;
-                    }
-
-                    if (
-                        data.status ===
-                        "waiting"
-                    ) {
-                        return null;
-                    }
+                    return null;
                 }
+            );
 
-                transaction.set(
-                    myQueueRef,
-                    {
-                        uid,
-                        displayName,
 
-                        status:
-                            "waiting",
+        /*
+         * Somehow we were already matched.
+         */
+        if (existingMatchCode) {
+            await clearOpenDraftQueuePresence(
+                uid
+            );
 
-                        matchCode:
-                            null,
+            return existingMatchCode;
+        }
 
-                        matchedWithUid:
-                            null,
 
-                        joinedAt:
-                            serverTimestamp(),
-                    }
-                );
+        /*
+         * Search for another LIVE player.
+         */
+        const matchedCode =
+            await tryMatchOpenDraftQueue(
+                uid,
+                displayName
+            );
 
-                return null;
-            }
+
+        /*
+         * Once matched we are no longer
+         * considered part of the open queue.
+         */
+        if (matchedCode) {
+            await clearOpenDraftQueuePresence(
+                uid
+            );
+        }
+
+
+        return matchedCode;
+    } catch (error) {
+        /*
+         * If entering the Firestore queue failed,
+         * don't leave fake RTDB presence behind.
+         */
+        await clearOpenDraftQueuePresence(
+            uid
         );
 
-    if (existingMatchCode) {
-        return existingMatchCode;
+        throw error;
     }
-
-    /*
-     * We are now waiting.
-     *
-     * See if somebody else is already
-     * sitting in the queue.
-     */
-    return tryMatchOpenDraftQueue(
-        uid,
-        displayName
-    );
 }
 
 
@@ -320,11 +493,48 @@ async function tryMatchOpenDraftQueue(
     const queueSnapshot =
         await getDocs(queueQuery);
 
-    const candidates =
+    const possibleCandidates =
         queueSnapshot.docs.filter(
             (snapshot) =>
                 snapshot.id !== uid
         );
+
+
+    const candidatePresenceChecks =
+        await Promise.all(
+            possibleCandidates.map(
+                async (
+                    snapshot
+                ) => {
+                    const connected =
+                        await isOpenDraftQueuePlayerConnected(
+                            snapshot.id
+                        );
+
+
+                    return {
+                        snapshot,
+                        connected,
+                    };
+                }
+            )
+        );
+
+
+    const candidates =
+        candidatePresenceChecks
+            .filter(
+                ({
+                     connected,
+                 }) =>
+                    connected
+            )
+            .map(
+                ({
+                     snapshot,
+                 }) =>
+                    snapshot
+            );
 
     if (candidates.length === 0) {
         /*
@@ -352,6 +562,20 @@ async function tryMatchOpenDraftQueue(
         ) {
         const candidateUid =
             candidateSnapshot.id;
+
+        /*
+         * Recheck presence immediately before trying
+         * to claim this player.
+         */
+        const candidateStillConnected =
+            await isOpenDraftQueuePlayerConnected(
+                candidateUid
+            );
+
+
+        if (!candidateStillConnected) {
+            continue;
+        }
 
         const candidateQueueRef =
             doc(
@@ -486,14 +710,14 @@ async function tryMatchOpenDraftQueue(
                                 {
                                     matchmaking:
                                         "open",
-
+                                    gameNumber:
+                                        1,
                                     host: {
                                         uid,
                                         displayName,
                                         ready:
                                             false,
                                     },
-
                                     guest: {
                                         uid:
                                         candidateData.uid,
@@ -504,55 +728,41 @@ async function tryMatchOpenDraftQueue(
                                         ready:
                                             false,
                                     },
-
                                     status:
                                         "lobby",
-
                                     round: 0,
-
                                     hostSubmitted:
                                         false,
-
                                     guestSubmitted:
                                         false,
-
                                     hostPowerSelected:
                                         false,
-
                                     guestPowerSelected:
                                         false,
-
                                     hostAscensionSelected:
                                         false,
-
                                     guestAscensionSelected:
                                         false,
-
                                     hostRematchRequested:
                                         false,
-
                                     guestRematchRequested:
                                         false,
-
                                     hostRematchReady:
                                         false,
-
                                     guestRematchReady:
                                         false,
-
                                     winnerUid:
                                         null,
-
                                     forfeitedByUid:
                                         null,
-
                                     endReason:
                                         null,
-
                                     createdAt:
                                         serverTimestamp(),
                                     hostRollLocked: false,
                                     guestRollLocked: false,
+                                    lobbyReadyStartedAt:
+                                        serverTimestamp(),
                                 }
                             );
 
@@ -629,33 +839,92 @@ export function listenToOpenDraftQueue(
         matchCode: string
     ) => void
 ) {
-    const queueRef =
-        doc(
-            db,
-            "draftQueue",
-            uid
-        );
+    const queueRef = doc(
+        db,
+        "draftQueue",
+        uid
+    );
+
+    /*
+     * Prevent the matched snapshot from
+     * being handled multiple times while
+     * we're cleaning it up.
+     */
+    let handledMatch = false;
+
 
     return onSnapshot(
         queueRef,
-        (snapshot) => {
-            if (!snapshot.exists()) {
+
+        async (snapshot) => {
+            if (
+                !snapshot.exists() ||
+                handledMatch
+            ) {
                 return;
             }
+
 
             const data =
                 snapshot.data() as
                     DraftQueueEntry;
 
+
             if (
-                data.status ===
-                "matched" &&
-                data.matchCode
+                data.status !== "matched" ||
+                !data.matchCode
             ) {
-                onMatched(
-                    data.matchCode
+                return;
+            }
+
+
+            handledMatch = true;
+
+            const matchCode =
+                data.matchCode;
+
+
+            /*
+             * Player was the waiting candidate.
+             *
+             * They now know their match code,
+             * so this Firestore queue document
+             * has finished its job.
+             */
+            try {
+                await deleteDoc(
+                    queueRef
+                );
+            } catch (error) {
+                console.error(
+                    "Failed to clear matched queue entry:",
+                    error
                 );
             }
+
+
+            /*
+             * They're also no longer waiting
+             * in RTDB matchmaking presence.
+             */
+            try {
+                await clearOpenDraftQueuePresence(
+                    uid
+                );
+            } catch (error) {
+                console.error(
+                    "Failed to clear matched queue presence:",
+                    error
+                );
+            }
+
+
+            /*
+             * NOW enter the match.
+             */
+            onMatched(
+                matchCode
+            );
         },
 
         (error) => {
@@ -677,43 +946,57 @@ export async function cancelOpenDraftQueue(
             uid
         );
 
-    return runTransaction(
-        db,
-        async (transaction) => {
-            const snapshot =
-                await transaction.get(
+
+    const matchCode =
+        await runTransaction(
+            db,
+            async (
+                transaction
+            ) => {
+                const snapshot =
+                    await transaction.get(
+                        queueRef
+                    );
+
+
+                if (!snapshot.exists()) {
+                    return null;
+                }
+
+
+                const data =
+                    snapshot.data() as
+                        DraftQueueEntry;
+
+
+                /*
+                 * Match already won the race.
+                 */
+                if (
+                    data.status ===
+                    "matched" &&
+                    data.matchCode
+                ) {
+                    return data.matchCode;
+                }
+
+
+                transaction.delete(
                     queueRef
                 );
 
-            if (!snapshot.exists()) {
+
                 return null;
             }
+        );
 
-            const data =
-                snapshot.data() as
-                    DraftQueueEntry;
 
-            /*
-             * Too late to cancel.
-             *
-             * The match transaction already
-             * paired us.
-             */
-            if (
-                data.status ===
-                "matched" &&
-                data.matchCode
-            ) {
-                return data.matchCode;
-            }
-
-            transaction.delete(
-                queueRef
-            );
-
-            return null;
-        }
+    await clearOpenDraftQueuePresence(
+        uid
     );
+
+
+    return matchCode;
 }
 
 export async function clearOpenDraftQueueEntry(
@@ -726,9 +1009,16 @@ export async function clearOpenDraftQueueEntry(
             uid
         );
 
-    await deleteDoc(
-        queueRef
-    );
+
+    await Promise.all([
+        deleteDoc(
+            queueRef
+        ),
+
+        clearOpenDraftQueuePresence(
+            uid
+        ),
+    ]);
 }
 
 export async function joinDraftMatch(
@@ -784,6 +1074,9 @@ export async function joinDraftMatch(
                         displayName,
                         ready: false,
                     },
+
+                    lobbyReadyStartedAt:
+                        serverTimestamp(),
                 }
             );
         }
@@ -1942,12 +2235,25 @@ export async function selectMultiplayerAscension(
                 );
             }
 
+            const publicAscensionAlreadySelected =
+                isHost
+                    ? match.hostAscensionSelected ===
+                    true
+                    : match.guestAscensionSelected ===
+                    true;
+
+
             if (
-                playerState.selectedAscension
+                playerState.selectedAscension ||
+                publicAscensionAlreadySelected
             ) {
-                throw new Error(
-                    "ASCENSION_ALREADY_SELECTED"
-                );
+                /*
+                 * Idempotent no-op.
+                 *
+                 * A stale timer or double click may
+                 * arrive after the choice succeeded.
+                 */
+                return;
             }
 
             if (
@@ -2074,23 +2380,6 @@ export async function selectMultiplayerAscension(
                 );
 
             /*
-             * Work out whether both
-             * players will now be done.
-             */
-
-            const hostSelected =
-                isHost
-                    ? true
-                    : match.hostAscensionSelected ??
-                    false;
-
-            const guestSelected =
-                isGuest
-                    ? true
-                    : match.guestAscensionSelected ??
-                    false;
-
-            /*
              * PRIVATE DATA
              */
 
@@ -2105,41 +2394,110 @@ export async function selectMultiplayerAscension(
                 }
             );
 
+
             /*
              * PUBLIC DATA
+             *
+             * Selecting an Ascension ONLY marks
+             * this player as finished.
+             *
+             * A separate host-controlled function
+             * will move the match to reveal once
+             * both players are done.
              */
-
-            const matchUpdates:
-                Record<string, unknown> = {};
-
-            if (isHost) {
-                matchUpdates
-                    .hostAscensionSelected =
-                    true;
-            }
-
-            if (isGuest) {
-                matchUpdates
-                    .guestAscensionSelected =
-                    true;
-            }
-
-            /*
-             * Last player to choose moves
-             * everyone to reveal.
-             */
-
-            if (
-                hostSelected &&
-                guestSelected
-            ) {
-                matchUpdates.status =
-                    "reveal";
-            }
 
             transaction.update(
                 matchRef,
-                matchUpdates
+                isHost
+                    ? {
+                        hostAscensionSelected:
+                            true,
+                    }
+                    : {
+                        guestAscensionSelected:
+                            true,
+                    }
+            );
+        }
+    );
+}
+
+export async function advanceDraftAscensionIfReady(
+    code: string,
+    uid: string
+) {
+    const normalizedCode =
+        code.trim().toUpperCase();
+
+    const matchRef = doc(
+        db,
+        "draftMatches",
+        normalizedCode
+    );
+
+
+    await runTransaction(
+        db,
+        async (transaction) => {
+            const snapshot =
+                await transaction.get(
+                    matchRef
+                );
+
+
+            if (!snapshot.exists()) {
+                throw new Error(
+                    "MATCH_NOT_FOUND"
+                );
+            }
+
+
+            const match =
+                snapshot.data();
+
+
+            /*
+             * It may already have been
+             * advanced by another render.
+             */
+            if (
+                match.status !==
+                "ascension"
+            ) {
+                return;
+            }
+
+
+            /*
+             * Only host controls public
+             * phase advancement.
+             */
+            if (
+                match.host.uid !==
+                uid
+            ) {
+                return;
+            }
+
+
+            /*
+             * Don't advance until both
+             * private choices are finished.
+             */
+            if (
+                !match.hostAscensionSelected ||
+                !match.guestAscensionSelected
+            ) {
+                return;
+            }
+
+
+            transaction.update(
+                matchRef,
+                {
+                    status:
+                        "reveal",
+                }
             );
         }
     );
@@ -3631,4 +3989,170 @@ export function listenToDraftMatchHistory(
             );
         }
     );
+}
+
+export async function expireDraftLobbyIfNeeded(
+    code: string,
+    uid: string
+): Promise<boolean> {
+    const normalizedCode =
+        code.trim().toUpperCase();
+
+    const matchRef = doc(
+        db,
+        "draftMatches",
+        normalizedCode
+    );
+
+
+    return runTransaction(
+        db,
+        async (
+            transaction
+        ) => {
+            const snapshot =
+                await transaction.get(
+                    matchRef
+                );
+
+
+            if (!snapshot.exists()) {
+                return false;
+            }
+
+
+            const match =
+                snapshot.data();
+
+
+            /*
+             * Game already started.
+             */
+            if (
+                match.status !==
+                "lobby"
+            ) {
+                return false;
+            }
+
+
+            /*
+             * Timer doesn't start until
+             * both players exist.
+             */
+            if (!match.guest) {
+                return false;
+            }
+
+
+            const isHost =
+                match.host.uid ===
+                uid;
+
+            const isGuest =
+                match.guest.uid ===
+                uid;
+
+
+            if (
+                !isHost &&
+                !isGuest
+            ) {
+                throw new Error(
+                    "NOT_IN_MATCH"
+                );
+            }
+
+
+            /*
+             * Both players ready means another
+             * transaction should already be
+             * advancing the match.
+             */
+            if (
+                match.host.ready &&
+                match.guest.ready
+            ) {
+                return false;
+            }
+
+
+            if (
+                !match.lobbyReadyStartedAt
+            ) {
+                return false;
+            }
+
+
+            const startedAt =
+                match.lobbyReadyStartedAt;
+
+
+            const deadline =
+                startedAt.toMillis() +
+                10_000;
+
+
+            const DELETE_GRACE_MS =
+                1000;
+
+
+            if (
+                Date.now() <
+                deadline +
+                DELETE_GRACE_MS
+            ) {
+                return false;
+            }
+
+
+            transaction.delete(
+                matchRef
+            );
+
+
+            return true;
+        }
+    );
+}
+
+export async function cleanupExpiredDraftLobby(
+    uid: string
+) {
+    const queueRef = doc(
+        db,
+        "draftQueue",
+        uid
+    );
+
+    try {
+        const queueSnapshot =
+            await getDoc(
+                queueRef
+            );
+
+        if (
+            queueSnapshot.exists()
+        ) {
+            await deleteDoc(
+                queueRef
+            );
+        }
+    } catch (error) {
+        console.error(
+            "Failed to clean expired queue document:",
+            error
+        );
+    }
+
+    try {
+        await clearOpenDraftQueuePresence(
+            uid
+        );
+    } catch (error) {
+        console.error(
+            "Failed to clean expired queue presence:",
+            error
+        );
+    }
 }

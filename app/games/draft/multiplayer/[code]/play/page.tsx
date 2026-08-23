@@ -10,7 +10,8 @@ import {
     selectDraftPowerPosition,
     ensureDraftRoundCharacter,
     submitMultiplayerDraftPick, advanceDraftRoundIfReady, rerollMultiplayerDraftCharacter, selectMultiplayerAscension,
-    completeDraftMatch, claimDraftForfeit, listenToDraftRoundReveal, lockDraftRoundCharacter
+    completeDraftMatch, claimDraftForfeit, listenToDraftRoundReveal, lockDraftRoundCharacter,
+    advanceDraftAscensionIfReady
 } from "@/lib/multiplayerDraft";
 import {Ascension, ascensionInfo, draftPositions, getAscensionPreview, powerPositionInfo,} from "@/data/draftLogic";
 import type {DraftMatch, MultiplayerDraftPlayerState,} from "@/types/multiplayerDraft";
@@ -18,6 +19,17 @@ import type {AnyDraftPosition, DraftPosition, PowerPosition,} from "@/data/draft
 import {draftCharacters,} from "@/data/draftCharacters";
 import {listenToDraftPresence, registerDraftPresence,} from "@/lib/draftPresence";
 import {DraftPick} from "@/types/draft";
+
+type DecisionTimerMode =
+    | "power"
+    | "roll"
+    | "position"
+    | "ascension"
+    | null;
+
+
+const DECISION_TIME_SECONDS =
+    15;
 
 export default function MultiplayerDraftPlayPage() {
     const router = useRouter();
@@ -33,7 +45,6 @@ export default function MultiplayerDraftPlayPage() {
     const [isDraggingCard, setIsDraggingCard,] = useState(false);
     const [submittingPick, setSubmittingPick,] = useState(false);
     const advancingRoundRef = useRef(false);
-    const autoLockingRollRef = useRef(false);
     const [rerolling, setRerolling,] = useState(false);
     const [selectingAscension, setSelectingAscension,] = useState(false);
     const [opponentOnline, setOpponentOnline,] = useState<boolean | null>(null);
@@ -44,6 +55,16 @@ export default function MultiplayerDraftPlayPage() {
     const [opponentVisibleCharacterId, setOpponentVisibleCharacterId,] = useState<string | null>(null);
     const [lockingRoll, setLockingRoll,] = useState(false);
     const [hoveredAscension, setHoveredAscension,] = useState<Ascension | null>(null);
+    const [decisionSecondsRemaining, setDecisionSecondsRemaining,] = useState<number | null>(null);
+    const [decisionTimerMode, setDecisionTimerMode,] = useState<DecisionTimerMode>(null);
+    const decisionTimerKeyRef = useRef<string | null>(null);
+    const decisionDeadlineRef = useRef<number | null>(null);
+    const autoDecisionRef = useRef(false);
+    const firedDecisionKeyRef = useRef<string | null>(null);
+    const latestMatchRef = useRef<DraftMatch | null>(null);
+    const latestPlayerStateRef = useRef<MultiplayerDraftPlayerState | null>(null);
+    const autoLockingRollRef = useRef(false);
+    const advancingAscensionRef = useRef(false);
 
     const positionIcons:
         Record<DraftPosition, string> = {
@@ -279,108 +300,6 @@ export default function MultiplayerDraftPlayPage() {
     ]);
 
     useEffect(() => {
-        if (
-            !user ||
-            !code ||
-            !match ||
-            !playerState
-        ) {
-            return;
-        }
-
-        if (
-            match.status !== "drafting"
-        ) {
-            return;
-        }
-
-        /*
-         * Auto-lock only after the player's
-         * one reroll has already been consumed.
-         */
-        if (!playerState.rerollUsed) {
-            return;
-        }
-
-        /*
-         * Wait until this round actually has
-         * a character.
-         */
-        if (
-            !playerState.currentCharacterId
-        ) {
-            return;
-        }
-
-        /*
-         * Don't accidentally operate on a
-         * character from an already-submitted
-         * round.
-         */
-        if (
-            playerState.lastSubmittedRound >=
-            match.round
-        ) {
-            return;
-        }
-
-        const isHost =
-            match.host.uid === user.uid;
-
-        const rollAlreadyLocked =
-            isHost
-                ? match.hostRollLocked
-                : match.guestRollLocked;
-
-        if (rollAlreadyLocked) {
-            return;
-        }
-
-        /*
-         * Prevent multiple simultaneous
-         * auto-lock attempts.
-         */
-        if (
-            autoLockingRollRef.current
-        ) {
-            return;
-        }
-
-        autoLockingRollRef.current = true;
-        setLockingRoll(true);
-
-        lockDraftRoundCharacter(
-            code,
-            user.uid
-        )
-            .catch((error) => {
-                console.error(
-                    "Failed to automatically lock character:",
-                    error
-                );
-            })
-            .finally(() => {
-                autoLockingRollRef.current =
-                    false;
-
-                setLockingRoll(false);
-            });
-    }, [
-        user,
-        code,
-
-        match?.status,
-        match?.round,
-        match?.host.uid,
-        match?.hostRollLocked,
-        match?.guestRollLocked,
-
-        playerState?.rerollUsed,
-        playerState?.currentCharacterId,
-        playerState?.lastSubmittedRound,
-    ]);
-
-    useEffect(() => {
         if (!user || !code || !match) {
             return;
         }
@@ -430,6 +349,82 @@ export default function MultiplayerDraftPlayPage() {
         match?.hostSubmitted,
         match?.guestSubmitted,
         match?.host.uid,
+    ]);
+
+    useEffect(() => {
+        if (
+            !user ||
+            !code ||
+            !match
+        ) {
+            return;
+        }
+
+
+        if (
+            match.status !==
+            "ascension"
+        ) {
+            return;
+        }
+
+
+        /*
+         * Only host advances the
+         * public match phase.
+         */
+        if (
+            match.host.uid !==
+            user.uid
+        ) {
+            return;
+        }
+
+
+        /*
+         * Wait for both players.
+         */
+        if (
+            !match.hostAscensionSelected ||
+            !match.guestAscensionSelected
+        ) {
+            return;
+        }
+
+
+        if (
+            advancingAscensionRef.current
+        ) {
+            return;
+        }
+
+
+        advancingAscensionRef.current =
+            true;
+
+
+        advanceDraftAscensionIfReady(
+            code,
+            user.uid
+        )
+            .catch((error) => {
+                console.error(
+                    "Failed to advance Ascension phase:",
+                    error
+                );
+            })
+            .finally(() => {
+                advancingAscensionRef.current =
+                    false;
+            });
+
+    }, [
+        user,
+        code,
+        match?.status,
+        match?.host.uid,
+        match?.hostAscensionSelected,
+        match?.guestAscensionSelected,
     ]);
 
     useEffect(() => {
@@ -684,6 +679,937 @@ export default function MultiplayerDraftPlayPage() {
         match?.guest?.uid,
     ]);
 
+    useEffect(() => {
+        if (
+            !user ||
+            !code ||
+            !match ||
+            !playerState
+        ) {
+            return;
+        }
+
+
+        /*
+         * Only relevant during actual
+         * character drafting.
+         */
+        if (
+            match.status !==
+            "drafting"
+        ) {
+            return;
+        }
+
+
+        /*
+         * Auto-lock mode only begins
+         * once Fate Rewrite has been used.
+         */
+        if (
+            !playerState.rerollUsed
+        ) {
+            return;
+        }
+
+
+        /*
+         * Wait until this round has
+         * generated a character.
+         */
+        if (
+            !playerState.currentCharacterId
+        ) {
+            return;
+        }
+
+
+        /*
+         * Don't touch a round that this
+         * player already submitted.
+         */
+        if (
+            playerState.lastSubmittedRound >=
+            match.round
+        ) {
+            return;
+        }
+
+
+        const currentUid =
+            user.uid;
+
+        const currentCode =
+            code;
+
+        const isHost =
+            match.host.uid ===
+            currentUid;
+
+
+        const alreadyLocked =
+            isHost
+                ? match.hostRollLocked
+                : match.guestRollLocked;
+
+
+        if (alreadyLocked) {
+            return;
+        }
+
+
+        /*
+         * Don't collide with Fate Rewrite
+         * while it is still writing the
+         * replacement character.
+         */
+        if (rerolling) {
+            return;
+        }
+
+
+        if (
+            autoLockingRollRef.current
+        ) {
+            return;
+        }
+
+
+        autoLockingRollRef.current =
+            true;
+
+        setLockingRoll(true);
+
+
+        lockDraftRoundCharacter(
+            currentCode,
+            currentUid
+        )
+            .catch((error) => {
+                console.error(
+                    "Failed to automatically lock character:",
+                    error
+                );
+            })
+            .finally(() => {
+                autoLockingRollRef.current =
+                    false;
+
+                setLockingRoll(false);
+            });
+    }, [
+        user,
+        code,
+
+        match?.status,
+        match?.round,
+        match?.host.uid,
+        match?.hostRollLocked,
+        match?.guestRollLocked,
+
+        playerState?.rerollUsed,
+        playerState?.currentCharacterId,
+        playerState?.lastSubmittedRound,
+
+        rerolling,
+    ]);
+
+    useEffect(() => {
+        if (
+            !user ||
+            !code ||
+            !match ||
+            !playerState
+        ) {
+            setDecisionSecondsRemaining(
+                null
+            );
+
+            setDecisionTimerMode(
+                null
+            );
+
+            decisionTimerKeyRef.current =
+                null;
+
+            decisionDeadlineRef.current =
+                null;
+
+            autoDecisionRef.current =
+                false;
+
+            return;
+        }
+
+
+        /*
+         * Capture these after the null checks
+         * so TypeScript doesn't lose the
+         * narrowing inside tick().
+         */
+        const currentUid =
+            user.uid;
+
+        const currentCode =
+            code;
+
+        const currentMatch =
+            match;
+
+        const currentState =
+            playerState;
+
+
+        const isHost =
+            currentMatch.host.uid ===
+            currentUid;
+
+        const myPowerAlreadySelected =
+            isHost
+                ? currentMatch.hostPowerSelected
+                : currentMatch.guestPowerSelected;
+
+        const myAscensionAlreadySelected =
+            isHost
+                ? currentMatch.hostAscensionSelected
+                : currentMatch.guestAscensionSelected;
+
+        const myRollLocked =
+            isHost
+                ? currentMatch.hostRollLocked
+                : currentMatch.guestRollLocked;
+
+        const mySubmitted =
+            isHost
+                ? currentMatch.hostSubmitted
+                : currentMatch.guestSubmitted;
+
+        const bothRollsLocked =
+            currentMatch.hostRollLocked &&
+            currentMatch.guestRollLocked;
+
+        const gameNumber =
+            currentMatch.gameNumber ??
+            1;
+
+        let nextMode:
+            DecisionTimerMode =
+            null;
+
+        let nextKey:
+            string | null =
+            null;
+
+        // =====================================================
+        // POWER POSITION
+        // =====================================================
+
+        if (
+            currentMatch.status ===
+            "power-selection" &&
+            !currentState.selectedPowerPosition &&
+            !myPowerAlreadySelected
+        ) {
+            nextMode =
+                "power";
+
+            nextKey =
+                `power-${gameNumber}`;
+        }
+
+
+            // =====================================================
+            // DRAFT ROUND
+        // =====================================================
+
+        else if (
+            currentMatch.status ===
+            "drafting" &&
+            !mySubmitted
+        ) {
+            if (
+                currentState
+                    .currentCharacterId &&
+                !myRollLocked &&
+                !currentState.rerollUsed
+            ) {
+                nextMode =
+                    "roll";
+
+                nextKey =
+                    `roll-${gameNumber}-${currentMatch.round}`;
+            }
+
+
+            /*
+             * Both characters revealed.
+             *
+             * Start a completely new 15-second
+             * timer for placement.
+             */
+            else if (
+                currentState
+                    .currentCharacterId &&
+                bothRollsLocked
+            ) {
+                nextMode =
+                    "position";
+
+                nextKey =
+                    `position-${gameNumber}-${currentMatch.round}`;
+            }
+        }
+
+
+            // =====================================================
+            // ASCENSION
+        // =====================================================
+
+        else if (
+            currentMatch.status ===
+            "ascension" &&
+            !currentState.selectedAscension &&
+            !myAscensionAlreadySelected
+        ) {
+            nextMode =
+                "ascension";
+
+            nextKey =
+                `ascension-${gameNumber}`;
+        }
+
+
+        // =====================================================
+        // NO CURRENT DECISION
+        // =====================================================
+
+        if (
+            !nextMode ||
+            !nextKey
+        ) {
+            setDecisionSecondsRemaining(
+                null
+            );
+
+            setDecisionTimerMode(
+                null
+            );
+
+            decisionTimerKeyRef.current =
+                null;
+
+            decisionDeadlineRef.current =
+                null;
+
+            autoDecisionRef.current =
+                false;
+
+            return;
+        }
+
+
+        // =====================================================
+        // START / RESET TIMER
+        // =====================================================
+
+        if (
+            decisionTimerKeyRef.current !==
+            nextKey
+        ) {
+            decisionTimerKeyRef.current =
+                nextKey;
+
+            decisionDeadlineRef.current =
+                Date.now() +
+                DECISION_TIME_SECONDS *
+                1000;
+
+            firedDecisionKeyRef.current =
+                null;
+
+            autoDecisionRef.current =
+                false;
+
+            setDecisionSecondsRemaining(
+                DECISION_TIME_SECONDS
+            );
+        }
+
+
+        setDecisionTimerMode(
+            nextMode
+        );
+
+
+        const deadline =
+            decisionDeadlineRef.current;
+
+        if (deadline === null) {
+            return;
+        }
+
+        /*
+         * Capture the guaranteed number so
+         * TypeScript preserves the narrowing
+         * inside the nested async function.
+         */
+        const activeDeadline =
+            deadline;
+
+
+        async function tick() {
+            const millisecondsLeft =
+                activeDeadline -
+                Date.now();
+
+            const secondsLeft =
+                Math.max(
+                    0,
+                    Math.ceil(
+                        millisecondsLeft /
+                        1000
+                    )
+                );
+
+            setDecisionSecondsRemaining(
+                secondsLeft
+            );
+
+
+            if (
+                millisecondsLeft >
+                0
+            ) {
+                return;
+            }
+
+            /*
+             * This interval may belong to an older
+             * render. If its decision is no longer
+             * the active one, it must do nothing.
+             */
+            if (
+                decisionTimerKeyRef.current !==
+                nextKey
+            ) {
+                return;
+            }
+
+
+            /*
+             * This exact timeout has already fired.
+             */
+            if (
+                firedDecisionKeyRef.current ===
+                nextKey
+            ) {
+                return;
+            }
+
+            /*
+             * Don't trust the state captured when
+             * this effect was created. Grab the
+             * newest Firestore listener state.
+             */
+            const liveMatch =
+                latestMatchRef.current;
+
+            const liveState =
+                latestPlayerStateRef.current;
+
+
+            if (
+                !liveMatch ||
+                !liveState
+            ) {
+                return;
+            }
+
+
+            const liveIsHost =
+                liveMatch.host.uid ===
+                currentUid;
+
+
+            const liveMyRollLocked =
+                liveIsHost
+                    ? liveMatch.hostRollLocked
+                    : liveMatch.guestRollLocked;
+
+
+            const liveMySubmitted =
+                liveIsHost
+                    ? liveMatch.hostSubmitted
+                    : liveMatch.guestSubmitted;
+
+
+            const liveMyPowerSelected =
+                liveIsHost
+                    ? liveMatch.hostPowerSelected
+                    : liveMatch.guestPowerSelected;
+
+
+            const liveMyAscensionSelected =
+                liveIsHost
+                    ? liveMatch.hostAscensionSelected
+                    : liveMatch.guestAscensionSelected;
+
+            let decisionStillValid =
+                false;
+
+            if (
+                nextMode === "power"
+            ) {
+                decisionStillValid =
+                    liveMatch.status ===
+                    "power-selection" &&
+                    !liveState
+                        .selectedPowerPosition &&
+                    !liveMyPowerSelected;
+            }
+
+            if (
+                nextMode === "roll"
+            ) {
+                decisionStillValid =
+                    liveMatch.status ===
+                    "drafting" &&
+                    !!liveState
+                        .currentCharacterId &&
+                    !liveMyRollLocked &&
+                    !liveMySubmitted;
+            }
+
+            if (
+                nextMode === "position"
+            ) {
+                decisionStillValid =
+                    liveMatch.status ===
+                    "drafting" &&
+                    liveMatch.hostRollLocked &&
+                    liveMatch.guestRollLocked &&
+                    !liveMySubmitted;
+            }
+
+            if (
+                nextMode === "ascension"
+            ) {
+                decisionStillValid =
+                    liveMatch.status ===
+                    "ascension" &&
+                    !liveState
+                        .selectedAscension &&
+                    !liveMyAscensionSelected;
+            }
+
+            if (!decisionStillValid) {
+                /*
+                 * This is an old timer. Mark it
+                 * finished so it cannot try again.
+                 */
+                firedDecisionKeyRef.current =
+                    nextKey;
+
+                return;
+            }
+
+            if (
+                autoDecisionRef.current
+            ) {
+                return;
+            }
+
+            // =============================================
+            // DON'T COLLIDE WITH AN ACTION ALREADY RUNNING
+            // =============================================
+
+            if (
+                nextMode === "power" &&
+                selecting
+            ) {
+                return;
+            }
+
+            if (
+                nextMode === "roll" &&
+                (
+                    lockingRoll ||
+                    rerolling
+                )
+            ) {
+                return;
+            }
+
+            if (
+                nextMode === "position" &&
+                submittingPick
+            ) {
+                return;
+            }
+
+            if (
+                nextMode === "ascension" &&
+                selectingAscension
+            ) {
+                return;
+            }
+
+            /*
+             * Claim this decision before performing
+             * any async Firestore work.
+             */
+            firedDecisionKeyRef.current =
+                nextKey;
+
+            autoDecisionRef.current =
+                true;
+
+            try {
+
+                // =================================================
+                // AUTO POWER POSITION
+                // =================================================
+
+                if (
+                    nextMode ===
+                    "power"
+                ) {
+                    const choices =
+                        currentState
+                            .powerPositionChoices;
+
+
+                    if (
+                        choices.length ===
+                        0
+                    ) {
+                        throw new Error(
+                            "NO_POWER_POSITION_CHOICES"
+                        );
+                    }
+
+
+                    const randomChoice =
+                        choices[
+                            Math.floor(
+                                Math.random() *
+                                choices.length
+                            )
+                            ];
+
+
+                    setSelecting(
+                        true
+                    );
+
+
+                    await selectDraftPowerPosition(
+                        currentCode,
+                        currentUid,
+                        randomChoice
+                    );
+
+
+                    return;
+                }
+
+
+                // =================================================
+                // AUTO LOCK CHARACTER
+                // =================================================
+
+                if (
+                    nextMode ===
+                    "roll"
+                ) {
+                    setLockingRoll(
+                        true
+                    );
+
+
+                    await lockDraftRoundCharacter(
+                        currentCode,
+                        currentUid
+                    );
+
+
+                    return;
+                }
+
+
+                // =================================================
+                // AUTO POSITION
+                // =================================================
+
+                if (
+                    nextMode ===
+                    "position"
+                ) {
+                    const selectedPowerPosition =
+                        currentState
+                            .selectedPowerPosition;
+
+
+                    if (
+                        !selectedPowerPosition
+                    ) {
+                        throw new Error(
+                            "NO_POWER_POSITION"
+                        );
+                    }
+
+
+                    const allPositions:
+                        AnyDraftPosition[] = [
+                        ...draftPositions,
+                        selectedPowerPosition,
+                    ];
+
+
+                    const filledPositions =
+                        new Set(
+                            currentState.picks.map(
+                                (pick) =>
+                                    pick.position
+                            )
+                        );
+
+
+                    const availablePositions =
+                        allPositions.filter(
+                            (position) =>
+                                !filledPositions.has(
+                                    position
+                                )
+                        );
+
+
+                    if (
+                        availablePositions.length ===
+                        0
+                    ) {
+                        throw new Error(
+                            "NO_AVAILABLE_POSITIONS"
+                        );
+                    }
+
+
+                    /*
+                     * If the player already dragged
+                     * onto a slot but didn't confirm,
+                     * preserve that decision.
+                     *
+                     * Otherwise choose randomly.
+                     */
+                    const selectedPosition =
+                        pendingPosition &&
+                        availablePositions.includes(
+                            pendingPosition
+                        )
+                            ? pendingPosition
+                            : availablePositions[
+                                Math.floor(
+                                    Math.random() *
+                                    availablePositions.length
+                                )
+                                ];
+
+
+                    setSubmittingPick(
+                        true
+                    );
+
+
+                    await submitMultiplayerDraftPick(
+                        currentCode,
+                        currentUid,
+                        selectedPosition
+                    );
+
+
+                    setPendingPosition(
+                        null
+                    );
+
+
+                    return;
+                }
+
+
+                // =================================================
+                // AUTO ASCENSION
+                // =================================================
+
+                if (
+                    nextMode ===
+                    "ascension"
+                ) {
+                    const choices =
+                        currentState
+                            .ascensionChoices;
+
+
+                    if (
+                        choices.length ===
+                        0
+                    ) {
+                        throw new Error(
+                            "NO_ASCENSION_CHOICES"
+                        );
+                    }
+
+
+                    const randomChoice =
+                        choices[
+                            Math.floor(
+                                Math.random() *
+                                choices.length
+                            )
+                            ];
+
+
+                    setSelectingAscension(
+                        true
+                    );
+
+
+                    await selectMultiplayerAscension(
+                        currentCode,
+                        currentUid,
+                        randomChoice
+                    );
+                }
+
+            } catch (error) {
+                console.error(
+                    "Automatic Draft decision failed:",
+                    error
+                );
+
+                autoDecisionRef.current =
+                    false;
+
+                /*
+                 * If this is STILL the same active
+                 * decision, allow another tick to retry.
+                 *
+                 * If the game already moved forward,
+                 * leave the old key marked as fired.
+                 */
+                if (
+                    decisionTimerKeyRef.current ===
+                    nextKey
+                ) {
+                    firedDecisionKeyRef.current =
+                        null;
+                }
+
+                setSelecting(false);
+                setLockingRoll(false);
+                setSubmittingPick(false);
+                setSelectingAscension(false);
+            }
+        }
+
+
+        tick();
+
+
+        const interval =
+            window.setInterval(
+                tick,
+                250
+            );
+
+
+        return () => {
+            window.clearInterval(
+                interval
+            );
+        };
+    }, [
+        user,
+        code,
+        match,
+        playerState,
+
+        pendingPosition,
+
+        selecting,
+        lockingRoll,
+        rerolling,
+        submittingPick,
+        selectingAscension,
+    ]);
+
+    useEffect(() => {
+        if (!match || !user) {
+            return;
+        }
+
+        const isHost =
+            match.host.uid ===
+            user.uid;
+
+        const locked =
+            isHost
+                ? match.hostRollLocked
+                : match.guestRollLocked;
+
+
+        if (locked) {
+            setLockingRoll(
+                false
+            );
+        }
+    }, [
+        user,
+        match?.host.uid,
+        match?.hostRollLocked,
+        match?.guestRollLocked,
+    ]);
+
+    useEffect(() => {
+        if (!match || !user) {
+            return;
+        }
+
+        const isHost =
+            match.host.uid ===
+            user.uid;
+
+        const submitted =
+            isHost
+                ? match.hostSubmitted
+                : match.guestSubmitted;
+
+
+        if (submitted) {
+            setSubmittingPick(
+                false
+            );
+
+            setPendingPosition(
+                null
+            );
+        }
+    }, [
+        user,
+        match?.host.uid,
+        match?.hostSubmitted,
+        match?.guestSubmitted,
+    ]);
+
+    useEffect(() => {
+        latestMatchRef.current =
+            match;
+    }, [match]);
+
+    useEffect(() => {
+        latestPlayerStateRef.current =
+            playerState;
+    }, [playerState]);
+
     async function handleReroll() {
         if (
             !user ||
@@ -694,7 +1620,8 @@ export default function MultiplayerDraftPlayPage() {
             myRollLocked ||
             mySubmitted ||
             pendingPosition ||
-            rerolling
+            rerolling ||
+            lockingRoll
         ) {
             return;
         }
@@ -706,6 +1633,15 @@ export default function MultiplayerDraftPlayPage() {
                 code,
                 user.uid
             );
+
+            /*
+             * Do NOT lock here.
+             *
+             * Once rerollUsed becomes true,
+             * the auto-lock effect below
+             * handles this rerolled character
+             * and every future character.
+             */
         } catch (error) {
             console.error(
                 "Failed to reroll character:",
@@ -1276,15 +2212,133 @@ export default function MultiplayerDraftPlayPage() {
                     {/* MATCH INFORMATION */}
                     <div className="flex shrink-0 flex-wrap gap-3">
 
+                        {/* DECISION TIMER */}
+                        {decisionTimerMode &&
+                            decisionSecondsRemaining !==
+                            null && (
+                                <div
+                                    className={`
+                                        min-w-[170px]
+                                        rounded-2xl
+                                        border
+                                        px-4
+                                        py-3
+
+                                        ${
+                                        decisionSecondsRemaining <=
+                                        5
+                                            ? `
+                                                border-red-400/25
+                                                bg-red-500/[0.07]
+                                            `
+                                            : `
+                                                border-yellow-400/20
+                                                bg-yellow-500/[0.05]
+                                            `
+                                        }
+                                    `}
+                                >
+
+                                    <div className="flex items-center justify-between gap-4">
+                                        <div>
+                                            <p
+                                                className={`
+                                                    text-[9px]
+                                                    font-black
+                                                    uppercase
+                                                    tracking-[0.2em]
+
+                                                    ${
+                                                    decisionSecondsRemaining <=
+                                                    5
+                                                        ? "text-red-300/55"
+                                                        : "text-yellow-300/50"
+                                                    }
+                                                `}
+                                            >
+                                                Decision Timer
+                                            </p>
+
+                                            <p className="mt-1 text-[10px] font-bold text-white/45">
+
+                                                {decisionTimerMode ===
+                                                    "power" &&
+                                                    "Choose Power Position"}
+
+                                                {decisionTimerMode ===
+                                                    "roll" &&
+                                                    "Lock or Fate Rewrite"}
+
+                                                {decisionTimerMode ===
+                                                    "position" &&
+                                                    "Choose Position"}
+
+                                                {decisionTimerMode ===
+                                                    "ascension" &&
+                                                    "Choose Ascension"}
+                                            </p>
+                                        </div>
+
+                                        <p
+                                            className={`
+                                                text-2xl
+                                                font-black
+
+                                                ${
+                                                decisionSecondsRemaining <=
+                                                5
+                                                    ? "text-red-300"
+                                                    : "text-yellow-300"
+                                                }
+                                            `}
+                                        >
+                                            {
+                                                decisionSecondsRemaining
+                                            }
+                                        </p>
+                                    </div>
+
+                                    {/* TIMER BAR */}
+                                    <div className="mt-2 h-1 overflow-hidden rounded-full bg-white/10">
+                                        <div
+                                            className={`
+                                                h-full
+                                                rounded-full
+                                                transition-[width]
+                                                duration-200
+                                                ease-linear
+
+                                                ${
+                                                decisionSecondsRemaining <=
+                                                5
+                                                    ? "bg-red-400"
+                                                    : "bg-yellow-300"
+                                                }
+                                            `}
+                                            style={{
+                                                width:
+                                                    `${
+                                                        (
+                                                            decisionSecondsRemaining /
+                                                            DECISION_TIME_SECONDS
+                                                        ) *
+                                                        100
+                                                    }%`,
+                                            }}
+                                        />
+                                    </div>
+                                </div>
+                            )}
+
                         {/* OPPONENT */}
                         <div
                             className="
-                            min-w-[170px]
-                            rounded-2xl
-                            border border-purple-400/20
-                            bg-purple-500/5
-                            px-4 py-3
-                        "
+                                min-w-[170px]
+                                rounded-2xl
+                                border border-purple-400/20
+                                bg-purple-500/5
+                                px-4 py-3
+                            "
                         >
                             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-purple-300/45">
                                 Opponent

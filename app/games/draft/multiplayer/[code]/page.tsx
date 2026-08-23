@@ -1,8 +1,13 @@
 "use client";
-import {useEffect, useState,} from "react";
+import {useEffect, useRef, useState,} from "react";
 import {useParams, useRouter, } from "next/navigation";
 import type {DraftMatch,} from "@/types/multiplayerDraft";
-import {listenToDraftMatch, setDraftPlayerReady} from "@/lib/multiplayerDraft";
+import {
+    cleanupExpiredDraftLobby,
+    expireDraftLobbyIfNeeded,
+    listenToDraftMatch,
+    setDraftPlayerReady
+} from "@/lib/multiplayerDraft";
 import {onAuthStateChanged, type User,} from "firebase/auth";
 import {auth,} from "@/lib/firebase";
 
@@ -17,31 +22,80 @@ export default function MultiplayerDraftLobbyPage() {
     const [match, setMatch] = useState<DraftMatch | null>(null);
     const [loading, setLoading] = useState(true);
     const [matchNotFound, setMatchNotFound] = useState(false);
+    const [readySecondsRemaining, setReadySecondsRemaining,] = useState<number | null>(null);
+    const expiringLobbyRef = useRef(false);
+    const hadMatchRef = useRef(false);
 
     useEffect(() => {
         if (!code) return;
 
+
         const unsubscribe =
             listenToDraftMatch(
                 code,
-                (updatedMatch) => {
-                    setLoading(false);
+
+                (
+                    updatedMatch
+                ) => {
+                    setLoading(
+                        false
+                    );
+
 
                     if (!updatedMatch) {
+                        if (hadMatchRef.current) {
+                            const currentUser =
+                                auth.currentUser;
+
+                            if (currentUser) {
+                                cleanupExpiredDraftLobby(
+                                    currentUser.uid
+                                ).catch(
+                                    (error) => {
+                                        console.error(
+                                            "Failed to clean lobby state:",
+                                            error
+                                        );
+                                    }
+                                );
+                            }
+
+                            router.replace(
+                                "/games/draft/multiplayer"
+                            );
+
+                            return;
+                        }
+
                         setMatchNotFound(true);
                         setMatch(null);
+
                         return;
                     }
 
-                    setMatchNotFound(false);
-                    setMatch(updatedMatch);
+
+                    hadMatchRef.current =
+                        true;
+
+
+                    setMatchNotFound(
+                        false
+                    );
+
+                    setMatch(
+                        updatedMatch
+                    );
                 }
             );
+
 
         return () => {
             unsubscribe();
         };
-    }, [code]);
+    }, [
+        code,
+        router,
+    ]);
 
     useEffect(() => {
         const unsubscribe =
@@ -70,6 +124,133 @@ export default function MultiplayerDraftLobbyPage() {
         match?.status,
         code,
         router,
+    ]);
+
+    useEffect(() => {
+        if (
+            !code ||
+            !user ||
+            !match ||
+            match.status !== "lobby" ||
+            !match.guest ||
+            !match.lobbyReadyStartedAt
+        ) {
+            setReadySecondsRemaining(null);
+
+            expiringLobbyRef.current = false;
+
+            return;
+        }
+
+        // Capture this now so TypeScript knows
+        // it can never be null inside tick().
+        const currentUserUid =
+            user.uid;
+
+        const hostUid =
+            match.host.uid;
+
+        const deadline =
+            match.lobbyReadyStartedAt.toMillis() +
+            10_000;
+
+        async function tick() {
+            const millisecondsLeft =
+                deadline -
+                Date.now();
+
+
+            const secondsLeft =
+                Math.max(
+                    0,
+                    Math.ceil(
+                        millisecondsLeft /
+                        1000
+                    )
+                );
+
+
+            setReadySecondsRemaining(
+                secondsLeft
+            );
+
+
+            /*
+             * UI reaches zero at 10 seconds.
+             *
+             * Actual deletion happens roughly
+             * one second later to avoid local
+             * clock vs Firestore clock races.
+             */
+            const DELETE_GRACE_MS =
+                1000;
+
+
+            if (
+                millisecondsLeft >
+                -DELETE_GRACE_MS
+            ) {
+                return;
+            }
+
+
+            /*
+             * Only host owns lobby expiration.
+             */
+            const isHost =
+                hostUid ===
+                currentUserUid;
+
+
+            if (!isHost) {
+                return;
+            }
+
+
+            if (
+                expiringLobbyRef.current
+            ) {
+                return;
+            }
+
+
+            expiringLobbyRef.current =
+                true;
+
+
+            try {
+                await expireDraftLobbyIfNeeded(
+                    code,
+                    currentUserUid
+                );
+            } catch (error) {
+                console.error(
+                    "Failed to expire Draft lobby:",
+                    error
+                );
+            } finally {
+                expiringLobbyRef.current =
+                    false;
+            }
+        }
+
+        tick();
+
+        const interval =
+            window.setInterval(
+                tick,
+                250
+            );
+
+        return () => {
+            window.clearInterval(
+                interval
+            );
+        };
+    }, [
+        code,
+        user,
+        match,
     ]);
 
     if (loading) {
@@ -163,6 +344,87 @@ export default function MultiplayerDraftLobbyPage() {
                     <p className="mt-1 text-3xl font-black tracking-[0.25em] text-yellow-300">
                         {code}
                     </p>
+
+                    {match.guest &&
+                        match.status ===
+                        "lobby" &&
+                        readySecondsRemaining !==
+                        null && (
+                            <div
+                                className="
+                                    mx-auto
+                                    mt-6
+                                    max-w-sm
+                                    rounded-2xl
+                                    border
+                                    border-yellow-400/20
+                                    bg-yellow-500/[0.05]
+                                    p-4
+                                "
+                            >
+
+                                <div className="flex items-center justify-between">
+
+                                    <p className="text-[10px] font-black uppercase tracking-[0.25em] text-yellow-200/50">
+                                        Ready Up
+                                    </p>
+
+                                    <p
+                                        className={`
+                                            text-2xl
+                                            font-black
+                    
+                                            ${
+                                            readySecondsRemaining <=
+                                            3
+                                                ? "text-red-300"
+                                                : "text-yellow-300"
+                                            }
+                                        `}
+                                    >
+                                        {readySecondsRemaining > 0
+                                            ? `${readySecondsRemaining}s`
+                                            : "Expired"}
+                                    </p>
+
+                                </div>
+
+
+                                <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/5">
+
+                                    <div
+                                        className={`
+                                            h-full
+                                            rounded-full
+                                            transition-all
+                                            duration-300
+                    
+                                            ${
+                                            readySecondsRemaining <=
+                                            3
+                                                ? "bg-red-400"
+                                                : "bg-yellow-300"
+                                            }
+                                        `}
+                                        style={{
+                                            width:
+                                                `${
+                                                    (
+                                                        readySecondsRemaining /
+                                                        10
+                                                    ) *
+                                                    100
+                                                }%`,
+                                        }}
+                                    />
+                                </div>
+
+                                <p className="mt-3 text-xs font-semibold text-white/35">
+                                    Both players must ready
+                                    before the timer expires.
+                                </p>
+                            </div>
+                        )}
                 </div>
 
                 <div className="mt-10 grid gap-5 md:grid-cols-2">
@@ -274,6 +536,9 @@ export default function MultiplayerDraftLobbyPage() {
                             <button
                                 type="button"
                                 onClick={handleReady}
+                                disabled={
+                                    readySecondsRemaining === 0
+                                }
                                 className={`
                                     mt-8 w-full
                                     rounded-2xl
@@ -283,24 +548,24 @@ export default function MultiplayerDraftLobbyPage() {
                                     transition-all duration-300
                                     hover:cursor-pointer
                                     ${
-                                myReady
+                                    myReady
                                     ? `
-                                border-green-400/40
-                                bg-green-500/10
-                                text-green-300
-                                hover:bg-green-500/20
-                                `
-                                        : `
-                                border-pink-400/40
-                                bg-gradient-to-r
-                                from-pink-600
-                                via-fuchsia-600
-                                to-purple-700
-                                text-white
-                                shadow-[0_0_25px_rgba(236,72,153,0.3)]
-                                hover:-translate-y-1
-                                hover:shadow-[0_0_40px_rgba(236,72,153,0.5)]
-                                `
+                                        border-green-400/40
+                                        bg-green-500/10
+                                        text-green-300
+                                        hover:bg-green-500/20
+                                        `
+                                                : `
+                                        border-pink-400/40
+                                        bg-gradient-to-r
+                                        from-pink-600
+                                        via-fuchsia-600
+                                        to-purple-700
+                                        text-white
+                                        shadow-[0_0_25px_rgba(236,72,153,0.3)]
+                                        hover:-translate-y-1
+                                        hover:shadow-[0_0_40px_rgba(236,72,153,0.5)]
+                                        `
                                     }
                                 `}
                             >

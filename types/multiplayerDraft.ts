@@ -6,6 +6,7 @@ import type {
 import type {
     Ascension,
 } from "@/data/draftLogic";
+import {Timestamp} from "@firebase/firestore";
 
 export type DraftMatchStatus =
     | "lobby"
@@ -72,6 +73,9 @@ export type DraftMatch = {
     winnerUid: string | null;
     forfeitedByUid: string | null;
     endReason: DraftMatchEndReason | null;
+
+    lobbyReadyStartedAt:
+        Timestamp | null;
 };
 
 export type MultiplayerDraftRoundReveal = {
