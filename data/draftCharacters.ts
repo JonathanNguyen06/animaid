@@ -59,18 +59,15 @@ export type AnyDraftPosition =
 
 export const positionWeights = {
     Captain: {
-        leadership: 0.65,
+        leadership: 0.80,
         iq: 0.10,
-        power: 0.15,
-        utility: 0.05,
-        defense: 0.05,
+        power: 0.10,
     },
 
     "Vice Captain": {
-        leadership: 0.25,
+        leadership: 0.40,
         power: 0.25,
         iq: 0.20,
-        utility: 0.15,
         defense: 0.15,
     },
 
@@ -82,10 +79,9 @@ export const positionWeights = {
     },
 
     Scout: {
-        speed: 0.45,
+        speed: 0.55,
         iq: 0.25,
         utility: 0.20,
-        power: 0.10,
     },
 
     Strategist: {
@@ -95,9 +91,8 @@ export const positionWeights = {
     },
 
     Assassin: {
-        speed: 0.45,
+        speed: 0.55,
         power: 0.35,
-        iq: 0.10,
         utility: 0.10,
     },
 
@@ -109,8 +104,8 @@ export const positionWeights = {
     },
 
     Vanguard: {
-        defense: 0.60,
-        leadership: 0.15,
+        defense: 0.65,
+        leadership: 0.10,
         power: 0.15,
         utility: 0.10,
     },
@@ -161,11 +156,11 @@ export const draftCharacters: DraftCharacter[] = [
         imageUrl: "/draft/naruto/naruto.png",
         stats: {
             leadership: 88,
-            power: 96,
+            power: 97,
             utility: 35,
             speed: 90,
             iq: 70,
-            defense: 84,
+            defense: 85,
         },
     },
     {
@@ -175,9 +170,9 @@ export const draftCharacters: DraftCharacter[] = [
         imageUrl: "/draft/naruto/sasuke.png",
         stats: {
             leadership: 58,
-            power: 93,
+            power: 95,
             utility: 82,
-            speed: 92,
+            speed: 93,
             iq: 82,
             defense: 82,
         },
@@ -188,11 +183,11 @@ export const draftCharacters: DraftCharacter[] = [
         anime: "Naruto",
         imageUrl: "/draft/naruto/kakashi.png",
         stats: {
-            leadership: 84,
-            power: 84,
-            utility: 88,
+            leadership: 94,
+            power: 90,
+            utility: 93,
             speed: 82,
-            iq: 91,
+            iq: 93,
             defense: 72,
         },
     },
@@ -202,7 +197,7 @@ export const draftCharacters: DraftCharacter[] = [
         anime: "Naruto",
         imageUrl: "/draft/naruto/itachi.png",
         stats: {
-            leadership: 72,
+            leadership: 75,
             power: 91,
             utility: 90,
             speed: 87,
@@ -220,7 +215,7 @@ export const draftCharacters: DraftCharacter[] = [
             power: 90,
             utility: 76,
             speed: 99,
-            iq: 87,
+            iq: 90,
             defense: 65,
         },
     },
@@ -346,8 +341,8 @@ export const draftCharacters: DraftCharacter[] = [
             power: 96,
             utility: 86,
             speed: 85,
-            iq: 92,
-            defense: 91,
+            iq: 95,
+            defense: 95,
         },
     },
     {
@@ -386,7 +381,7 @@ export const draftCharacters: DraftCharacter[] = [
         stats: {
             leadership: 72,
             power: 82,
-            utility: 83,
+            utility: 87,
             speed: 61,
             iq: 78,
             defense: 79,
@@ -445,7 +440,7 @@ export const draftCharacters: DraftCharacter[] = [
             power: 95,
             utility: 60,
             speed: 88,
-            iq: 50,
+            iq: 60,
             defense: 95,
         },
     },
@@ -725,7 +720,7 @@ export const draftCharacters: DraftCharacter[] = [
             leadership: 82,
             power: 97,
             utility: 70,
-            speed: 88,
+            speed: 89,
             iq: 68,
             defense: 90,
         },
@@ -768,7 +763,7 @@ export const draftCharacters: DraftCharacter[] = [
             power: 99,
             utility: 15,
             speed: 75,
-            iq: 35,
+            iq: 40,
             defense: 98,
         },
     },
@@ -778,7 +773,7 @@ export const draftCharacters: DraftCharacter[] = [
         anime: "Bleach",
         imageUrl: "/draft/bleach/aizen.webp",
         stats: {
-            leadership: 95,
+            leadership: 96,
             power: 98,
             utility: 99,
             speed: 92,
@@ -1008,7 +1003,7 @@ export const draftCharacters: DraftCharacter[] = [
             utility: 55,
             speed: 98,
             iq: 55,
-            defense: 95,
+            defense: 97,
         },
     },
     {
@@ -1036,7 +1031,7 @@ export const draftCharacters: DraftCharacter[] = [
             utility: 82,
             speed: 80,
             iq: 92,
-            defense: 88,
+            defense: 90,
         },
     },
     {
@@ -1171,7 +1166,7 @@ export const draftCharacters: DraftCharacter[] = [
         anime: "Dragon Ball",
         imageUrl: "/draft/dragonball/buu.webp",
         stats: {
-            leadership: 20,
+            leadership: 30,
             power: 96,
             utility: 92,
             speed: 75,
@@ -1185,12 +1180,12 @@ export const draftCharacters: DraftCharacter[] = [
         anime: "Dragon Ball",
         imageUrl: "/draft/dragonball/broly.jpg",
         stats: {
-            leadership: 35,
+            leadership: 50,
             power: 99,
             utility: 20,
             speed: 92,
-            iq: 20,
-            defense: 98,
+            iq: 35,
+            defense: 99,
         },
     },
     {
@@ -1286,7 +1281,7 @@ export const draftCharacters: DraftCharacter[] = [
         stats: {
             leadership: 90,
             power: 34,
-            utility: 90,
+            utility: 95,
             speed: 25,
             iq: 98,
             defense: 20,
@@ -1809,8 +1804,8 @@ export const draftCharacters: DraftCharacter[] = [
             power: 93,
             utility: 60,
             speed: 90,
-            iq: 72,
-            defense: 95,
+            iq: 82,
+            defense: 97,
         },
     },
     {
@@ -1833,7 +1828,7 @@ export const draftCharacters: DraftCharacter[] = [
         anime: "My Hero Academia",
         imageUrl: "/draft/mha/hawks.avif",
         stats: {
-            leadership: 82,
+            leadership: 85,
             power: 85,
             utility: 90,
             speed: 99,
@@ -1852,7 +1847,7 @@ export const draftCharacters: DraftCharacter[] = [
             utility: 72,
             speed: 78,
             iq: 82,
-            defense: 90,
+            defense: 92,
         },
     },
     {
@@ -2087,11 +2082,11 @@ export const draftCharacters: DraftCharacter[] = [
         imageUrl: "/draft/opm/tatsumaki.webp",
         stats: {
             leadership: 45,
-            power: 96,
+            power: 97,
             utility: 95,
             speed: 85,
-            iq: 82,
-            defense: 90,
+            iq: 84,
+            defense: 91,
         },
     },
     {
@@ -2440,7 +2435,7 @@ export const draftCharacters: DraftCharacter[] = [
             leadership: 75,
             power: 95,
             utility: 75,
-            speed: 95,
+            speed: 97,
             iq: 90,
             defense: 92
         }
