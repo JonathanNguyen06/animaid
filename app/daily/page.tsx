@@ -1,5 +1,7 @@
 "use client";
 
+const DAILY_GAME_DISABLED = true;
+
 import {useEffect, useState} from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -43,6 +45,85 @@ type AnimeOption = {
 };
 
 export default function DailyPage() {
+    if (DAILY_GAME_DISABLED) {
+        return (
+            <main className="relative flex min-h-[calc(100vh-130px)] items-center justify-center overflow-hidden px-4">
+
+                {/* BACKGROUND GLOW */}
+                <div className="pointer-events-none absolute inset-0">
+                    <div className="absolute left-1/4 top-1/4 h-[400px] w-[400px] rounded-full bg-pink-500/10 blur-[140px]" />
+                    <div className="absolute right-1/4 top-1/3 h-[400px] w-[400px] rounded-full bg-purple-500/10 blur-[140px]" />
+                </div>
+
+                <div
+                    className="
+                        relative z-10
+                        w-full max-w-xl
+                        rounded-3xl
+                        border border-pink-500/20
+                        bg-black/50
+                        p-10
+                        text-center
+                        shadow-[0_0_40px_rgba(236,72,153,0.08)]
+                        backdrop-blur-xl
+                    "
+                >
+                    <div
+                        className="
+                            mx-auto flex
+                            h-16 w-16
+                            items-center justify-center
+                            rounded-2xl
+                            border border-pink-400/20
+                            bg-pink-500/10
+                            text-3xl
+                        "
+                    >
+                        🔧
+                    </div>
+
+                    <p className="mt-6 text-xs font-black uppercase tracking-[0.3em] text-pink-300/60">
+                        Daily Challenge
+                    </p>
+
+                    <h1 className="mt-3 text-4xl font-black text-white">
+                        Temporarily Unavailable
+                    </h1>
+
+                    <p className="mx-auto mt-4 max-w-md text-sm leading-6 text-white/45">
+                        The Daily Challenge is currently undergoing maintenance
+                        and will return in a future update.
+                    </p>
+
+                    <a
+                        href="/games"
+                        className="
+                            mt-7 inline-flex
+                            rounded-2xl
+                            bg-gradient-to-r
+                            from-pink-600
+                            via-fuchsia-600
+                            to-purple-700
+                            px-6 py-3
+                            text-sm font-black
+                            text-white
+                            shadow-[0_0_25px_rgba(236,72,153,0.2)]
+                            transition
+                            hover:-translate-y-0.5
+                            hover:shadow-[0_0_35px_rgba(236,72,153,0.35)]
+                        "
+                    >
+                        Back to Games
+                    </a>
+                </div>
+            </main>
+        );
+    }
+
+    return <DailyGame />;
+}
+
+function DailyGame() {
     const [selectedAnime, setSelectedAnime] = useState<AnimeOption | null>(null);
     const [attempts, setAttempts] = useState<GuessAnime[]>([]);
     const [user, setUser] = useState<User | null>(null);
