@@ -12,6 +12,12 @@ export type DraftCharacter = {
         iq: number;
         defense: number;
     };
+    rarity?: DraftRarity;
+};
+
+export type DraftRarity = {
+    type: "Ultra";
+    position: DraftPosition;
 };
 
 export type CharacterStat = keyof DraftCharacter["stats"];
@@ -56,88 +62,6 @@ export type PowerPosition =
 export type AnyDraftPosition =
     | DraftPosition
     | PowerPosition;
-
-export const positionWeights = {
-    Captain: {
-        leadership: 0.80,
-        iq: 0.10,
-        power: 0.10,
-    },
-
-    "Vice Captain": {
-        leadership: 0.40,
-        power: 0.25,
-        iq: 0.20,
-        defense: 0.15,
-    },
-
-    Support: {
-        utility: 0.65,
-        iq: 0.20,
-        speed: 0.05,
-        defense: 0.10,
-    },
-
-    Scout: {
-        speed: 0.55,
-        iq: 0.25,
-        utility: 0.20,
-    },
-
-    Strategist: {
-        iq: 0.80,
-        leadership: 0.15,
-        utility: 0.05,
-    },
-
-    Assassin: {
-        speed: 0.55,
-        power: 0.35,
-        utility: 0.10,
-    },
-
-    Ace: {
-        power: 0.55,
-        speed: 0.20,
-        defense: 0.15,
-        iq: 0.10,
-    },
-
-    Vanguard: {
-        defense: 0.65,
-        leadership: 0.10,
-        power: 0.15,
-        utility: 0.10,
-    },
-} satisfies Record<
-    DraftPosition,
-    Partial<Record<CharacterStat, number>>
->;
-
-export const powerPositionWeights = {
-    Juggernaut: {
-        power: 0.50,
-        defense: 0.40,
-        speed: 0.10,
-    },
-
-    Guardian: {
-        defense: 0.40,
-        utility: 0.30,
-        leadership: 0.20,
-        power: 0.10,
-    },
-
-    "Battle Genius": {
-        iq: 0.40,
-        power: 0.25,
-        speed: 0.25,
-        utility: 0.10,
-    },
-} satisfies Record<
-    WeightedPowerPosition,
-    Partial<Record<CharacterStat, number>>
->;
 
 export const formulaPowerPositions: FormulaPowerPosition[] = [
     "Wildcard",
@@ -218,6 +142,10 @@ export const draftCharacters: DraftCharacter[] = [
             iq: 90,
             defense: 65,
         },
+        rarity: {
+            type: "Ultra",
+            position: "Scout",
+        },
     },
     {
         id: "jiraiya",
@@ -245,6 +173,10 @@ export const draftCharacters: DraftCharacter[] = [
             speed: 56,
             iq: 78,
             defense: 91,
+        },
+        rarity: {
+            type: "Ultra",
+            position: "Support",
         },
     },
     {
@@ -443,6 +375,10 @@ export const draftCharacters: DraftCharacter[] = [
             iq: 60,
             defense: 95,
         },
+        rarity: {
+            type: "Ultra",
+            position: "Captain",
+        },
     },
     {
         id: "roronoa-zoro",
@@ -456,6 +392,10 @@ export const draftCharacters: DraftCharacter[] = [
             speed: 86,
             iq: 50,
             defense: 90,
+        },
+        rarity: {
+            type: "Ultra",
+            position: "Vice Captain",
         },
     },
     {
@@ -667,6 +607,10 @@ export const draftCharacters: DraftCharacter[] = [
             iq: 60,
             defense: 99,
         },
+        rarity: {
+            type: "Ultra",
+            position: "Vanguard",
+        },
     },
     {
         id: "charlotte-linlin",
@@ -779,6 +723,10 @@ export const draftCharacters: DraftCharacter[] = [
             speed: 92,
             iq: 99,
             defense: 92,
+        },
+        rarity: {
+            type: "Ultra",
+            position: "Strategist",
         },
     },
     {
@@ -920,6 +868,10 @@ export const draftCharacters: DraftCharacter[] = [
             iq: 90,
             defense: 88,
         },
+        rarity: {
+            type: "Ultra",
+            position: "Vice Captain",
+        },
     },
     {
         id: "uryu-ishida",
@@ -961,6 +913,10 @@ export const draftCharacters: DraftCharacter[] = [
             speed: 50,
             iq: 70,
             defense: 90,
+        },
+        rarity: {
+            type: "Ultra",
+            position: "Support",
         },
     },
     {
@@ -1004,6 +960,10 @@ export const draftCharacters: DraftCharacter[] = [
             speed: 98,
             iq: 55,
             defense: 97,
+        },
+        rarity: {
+            type: "Ultra",
+            position: "Ace",
         },
     },
     {
@@ -1215,6 +1175,10 @@ export const draftCharacters: DraftCharacter[] = [
             iq: 88,
             defense: 82,
         },
+        rarity: {
+            type: "Ultra",
+            position: "Assassin",
+        },
     },
     {
         id: "krillin",
@@ -1300,6 +1264,10 @@ export const draftCharacters: DraftCharacter[] = [
             iq: 99,
             defense: 20,
         },
+        rarity: {
+            type: "Ultra",
+            position: "Strategist",
+        },
     },
     // Attack on Titan
     {
@@ -1370,6 +1338,10 @@ export const draftCharacters: DraftCharacter[] = [
             speed: 45,
             iq: 97,
             defense: 60,
+        },
+        rarity: {
+            type: "Ultra",
+            position: "Captain",
         },
     },
     {
@@ -1835,6 +1807,10 @@ export const draftCharacters: DraftCharacter[] = [
             iq: 88,
             defense: 68,
         },
+        rarity: {
+            type: "Ultra",
+            position: "Scout",
+        },
     },
     {
         id: "endeavor",
@@ -2045,6 +2021,10 @@ export const draftCharacters: DraftCharacter[] = [
             speed: 99,
             iq: 45,
             defense: 99,
+        },
+        rarity: {
+            type: "Ultra",
+            position: "Ace",
         },
     },
     {
@@ -2509,7 +2489,11 @@ export const draftCharacters: DraftCharacter[] = [
             speed: 98,
             iq: 88,
             defense: 78
-        }
+        },
+        rarity: {
+            type: "Ultra",
+            position: "Assassin",
+        },
     },
     {
         id: "kurapika",
@@ -3099,7 +3083,11 @@ export const draftCharacters: DraftCharacter[] = [
             speed: 30,
             iq: 99,
             defense: 20
-        }
+        },
+        rarity: {
+            type: "Ultra",
+            position: "Strategist",
+        },
     },
     {
         id: "korosensei",
@@ -4595,6 +4583,10 @@ export const draftCharacters: DraftCharacter[] = [
             iq: 78,
             defense: 90,
         },
+        rarity: {
+            type: "Ultra",
+            position: "Support"
+        }
     },
     {
         id: "giorno-giovanna",
@@ -4935,6 +4927,10 @@ export const draftCharacters: DraftCharacter[] = [
             speed: 82,
             iq: 90,
             defense: 98,
+        },
+        rarity: {
+            type: "Ultra",
+            position: "Vanguard",
         },
     },
     // That Time I Got Reincarnated as a Slime

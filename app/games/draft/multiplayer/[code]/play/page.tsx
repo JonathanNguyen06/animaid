@@ -19,6 +19,7 @@ import type {AnyDraftPosition, DraftPosition, PowerPosition,} from "@/data/draft
 import {draftCharacters,} from "@/data/draftCharacters";
 import {listenToDraftPresence, registerDraftPresence,} from "@/lib/draftPresence";
 import {DraftPick} from "@/types/draft";
+import PositionBreakdownTooltip from "@/app/components/PositionBreakdownToolTip";
 
 type DecisionTimerMode =
     | "power"
@@ -65,6 +66,7 @@ export default function MultiplayerDraftPlayPage() {
     const latestPlayerStateRef = useRef<MultiplayerDraftPlayerState | null>(null);
     const autoLockingRollRef = useRef(false);
     const advancingAscensionRef = useRef(false);
+    const [hoveredInfoPosition, setHoveredInfoPosition,] = useState<AnyDraftPosition | null>(null);
 
     const positionIcons:
         Record<DraftPosition, string> = {
@@ -80,6 +82,15 @@ export default function MultiplayerDraftPlayPage() {
 
     function getGradeStyle(grade: string) {
         switch (grade) {
+            case "U":
+                return {
+                    border:
+                        "border-amber-200 ring-2 ring-yellow-300/60 shadow-[0_0_18px_rgba(255,255,255,0.45),0_0_40px_rgba(250,204,21,0.85),0_0_80px_rgba(245,158,11,0.5)]",
+
+                    grade:
+                        "bg-gradient-to-b from-white via-yellow-200 to-amber-500 bg-clip-text text-transparent drop-shadow-[0_0_14px_rgba(250,204,21,0.95)]",
+                };
+
             case "S+":
                 return {
                     border:
@@ -2035,6 +2046,7 @@ export default function MultiplayerDraftPlayPage() {
                     "A+",
                     "S",
                     "S+",
+                    "U",
                 ].includes(
                     pick.grade
                 )
@@ -3023,10 +3035,18 @@ export default function MultiplayerDraftPlayPage() {
                                                 to-purple-700
                                                 text-white
                                                 shadow-[0_0_25px_rgba(236,72,153,0.25)]
-                                                hover:-translate-y-1
-                                                hover:cursor-pointer
-                                                hover:shadow-[0_0_35px_rgba(236,72,153,0.4)]
-                                            `
+                                            
+                                                ${
+                                                !lockingRoll &&
+                                                !playerState.rerollUsed
+                                                    ? "animate-[pulse_1.4s_ease-in-out_infinite]"
+                                                    : ""
+                                                }
+
+                                                    hover:-translate-y-1
+                                                    hover:cursor-pointer
+                                                    hover:shadow-[0_0_35px_rgba(236,72,153,0.4)]
+                                                `
                                         }
                                     `}
                                 >
@@ -3133,9 +3153,20 @@ export default function MultiplayerDraftPlayPage() {
                                         return (
                                             <div
                                                 key={position}
-                                                onDragOver={(
-                                                    event
-                                                ) => {
+
+                                                onMouseEnter={() => {
+                                                    setHoveredInfoPosition(
+                                                        position
+                                                    );
+                                                }}
+
+                                                onMouseLeave={() => {
+                                                    setHoveredInfoPosition(
+                                                        null
+                                                    );
+                                                }}
+
+                                                onDragOver={(event) => {
                                                     event.preventDefault();
 
                                                     if (
@@ -3149,29 +3180,34 @@ export default function MultiplayerDraftPlayPage() {
                                                         );
                                                     }
                                                 }}
+
                                                 onDragLeave={() =>
                                                     setHoveredPosition(
                                                         null
                                                     )
                                                 }
+
                                                 onDrop={(event) =>
                                                     handleDrop(
                                                         event,
                                                         position
                                                     )
                                                 }
+
                                                 className={`
+                                                    relative
                                                     min-h-[325px]
                                                     rounded-3xl
-                                                    border-2 border-dashed
+                                                    border-2
+                                                    border-dashed
                                                     p-3
                                                     transition
-                            
+                                        
                                                     ${
                                                     isPowerPosition
                                                         ? "xl:col-start-5 xl:row-start-1 xl:row-span-2 xl:self-center"
                                                         : ""
-                                                }
+                                                    }
 
                                                     ${
                                                     pick
@@ -3186,6 +3222,13 @@ export default function MultiplayerDraftPlayPage() {
                                                     }
                                                 `}
                                             >
+                                                <PositionBreakdownTooltip
+                                                    position={position}
+                                                    visible={
+                                                        hoveredInfoPosition ===
+                                                        position
+                                                    }
+                                                />
                                                 <p
                                                     className={`
                                                         text-sm

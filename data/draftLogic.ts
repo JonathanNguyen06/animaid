@@ -32,60 +32,62 @@ export const draftPositions: DraftPosition[] = [
     "Vanguard",
 ];
 
-const positionWeights: Record<DraftPosition, Partial<Record<keyof DraftCharacter["stats"], number>>> = {
+export const positionWeights = {
     Captain: {
-        leadership: 0.45,
-        iq: 0.25,
-        power: 0.15,
-        defense: 0.10,
-        utility: 0.05,
-    },
-    "Vice Captain": {
-        leadership: 0.25,
-        power: 0.25,
-        iq: 0.20,
-        utility: 0.15,
-        defense: 0.15,
-    },
-    Support: {
-        utility: 0.50,
-        iq: 0.20,
-        defense: 0.15,
-        leadership: 0.15,
-    },
-    Scout: {
-        speed: 0.50,
-        iq: 0.20,
-        utility: 0.20,
+        leadership: 0.80,
+        iq: 0.10,
         power: 0.10,
     },
+
+    "Vice Captain": {
+        leadership: 0.40,
+        power: 0.25,
+        iq: 0.20,
+        defense: 0.15,
+    },
+
+    Support: {
+        utility: 0.65,
+        iq: 0.20,
+        speed: 0.05,
+        defense: 0.10,
+    },
+
+    Scout: {
+        speed: 0.55,
+        iq: 0.25,
+        utility: 0.20,
+    },
+
     Strategist: {
-        iq: 0.75,
+        iq: 0.80,
         leadership: 0.15,
         utility: 0.05,
-        defense: 0.05,
     },
+
     Assassin: {
-        speed: 0.40,
+        speed: 0.55,
         power: 0.35,
-        iq: 0.15,
         utility: 0.10,
     },
+
     Ace: {
-        power: 0.50,
+        power: 0.55,
         speed: 0.20,
-        defense: 0.20,
-        leadership: 0.10,
+        defense: 0.15,
+        iq: 0.10,
     },
+
     Vanguard: {
-        defense: 0.4,
-        leadership: 0.2,
-        power: 0.2,
-        utility: 0.1,
-        speed: 0.05,
-        iq: 0.05,
-    }
-};
+        defense: 0.65,
+        leadership: 0.10,
+        power: 0.15,
+        utility: 0.10,
+    },
+} satisfies Record<
+    DraftPosition,
+    Partial<Record<CharacterStat, number>>
+>;
 
 export const powerPositionWeights = {
     Juggernaut: {
@@ -119,6 +121,108 @@ export const formulaPowerPositions: FormulaPowerPosition[] = [
     "Apex",
     "One Man Army",
 ];
+
+export const formulaPowerPositionBreakdowns: Record<
+    FormulaPowerPosition,
+    {
+        description: string;
+        rows: {
+            label: string;
+            percentage?: number;
+            value?: string;
+        }[];
+        note?: string;
+    }
+> = {
+    Wildcard: {
+        description:
+            "Automatically uses the character's 3 strongest attributes.",
+        rows: [
+            {
+                label: "Highest Attribute",
+                percentage: 45,
+            },
+            {
+                label: "2nd Highest",
+                percentage: 35,
+            },
+            {
+                label: "3rd Highest",
+                percentage: 20,
+            },
+        ],
+    },
+
+    Specialist: {
+        description:
+            "Rewards characters who dominate in one or two attributes.",
+        rows: [
+            {
+                label: "Highest Attribute",
+                percentage: 70,
+            },
+            {
+                label: "2nd Highest",
+                percentage: 30,
+            },
+        ],
+    },
+
+    Prodigy: {
+        description:
+            "Rewards characters who are consistently strong across every attribute.",
+        rows: [
+            {
+                label: "All-Stat Average",
+                percentage: 60,
+            },
+            {
+                label: "Weakest Attribute",
+                percentage: 40,
+            },
+        ],
+    },
+
+    Apex: {
+        description:
+            "Tests a character's weaknesses instead of their strengths.",
+        rows: [
+            {
+                label: "Weakest Attribute",
+                percentage: 45,
+            },
+            {
+                label: "2nd Weakest",
+                percentage: 35,
+            },
+            {
+                label: "3rd Weakest",
+                percentage: 20,
+            },
+        ],
+    },
+
+    "One Man Army": {
+        description:
+            "Rewards characters who are elite across the entire stat sheet.",
+        rows: [
+            {
+                label: "Base Score",
+                value: "Average of all 6 attributes",
+            },
+            {
+                label: "85+ Attribute",
+                value: "+1 Power each",
+            },
+            {
+                label: "90+ Attribute",
+                value: "+2 Power each",
+            },
+        ],
+        note:
+            "90+ attributes receive +2 instead of the +1 bonus.",
+    },
+};
 
 export type Ascension =
     | "Comeback Story"
@@ -287,20 +391,29 @@ function addPower(
     pick: DraftPick,
     amount: number
 ): DraftPick {
-    const previousPower = pick.power;
+    const previousPower =
+        pick.power;
 
-    const power = Math.min(
-        99,
-        previousPower + amount
-    );
+    const power =
+        Math.min(
+            99,
+            previousPower + amount
+        );
 
     const actualBonus =
         power - previousPower;
 
     return {
         ...pick,
+
         power,
-        grade: getLetterGrade(power),
+
+        grade:
+            getDraftPickGrade(
+                pick.character,
+                pick.position,
+                power
+            ),
 
         ascensionBonus:
             (pick.ascensionBonus ?? 0) +
@@ -966,6 +1079,15 @@ export function calculateDraftPower(
     character: DraftCharacter,
     position: DraftPosition | PowerPosition
 ) {
+    if (
+        isUltraPick(
+            character,
+            position
+        )
+    ) {
+        return 99;
+    }
+
     let score: number;
 
     if (position in positionWeights) {
@@ -1008,6 +1130,25 @@ export function calculateDraftPower(
     }
 
     return Math.min(99, Math.round(score));
+}
+
+export function getDraftPickGrade(
+    character: DraftCharacter,
+    position: AnyDraftPosition,
+    power: number
+) {
+    if (
+        isUltraPick(
+            character,
+            position
+        )
+    ) {
+        return "U";
+    }
+
+    return getLetterGrade(
+        power
+    );
 }
 
 function calculateWeightedScore(
@@ -1101,6 +1242,18 @@ export function getRandomPowerPositions(
     return [...positions]
         .sort(() => Math.random() - 0.5)
         .slice(0, count);
+}
+
+export function isUltraPick(
+    character: DraftCharacter,
+    position: AnyDraftPosition
+) {
+    return (
+        character.rarity?.type ===
+        "Ultra" &&
+        character.rarity.position ===
+        position
+    );
 }
 
 export const powerPositionInfo: Record<
@@ -1260,4 +1413,22 @@ export function getAscensionPreview(
             };
         }
     );
+}
+
+export function getPositionWeights(
+    position: DraftPosition | PowerPosition
+): Partial<Record<CharacterStat, number>> | null {
+    if (position in positionWeights) {
+        return positionWeights[
+            position as DraftPosition
+            ];
+    }
+
+    if (position in powerPositionWeights) {
+        return powerPositionWeights[
+            position as WeightedPowerPosition
+            ];
+    }
+
+    return null;
 }

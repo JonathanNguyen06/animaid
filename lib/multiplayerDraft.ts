@@ -11,7 +11,7 @@ import {db} from "./firebase";
 import {
     applyAscension, Ascension,
     calculateDraftPower,
-    draftPositions,
+    draftPositions, getDraftPickGrade,
     getLetterGrade,
     getRandomAscensions,
     getRandomPowerPositions
@@ -1605,7 +1605,9 @@ function applyMultiplayerSynergyBonuses(
     picks: MultiplayerDraftPick[]
 ) {
     const animeCounts =
-        picks.reduce<Record<string, number>>(
+        picks.reduce<
+            Record<string, number>
+        >(
             (counts, pick) => {
                 const character =
                     draftCharacters.find(
@@ -1618,59 +1620,72 @@ function applyMultiplayerSynergyBonuses(
                     return counts;
                 }
 
-                counts[character.anime] =
-                    (counts[character.anime] ?? 0) +
-                    1;
+                counts[
+                    character.anime
+                    ] =
+                    (
+                        counts[
+                            character.anime
+                            ] ?? 0
+                    ) + 1;
 
                 return counts;
             },
             {}
         );
 
-    return picks.map((pick) => {
-        const character =
-            draftCharacters.find(
-                (character) =>
-                    character.id ===
-                    pick.characterId
-            );
+    return picks.map(
+        (pick) => {
+            const character =
+                draftCharacters.find(
+                    (character) =>
+                        character.id ===
+                        pick.characterId
+                );
 
-        if (!character) {
-            return pick;
+            if (!character) {
+                return pick;
+            }
+
+            const sameAnimeCount =
+                animeCounts[
+                    character.anime
+                    ] ?? 1;
+
+            const hasSynergy =
+                sameAnimeCount >= 2;
+
+            const synergyBonus =
+                hasSynergy
+                    ? Math.min(
+                        sameAnimeCount - 1,
+                        3
+                    )
+                    : 0;
+
+            const power =
+                Math.min(
+                    99,
+                    pick.basePower +
+                    synergyBonus
+                );
+
+            return {
+                ...pick,
+
+                power,
+
+                grade:
+                    getDraftPickGrade(
+                        character,
+                        pick.position,
+                        power
+                    ),
+
+                hasSynergy,
+            };
         }
-
-        const sameAnimeCount =
-            animeCounts[character.anime] ?? 1;
-
-        const hasSynergy =
-            sameAnimeCount >= 2;
-
-        const synergyBonus =
-            hasSynergy
-                ? Math.min(
-                    sameAnimeCount - 1,
-                    3
-                )
-                : 0;
-
-        const power =
-            Math.min(
-                99,
-                pick.basePower +
-                synergyBonus
-            );
-
-        return {
-            ...pick,
-
-            power,
-
-            grade:
-                getLetterGrade(power),
-
-            hasSynergy,
-        };
-    });
+    );
 }
 
 export async function submitMultiplayerDraftPick(
@@ -1847,7 +1862,9 @@ export async function submitMultiplayerDraftPick(
                 basePower,
 
                 grade:
-                    getLetterGrade(
+                    getDraftPickGrade(
+                        character,
+                        position,
                         basePower
                     ),
 

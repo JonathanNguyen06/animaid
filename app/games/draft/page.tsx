@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, useRef } from "react";
 import {draftCharacters, DraftCharacter, DraftPosition, AnyDraftPosition,} from "@/data/draftCharacters";
-import {calculateDraftPower, draftPositions, getLetterGrade,} from "@/data/draftLogic";
+import {calculateDraftPower, draftPositions, getDraftPickGrade, getLetterGrade, isUltraPick,} from "@/data/draftLogic";
 import {auth, getDraftHighScore, saveDraftHighScore, type DraftHighScore,} from "@/lib/firebase";
 import { onAuthStateChanged, type User } from "firebase/auth";
 import { useRouter } from "next/navigation";
@@ -35,8 +35,12 @@ const positionIcons: Record<DraftPosition, string> = {
     Vanguard: "🛡️",
 };
 
-function getGradeGlow(grade: string) {
+function getGradeGlow(
+    grade: string
+) {
     switch (grade) {
+        case "U":
+            return "border-amber-200 ring-2 ring-yellow-300/50 shadow-[0_0_25px_rgba(255,215,0,0.9),0_0_65px_rgba(245,158,11,0.65)]";
         case "S+":
             return "border-yellow-300 shadow-[0_0_30px_rgba(250,204,21,0.75)]";
         case "S":
@@ -83,25 +87,97 @@ function getRandomCharacter(usedIds: string[]) {
     return available[Math.floor(Math.random() * available.length)];
 }
 
-function applySynergyBonuses(picks: DraftPick[]) {
-    const animeCounts = picks.reduce<Record<string, number>>((counts, pick) => {
-        counts[pick.character.anime] = (counts[pick.character.anime] ?? 0) + 1;
-        return counts;
-    }, {});
+function applySynergyBonuses(
+    picks: DraftPick[]
+) {
+    const animeCounts =
+        picks.reduce<
+            Record<string, number>
+        >(
+            (counts, pick) => {
+                counts[
+                    pick.character.anime
+                    ] =
+                    (
+                        counts[
+                            pick.character.anime
+                            ] ?? 0
+                    ) + 1;
 
-    return picks.map((pick) => {
-        const sameAnimeCount = animeCounts[pick.character.anime] ?? 1;
-        const hasSynergy = sameAnimeCount >= 2;
-        const synergyBonus = hasSynergy ? Math.min(sameAnimeCount - 1, 3) : 0;
-        const power = Math.min(99, pick.basePower + synergyBonus);
+                return counts;
+            },
+            {}
+        );
 
-        return {
-            ...pick,
-            power,
-            grade: getLetterGrade(power),
-            hasSynergy,
-        };
-    });
+
+    return picks.map(
+        (pick) => {
+            const sameAnimeCount =
+                animeCounts[
+                    pick.character.anime
+                    ] ?? 1;
+
+
+            const hasSynergy =
+                sameAnimeCount >= 2;
+
+
+            /*
+             * ULTRA OVERRIDE
+             *
+             * An Ultra pick is permanently
+             * U / 99 regardless of synergy.
+             */
+            if (
+                isUltraPick(
+                    pick.character,
+                    pick.position
+                )
+            ) {
+                return {
+                    ...pick,
+
+                    basePower: 99,
+                    power: 99,
+                    grade: "U",
+
+                    hasSynergy,
+                };
+            }
+
+
+            const synergyBonus =
+                hasSynergy
+                    ? Math.min(
+                        sameAnimeCount -
+                        1,
+                        3
+                    )
+                    : 0;
+
+
+            const power =
+                Math.min(
+                    99,
+                    pick.basePower +
+                    synergyBonus
+                );
+
+
+            return {
+                ...pick,
+
+                power,
+
+                grade:
+                    getLetterGrade(
+                        power
+                    ),
+
+                hasSynergy,
+            };
+        }
+    );
 }
 
 function DraftCardSkeleton() {
@@ -191,7 +267,11 @@ function LegendaryPickReveal({
                              }: {
     pick: DraftPick;
 }) {
-    const isSPlus = pick.grade === "S+";
+    const isUltra =
+        pick.grade === "U";
+
+    const isSPlus =
+        pick.grade === "S+";
 
     return (
         <div className="pointer-events-none fixed inset-0 z-[100] flex items-center justify-center overflow-hidden">
@@ -276,22 +356,52 @@ function LegendaryPickReveal({
             <div className="relative z-10 flex flex-col items-center">
                 {/* Rarity heading */}
                 <p
-                    className={`mb-5 animate-[rarityLabel_2.2s_ease-out_forwards] text-sm font-black uppercase tracking-[0.55em] ${
-                        isSPlus
-                            ? "text-yellow-200"
-                            : "text-fuchsia-200"
-                    }`}
+                    className={`
+                        mb-5
+                        animate-[rarityLabel_2.2s_ease-out_forwards]
+                        text-sm
+                        font-black
+                        uppercase
+                        tracking-[0.55em]
+                    
+                        ${
+                        isUltra
+                            ? `
+                                bg-gradient-to-r
+                                from-amber-500
+                                via-white
+                                to-yellow-300
+                                bg-clip-text
+                                text-transparent
+                                drop-shadow-[0_0_16px_rgba(251,191,36,0.9)]
+                            `
+                            : isSPlus
+                                ? "text-yellow-200"
+                                : "text-fuchsia-200"
+                        }
+                    `}
                 >
-                    {isSPlus ? "Limit Break" : "Elite Pick"}
+                    {isUltra
+                        ? "ULTRA"
+                        : isSPlus
+                            ? "Limit Break"
+                            : "Elite Pick"}
                 </p>
 
                 {/* Character card */}
                 <div
-                    className={`relative h-[460px] w-[310px] animate-[legendaryCard_2.4s_cubic-bezier(.16,1,.3,1)_forwards] overflow-hidden rounded-[2rem] border-4 bg-black ${
-                        isSPlus
-                            ? "border-yellow-300 shadow-[0_0_40px_rgba(250,204,21,0.9),0_0_100px_rgba(250,204,21,0.45)]"
-                            : "border-purple-400 shadow-[0_0_40px_rgba(168,85,247,0.9),0_0_100px_rgba(217,70,239,0.4)]"
-                    }`}
+                    className={`relative h-[460px] w-[310px] animate-[legendaryCard_2.4s_cubic-bezier(.16,1,.3,1)_forwards] overflow-hidden rounded-[2rem] border-4 bg-black
+                        ${
+                        isUltra
+                            ? `
+                                border-amber-200
+                                shadow-[0_0_30px_rgba(255,255,255,0.65),0_0_70px_rgba(251,191,36,0.95),0_0_140px_rgba(245,158,11,0.55)]
+                            `
+                            : isSPlus
+                                ? "border-yellow-300 shadow-[0_0_40px_rgba(250,204,21,0.9),0_0_100px_rgba(250,204,21,0.45)]"
+                                : "border-purple-400 shadow-[0_0_40px_rgba(168,85,247,0.9),0_0_100px_rgba(217,70,239,0.4)]"
+                        }`
+                    }
                 >
                     <img
                         src={pick.character.imageUrl}
@@ -306,11 +416,26 @@ function LegendaryPickReveal({
 
                     {/* Giant grade behind details */}
                     <div
-                        className={`absolute right-3 top-1/2 -translate-y-1/2 animate-[gradeSlam_2.2s_cubic-bezier(.16,1,.3,1)_forwards] text-[9rem] font-black italic leading-none ${
-                            isSPlus
-                                ? "text-yellow-300"
-                                : "text-purple-300"
-                        } drop-shadow-[0_0_25px_currentColor]`}
+                        className={`
+                            absolute
+                            right-3
+                            top-1/2
+                            -translate-y-1/2
+                            animate-[gradeSlam_2.2s_cubic-bezier(.16,1,.3,1)_forwards]
+                            text-[9rem]
+                            font-black
+                            italic
+                            leading-none
+                            drop-shadow-[0_0_25px_currentColor]
+                    
+                            ${
+                            isUltra
+                                ? "text-amber-300"
+                                : isSPlus
+                                    ? "text-yellow-300"
+                                    : "text-purple-300"
+                            }
+                        `}
                     >
                         {pick.grade}
                     </div>
@@ -335,7 +460,7 @@ function LegendaryPickReveal({
                             {pick.character.anime}
                         </p>
 
-                        <div className="mt-4 flex items-end justify-between">
+                        <div className="mt-4 flex items-end">
                             <span
                                 className={`text-6xl font-black italic leading-none ${
                                     isSPlus
@@ -345,16 +470,6 @@ function LegendaryPickReveal({
                             >
                                 {pick.grade}
                             </span>
-
-                            <div className="text-right">
-                                <p className="text-3xl font-black text-white">
-                                    {pick.power}
-                                </p>
-
-                                <p className="text-[10px] font-black uppercase tracking-widest text-white/50">
-                                    OVR
-                                </p>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -787,17 +902,30 @@ export default function DraftPage() {
             0
         );
 
-        const basePower = calculateDraftPower(
-            pendingPick.character,
-            pendingPick.position
-        );
+        const basePower =
+            calculateDraftPower(
+                pendingPick.character,
+                pendingPick.position
+            );
 
         const newPick: DraftPick = {
-            character: pendingPick.character,
-            position: pendingPick.position,
+            character:
+            pendingPick.character,
+
+            position:
+            pendingPick.position,
+
             basePower,
-            power: basePower,
-            grade: getLetterGrade(basePower),
+
+            power:
+            basePower,
+
+            grade:
+                getDraftPickGrade(
+                    pendingPick.character,
+                    pendingPick.position,
+                    basePower
+                ),
         };
 
         const updatedPicks = applySynergyBonuses([...picks, newPick]);
@@ -825,13 +953,20 @@ export default function DraftPage() {
 
         if (
             revealedPick &&
-            (revealedPick.grade === "S" ||
-                revealedPick.grade === "S+")
+            (
+                revealedPick.grade === "S" ||
+                revealedPick.grade === "S+" ||
+                revealedPick.grade === "U"
+            )
         ) {
-            setLegendaryReveal(revealedPick);
+            setLegendaryReveal(
+                revealedPick
+            );
 
             window.setTimeout(() => {
-                setLegendaryReveal(null);
+                setLegendaryReveal(
+                    null
+                );
             }, 2600);
         }
 
@@ -1326,7 +1461,31 @@ export default function DraftPage() {
                                                             {pick.character.anime}
                                                         </p>
 
-                                                        <p className="mt-3 text-3xl font-black text-yellow-300 drop-shadow italic">
+                                                        <p
+                                                            className={`
+                                                                mt-3
+                                                                text-3xl
+                                                                font-black
+                                                                italic
+                                                        
+                                                                ${
+                                                                pick.grade === "U"
+                                                                    ? `
+                                                                        bg-gradient-to-b
+                                                                        from-white
+                                                                        via-yellow-200
+                                                                        to-amber-500
+                                                                        bg-clip-text
+                                                                        text-transparent
+                                                                        drop-shadow-[0_0_12px_rgba(251,191,36,0.9)]
+                                                                    `
+                                                                    : `
+                                                                        text-yellow-300
+                                                                        drop-shadow
+                                                                    `
+                                                                }
+                                                            `}
+                                                        >
                                                             {pick.grade}
                                                         </p>
                                                     </div>
