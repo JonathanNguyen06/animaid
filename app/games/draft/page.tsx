@@ -7,6 +7,7 @@ import {auth, getDraftHighScore, saveDraftHighScore, type DraftHighScore,} from 
 import { onAuthStateChanged, type User } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import type { DraftPick, DraftResult } from "@/types/draft";
+import PositionBreakdownTooltip from "@/app/components/PositionBreakdownToolTip";
 
 type PowerBurst = {
     id: number;
@@ -708,6 +709,7 @@ export default function DraftPage() {
     const [legendaryReveal, setLegendaryReveal] = useState<DraftPick | null>(null);
     const [isLeavingDraft, setIsLeavingDraft] = useState(false);
     const [showDraftInfo, setShowDraftInfo] = useState(false);
+    const [hoveredInfoPosition, setHoveredInfoPosition,] = useState<AnyDraftPosition | null>(null);
     const availablePositions = draftPositions;
 
     const totalRounds = availablePositions.length;
@@ -756,18 +758,45 @@ export default function DraftPage() {
         return null;
     }
 
-    function handleDragStart(event: React.DragEvent<HTMLDivElement>) {
-        if (pendingPick || !currentCharacter) return;
+    function handleDragStart(
+        event: React.DragEvent<HTMLDivElement>
+    ) {
+        if (
+            pendingPick ||
+            !currentCharacter
+        ) {
+            return;
+        }
 
-        event.dataTransfer.setData("text/plain", currentCharacter.id);
-        event.dataTransfer.effectAllowed = "move";
+        event.dataTransfer.setData(
+            "text/plain",
+            currentCharacter.id
+        );
+
+        event.dataTransfer.effectAllowed =
+            "move";
+
+        /*
+         * Hide any info tooltip as soon
+         * as dragging begins.
+         */
+        setHoveredInfoPosition(null);
 
         setIsDraggingCard(true);
     }
 
     function handleDragEnd() {
         setIsDraggingCard(false);
+
+        /*
+         * Drag/drop highlight.
+         */
         setHoveredPosition(null);
+
+        /*
+         * Information tooltip.
+         */
+        setHoveredInfoPosition(null);
     }
 
     function handleDrop(
@@ -799,6 +828,7 @@ export default function DraftPage() {
         });
 
         setHoveredPosition(null);
+        setHoveredInfoPosition(null);
         setIsDraggingCard(false);
     }
 
@@ -815,6 +845,7 @@ export default function DraftPage() {
     function cancelPendingPick() {
         setPendingPick(null);
         setHoveredPosition(null);
+        setHoveredInfoPosition(null);
         setIsDraggingCard(false);
     }
 
@@ -1008,6 +1039,7 @@ export default function DraftPage() {
         setIsDraggingCard(false);
         setPowerBursts([]);
         setLastPowerIncrease(0);
+        setHoveredInfoPosition(null);
     }
 
     return (
@@ -1358,13 +1390,43 @@ export default function DraftPage() {
                                             onDragOver={(event) => {
                                                 event.preventDefault();
 
-                                                if (!pick && !pendingPick) {
-                                                    setHoveredPosition(position);
+                                                if (
+                                                    !pick &&
+                                                    !pendingPick
+                                                ) {
+                                                    setHoveredPosition(
+                                                        position
+                                                    );
                                                 }
                                             }}
                                             onDragLeave={() => setHoveredPosition(null)}
                                             onDrop={(event) => handleDrop(event, position)}
-                                            className={`min-h-[325px] rounded-3xl border-2 border-dashed p-3 transition ${
+                                            onMouseEnter={() => {
+                                                if (
+                                                    !isDraggingCard &&
+                                                    !pendingPick
+                                                ) {
+                                                    setHoveredInfoPosition(
+                                                        position
+                                                    );
+                                                }
+                                            }}
+
+                                            onMouseLeave={() => {
+                                                setHoveredInfoPosition(
+                                                    null
+                                                );
+                                            }}
+                                            className={`
+                                                relative
+                                                min-h-[325px]
+                                                rounded-3xl
+                                                border-2
+                                                border-dashed
+                                                p-3
+                                                transition
+                                    
+                                                ${
                                                 pick
                                                     ? "border-pink-500/30 bg-black/40 backdrop-blur-xl"
                                                     : pendingForThisPosition
@@ -1372,8 +1434,19 @@ export default function DraftPage() {
                                                         : isHovered
                                                             ? "border-pink-400 bg-pink-500/10 shadow-[0_0_25px_rgba(236,72,153,0.25)]"
                                                             : "border-pink-500/20 bg-black/20"
-                                            }`}
+                                                }
+                                            `}
                                         >
+                                            <PositionBreakdownTooltip
+                                                position={position}
+                                                visible={
+                                                    !isDraggingCard &&
+                                                    !pendingPick &&
+                                                    hoveredInfoPosition ===
+                                                    position
+                                                }
+                                            />
+
                                             <p className="text-sm font-bold uppercase tracking-widest text-pink-300/60">
                                                 {getPositionIcon(position)} {position}
                                             </p>
