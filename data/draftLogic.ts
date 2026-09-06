@@ -1432,3 +1432,97 @@ export function getPositionWeights(
 
     return null;
 }
+
+
+export function applySynergyBonuses(
+    picks: DraftPick[]
+) {
+    const animeCounts =
+        picks.reduce<
+            Record<string, number>
+        >(
+            (counts, pick) => {
+                counts[
+                    pick.character.anime
+                    ] =
+                    (
+                        counts[
+                            pick.character.anime
+                            ] ?? 0
+                    ) + 1;
+
+                return counts;
+            },
+            {}
+        );
+
+
+    return picks.map(
+        (pick) => {
+            const sameAnimeCount =
+                animeCounts[
+                    pick.character.anime
+                    ] ?? 1;
+
+
+            const hasSynergy =
+                sameAnimeCount >= 2;
+
+
+            /*
+             * ULTRA OVERRIDE
+             *
+             * An Ultra pick is permanently
+             * U / 99 regardless of synergy.
+             */
+            if (
+                isUltraPick(
+                    pick.character,
+                    pick.position
+                )
+            ) {
+                return {
+                    ...pick,
+
+                    basePower: 99,
+                    power: 99,
+                    grade: "U",
+
+                    hasSynergy,
+                };
+            }
+
+
+            const synergyBonus =
+                hasSynergy
+                    ? Math.min(
+                        sameAnimeCount -
+                        1,
+                        3
+                    )
+                    : 0;
+
+
+            const power =
+                Math.min(
+                    99,
+                    pick.basePower +
+                    synergyBonus
+                );
+
+
+            return {
+                ...pick,
+
+                power,
+
+                grade:
+                    getLetterGrade(
+                        power
+                    ),
+
+                hasSynergy,
+            };
+        }
+    );
+}

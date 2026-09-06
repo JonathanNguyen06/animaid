@@ -106,55 +106,6 @@ export const db = getFirestore(app);
 
 export default app;
 
-export async function getDailyProgress(
-    userId: string,
-    date: string
-) {
-    const progressRef = doc(
-        db,
-        "dailyProgress",
-        `${userId}-${date}`
-    );
-
-    const snapshot = await getDoc(progressRef);
-
-    return snapshot.exists() ? snapshot.data() : null;
-}
-
-export async function saveDailyProgress(
-    userId: string,
-    date: string,
-    animeId: number,
-    attempts: any[],
-    won: boolean
-) {
-    const progressRef = doc(
-        db,
-        "dailyProgress",
-        `${userId}-${date}`
-    );
-
-    const snapshot = await getDoc(progressRef);
-
-    const existingData = snapshot.exists()
-        ? snapshot.data()
-        : null;
-
-    await setDoc(
-        progressRef,
-        {
-            userId,
-            date,
-            animeId,
-            attempts,
-            won,
-            rewardClaimed: existingData?.rewardClaimed ?? false,
-            updatedAt: serverTimestamp(),
-        },
-        { merge: true }
-    );
-}
-
 function getYesterday(date: string) {
     const d = new Date(date);
     d.setDate(d.getDate() - 1);
@@ -257,4 +208,90 @@ export async function saveDraftHighScore(
         ...highScore,
         updatedAt: serverTimestamp(),
     });
+}
+
+export type DailyDraftPick = {
+    characterId: string;
+    position: string;
+    power: number;
+    grade: string;
+};
+
+export type DailyDraftProgress = {
+    userId: string;
+    date: string;
+
+    completed: boolean;
+
+    picks: DailyDraftPick[];
+
+    totalPower: number;
+
+    optimalPower?: number;
+
+    efficiency?: number;
+
+    completedAt?: any;
+    updatedAt?: any;
+};
+
+export async function getDailyDraftProgress(
+    userId: string,
+    date: string
+) {
+    const progressRef = doc(
+        db,
+        "dailyDraftProgress",
+        `${userId}-${date}`
+    );
+
+    const snapshot =
+        await getDoc(progressRef);
+
+    return snapshot.exists()
+        ? (
+            snapshot.data() as DailyDraftProgress
+        )
+        : null;
+}
+
+export async function saveDailyDraftProgress(
+    userId: string,
+    date: string,
+    progress: {
+        completed: boolean;
+        picks: DailyDraftPick[];
+        totalPower: number;
+        optimalPower?: number;
+        efficiency?: number;
+    }
+) {
+    const progressRef = doc(
+        db,
+        "dailyDraftProgress",
+        `${userId}-${date}`
+    );
+
+    await setDoc(
+        progressRef,
+        {
+            userId,
+            date,
+
+            ...progress,
+
+            updatedAt:
+                serverTimestamp(),
+
+            ...(progress.completed
+                ? {
+                    completedAt:
+                        serverTimestamp(),
+                }
+                : {}),
+        },
+        {
+            merge: true,
+        }
+    );
 }

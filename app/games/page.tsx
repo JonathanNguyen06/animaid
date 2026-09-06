@@ -16,12 +16,12 @@ const games = [
         imageLink: "/game-images/draft.avif",
     },
     {
-        title: "Daily Quest",
+        title: "Daily Draft",
         description:
-            "Test your anime knowledge with a new guessing challenge every day.",
+            "Draft the same 8 characters as everyone else and see how close your lineup comes to the optimal solution.",
         href: "/daily",
         status: "Daily",
-        imageLabel: "Daily Quest",
+        imageLabel: "Daily Draft",
         imageLink: "/game-images/daily-game.png",
     },
 ];
@@ -264,8 +264,8 @@ export default function GamesPage() {
                 </h1>
 
                 <p className="mx-auto mt-3 max-w-2xl text-purple-100/70">
-                    Build anime lineups, master your draft strategy, and challenge
-                    other players head-to-head.
+                    Build anime lineups, solve the daily draft, master your strategy,
+                    and challenge other players head-to-head.
                 </p>
             </section>
 

@@ -2,7 +2,14 @@
 
 import { useEffect, useMemo, useState, useRef } from "react";
 import {draftCharacters, DraftCharacter, DraftPosition, AnyDraftPosition,} from "@/data/draftCharacters";
-import {calculateDraftPower, draftPositions, getDraftPickGrade, getLetterGrade, isUltraPick,} from "@/data/draftLogic";
+import {
+    applySynergyBonuses,
+    calculateDraftPower,
+    draftPositions,
+    getDraftPickGrade,
+    getLetterGrade,
+    isUltraPick,
+} from "@/data/draftLogic";
 import {auth, getDraftHighScore, saveDraftHighScore, type DraftHighScore,} from "@/lib/firebase";
 import { onAuthStateChanged, type User } from "firebase/auth";
 import { useRouter } from "next/navigation";
@@ -86,99 +93,6 @@ function getRandomCharacter(usedIds: string[]) {
     );
 
     return available[Math.floor(Math.random() * available.length)];
-}
-
-function applySynergyBonuses(
-    picks: DraftPick[]
-) {
-    const animeCounts =
-        picks.reduce<
-            Record<string, number>
-        >(
-            (counts, pick) => {
-                counts[
-                    pick.character.anime
-                    ] =
-                    (
-                        counts[
-                            pick.character.anime
-                            ] ?? 0
-                    ) + 1;
-
-                return counts;
-            },
-            {}
-        );
-
-
-    return picks.map(
-        (pick) => {
-            const sameAnimeCount =
-                animeCounts[
-                    pick.character.anime
-                    ] ?? 1;
-
-
-            const hasSynergy =
-                sameAnimeCount >= 2;
-
-
-            /*
-             * ULTRA OVERRIDE
-             *
-             * An Ultra pick is permanently
-             * U / 99 regardless of synergy.
-             */
-            if (
-                isUltraPick(
-                    pick.character,
-                    pick.position
-                )
-            ) {
-                return {
-                    ...pick,
-
-                    basePower: 99,
-                    power: 99,
-                    grade: "U",
-
-                    hasSynergy,
-                };
-            }
-
-
-            const synergyBonus =
-                hasSynergy
-                    ? Math.min(
-                        sameAnimeCount -
-                        1,
-                        3
-                    )
-                    : 0;
-
-
-            const power =
-                Math.min(
-                    99,
-                    pick.basePower +
-                    synergyBonus
-                );
-
-
-            return {
-                ...pick,
-
-                power,
-
-                grade:
-                    getLetterGrade(
-                        power
-                    ),
-
-                hasSynergy,
-            };
-        }
-    );
 }
 
 function DraftCardSkeleton() {
