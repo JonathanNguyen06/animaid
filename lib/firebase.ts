@@ -30,6 +30,7 @@ import {
 import {
     getDatabase,
 } from "firebase/database";
+import {DraftPosition} from "@/data/draftCharacters";
 
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
@@ -162,7 +163,7 @@ export type DraftHighScore = {
     averagePower: number;
     grade: string;
     lineup: {
-        position: string;
+        position: DraftPosition;
         power: number;
         grade: string;
         character: {

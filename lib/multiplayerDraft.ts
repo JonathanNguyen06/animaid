@@ -12,7 +12,7 @@ import {
     applyAscension, Ascension,
     calculateDraftPower,
     draftPositions, getDraftPickGrade,
-    getLetterGrade,
+    getLetterGrade, getPowerPositionMatchupPoints,
     getRandomAscensions,
     getRandomPowerPositions
 } from "@/data/draftLogic";
@@ -2727,12 +2727,18 @@ export async function completeDraftMatch(
                 hostPowerPick.power >
                 guestPowerPick.power
             ) {
-                hostPositionWins++;
+                hostPositionWins +=
+                    getPowerPositionMatchupPoints(
+                        hostState.selectedPowerPosition
+                    );
             } else if (
                 guestPowerPick.power >
                 hostPowerPick.power
             ) {
-                guestPositionWins++;
+                guestPositionWins +=
+                    getPowerPositionMatchupPoints(
+                        guestState.selectedPowerPosition
+                    );
             }
 
 
@@ -3835,12 +3841,18 @@ export async function saveDraftMatchHistory(
             hostPowerPick.power >
             guestPowerPick.power
         ) {
-            hostPositionWins++;
+            hostPositionWins +=
+                getPowerPositionMatchupPoints(
+                    hostState.selectedPowerPosition
+                );
         } else if (
             guestPowerPick.power >
             hostPowerPick.power
         ) {
-            guestPositionWins++;
+            guestPositionWins +=
+                getPowerPositionMatchupPoints(
+                    guestState.selectedPowerPosition
+                );
         }
     }
 

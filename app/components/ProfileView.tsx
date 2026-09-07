@@ -26,6 +26,8 @@ import {
 
 import AddFriendButton from "@/app/components/AddFriendButton";
 import ChallengeFriendButton from "@/app/components/ChallengeFriendButton";
+import {DraftPosition} from "@/data/draftCharacters";
+import {draftPositions} from "@/data/draftLogic";
 
 
 type UserProfile = {
@@ -43,7 +45,7 @@ type Props = {
 
 
 const positionIcons:
-    Record<string, string> = {
+    Record<DraftPosition, string> = {
     Captain: "👑",
     "Vice Captain": "⚔️",
     Support: "💚",
@@ -547,6 +549,25 @@ export default function ProfileView({
                                         Solo Draft
                                     </Link>
 
+                                    <Link
+                                        href="/daily"
+                                        className="
+                                            rounded-xl
+                                            border border-purple-400/25
+                                            bg-purple-500/10
+                                            px-4 py-2.5
+                                            text-xs
+                                            font-black
+                                            text-purple-100
+                                            transition
+                                            hover:-translate-y-0.5
+                                            hover:border-purple-400/50
+                                            hover:bg-purple-500/15
+                                        "
+                                    >
+                                        Daily Draft
+                                    </Link>
+
 
                                     <Link
                                         href="/games/draft/multiplayer"
@@ -664,7 +685,7 @@ export default function ProfileView({
                         />
 
                         <ProfileStat
-                            label="Daily Quest"
+                            label="Daily Draft"
                             value={`🔥 ${
                                 profile.dailyStreak ??
                                 0
@@ -792,19 +813,32 @@ export default function ProfileView({
 
                                 <div className="mt-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
 
-                                    {draftHighScore.lineup.map(
-                                        (
-                                            pick
-                                        ) => (
-                                            <DraftCard
-                                                key={
-                                                    pick.position
-                                                }
-                                                pick={
-                                                    pick
-                                                }
-                                            />
-                                        )
+                                    {draftPositions.map(
+                                        (position) => {
+                                            const pick =
+                                                draftHighScore.lineup.find(
+                                                    (pick) =>
+                                                        pick.position ===
+                                                        position
+                                                );
+
+
+                                            if (!pick) {
+                                                return null;
+                                            }
+
+
+                                            return (
+                                                <DraftCard
+                                                    key={
+                                                        position
+                                                    }
+                                                    pick={
+                                                        pick
+                                                    }
+                                                />
+                                            );
+                                        }
                                     )}
 
                                 </div>
@@ -1134,22 +1168,34 @@ function DraftCard({
 }) {
     return (
         <div
-            className="
+            className={`
                 group
                 relative
                 min-h-[360px]
                 overflow-hidden
                 rounded-3xl
                 border
-                border-yellow-400/20
                 bg-black
-                shadow-[0_0_20px_rgba(250,204,21,0.08)]
                 transition-all
                 duration-300
                 hover:-translate-y-1
-                hover:border-yellow-300/45
-                hover:shadow-[0_0_28px_rgba(250,204,21,0.16)]
-            "
+        
+                ${
+                pick.grade === "U"
+                    ? `
+                    border-yellow-200/70
+                    shadow-[0_0_24px_rgba(250,204,21,0.3),0_0_50px_rgba(245,158,11,0.12)]
+                    hover:border-yellow-100
+                    hover:shadow-[0_0_32px_rgba(250,204,21,0.45),0_0_60px_rgba(245,158,11,0.18)]
+                    `
+                    : `
+                    border-yellow-400/20
+                    shadow-[0_0_20px_rgba(250,204,21,0.08)]
+                    hover:border-yellow-300/45
+                    hover:shadow-[0_0_28px_rgba(250,204,21,0.16)]
+                    `
+                }
+            `}
         >
 
             {/* IMAGE */}
@@ -1260,10 +1306,32 @@ function DraftCard({
                             Grade
                         </p>
 
-                        <p className="mt-1 text-4xl font-black italic text-yellow-300 drop-shadow-[0_0_14px_rgba(250,204,21,0.55)]">
-                            {
-                                pick.grade
-                            }
+                        <p
+                            className={`
+                                mt-1
+                                text-4xl
+                                font-black
+                                italic
+                        
+                                ${
+                                pick.grade === "U"
+                                    ? `
+                                        bg-gradient-to-b
+                                        from-white
+                                        via-yellow-200
+                                        to-amber-500
+                                        bg-clip-text
+                                        text-transparent
+                                        drop-shadow-[0_0_14px_rgba(251,191,36,0.9)]
+                                    `
+                                    : `
+                                        text-yellow-300
+                                        drop-shadow-[0_0_14px_rgba(250,204,21,0.55)]
+                                    `
+                                }
+                            `}
+                        >
+                            {pick.grade}
                         </p>
 
                     </div>

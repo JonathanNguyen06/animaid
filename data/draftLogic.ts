@@ -1256,6 +1256,19 @@ export function isUltraPick(
     );
 }
 
+export function getPowerPositionMatchupPoints(
+    position: PowerPosition | null | undefined
+) {
+    if (
+        position === "Apex" ||
+        position === "One Man Army"
+    ) {
+        return 2;
+    }
+
+    return 1;
+}
+
 export const powerPositionInfo: Record<
     PowerPosition,
     {
@@ -1294,13 +1307,17 @@ export const powerPositionInfo: Record<
     },
 
     Apex: {
-        description: "Only characters with virtually no weaknesses can dominate this role.",
-        scoring: "Uses the character's 3 weakest attributes",
+        description:
+            "Only characters with virtually no weaknesses can dominate this role.",
+        scoring:
+            "Uses the character's 3 weakest attributes • Win = 2 matchup points",
     },
 
     "One Man Army": {
-        description: "Designed for characters capable of doing everything themselves.",
-        scoring: "Uses all 6 attributes with bonuses for elite stats",
+        description:
+            "Designed for characters capable of doing everything themselves.",
+        scoring:
+            "Uses all 6 attributes with bonuses for elite stats • Win = 2 matchup points",
     },
 };
 

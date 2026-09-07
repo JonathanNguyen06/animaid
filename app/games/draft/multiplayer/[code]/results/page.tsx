@@ -11,7 +11,7 @@ import {
     requestDraftRematch, saveDraftMatchHistory, startDraftRematchIfReady,
 } from "@/lib/multiplayerDraft";
 import {draftCharacters,} from "@/data/draftCharacters";
-import {draftPositions, ascensionInfo, getDraftPickGrade,} from "@/data/draftLogic";
+import {draftPositions, ascensionInfo, getDraftPickGrade, getPowerPositionMatchupPoints,} from "@/data/draftLogic";
 import type {DraftMatch, MultiplayerDraftPlayerState,} from "@/types/multiplayerDraft";
 
 type MultiplayerRevealPhase =
@@ -800,6 +800,22 @@ function CinematicMatchup({
     const opponentWon =
         outcome === "loss";
 
+    const myMatchupPoints =
+        slot.isPowerPosition
+            ? getPowerPositionMatchupPoints(
+                myState.selectedPowerPosition
+            )
+            : 1;
+
+
+    const opponentMatchupPoints =
+        slot.isPowerPosition
+            ? getPowerPositionMatchupPoints(
+                opponentState
+                    .selectedPowerPosition
+            )
+            : 1;
+
     const myGradeStyle =
         getGradeStyle(myGrade);
 
@@ -1238,10 +1254,10 @@ function CinematicMatchup({
                 >
                     <p className="text-xs font-black uppercase tracking-[0.25em]">
                         {outcome === "win"
-                            ? "Matchup Won"
+                            ? `✓ You Win This Matchup +${myMatchupPoints}`
                             : outcome === "loss"
-                                ? `Matchup Lost`
-                                : "Tie"}
+                                ? `${opponentName} Wins This Matchup +${opponentMatchupPoints}`
+                                : "Tie • No Point"}
                     </p>
                 </div>
             </div>
@@ -2400,17 +2416,72 @@ export default function MultiplayerDraftResultsPage() {
                 getMatchupOutcome(slot)
         );
 
+
     const myPositionWins =
-        matchupOutcomes.filter(
-            (result) =>
-                result === "win"
-        ).length;
+        revealSlots.reduce(
+            (
+                total,
+                slot,
+                index
+            ) => {
+                const outcome =
+                    matchupOutcomes[index];
+
+                if (
+                    outcome !== "win"
+                ) {
+                    return total;
+                }
+
+                const points =
+                    slot.isPowerPosition
+                        ? getPowerPositionMatchupPoints(
+                            myState
+                                .selectedPowerPosition
+                        )
+                        : 1;
+
+                return (
+                    total +
+                    points
+                );
+            },
+            0
+        );
+
 
     const opponentPositionWins =
-        matchupOutcomes.filter(
-            (result) =>
-                result === "loss"
-        ).length;
+        revealSlots.reduce(
+            (
+                total,
+                slot,
+                index
+            ) => {
+                const outcome =
+                    matchupOutcomes[index];
+
+                if (
+                    outcome !== "loss"
+                ) {
+                    return total;
+                }
+
+                const points =
+                    slot.isPowerPosition
+                        ? getPowerPositionMatchupPoints(
+                            opponentState
+                                .selectedPowerPosition
+                        )
+                        : 1;
+
+                return (
+                    total +
+                    points
+                );
+            },
+            0
+        );
+
 
     const tiedPositions =
         matchupOutcomes.filter(
