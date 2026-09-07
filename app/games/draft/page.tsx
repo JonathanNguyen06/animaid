@@ -7,8 +7,6 @@ import {
     calculateDraftPower,
     draftPositions,
     getDraftPickGrade,
-    getLetterGrade,
-    isUltraPick,
 } from "@/data/draftLogic";
 import {auth, getDraftHighScore, saveDraftHighScore, type DraftHighScore,} from "@/lib/firebase";
 import { onAuthStateChanged, type User } from "firebase/auth";
@@ -20,17 +18,6 @@ type PowerBurst = {
     id: number;
     amount: number;
 };
-
-const positions: DraftPosition[] = [
-    "Captain",
-    "Vice Captain",
-    "Support",
-    "Scout",
-    "Strategist",
-    "Assassin",
-    "Ace",
-    "Vanguard",
-];
 
 const positionIcons: Record<DraftPosition, string> = {
     Captain: "👑",
@@ -93,19 +80,6 @@ function getRandomCharacter(usedIds: string[]) {
     );
 
     return available[Math.floor(Math.random() * available.length)];
-}
-
-function DraftCardSkeleton() {
-    return (
-        <div className="overflow-hidden rounded-3xl border border-purple-200 bg-purple-50 shadow-lg">
-            <div className="h-80 w-full animate-pulse bg-purple-200/70" />
-
-            <div className="space-y-3 p-5">
-                <div className="h-7 w-3/4 animate-pulse rounded-full bg-purple-200" />
-                <div className="h-4 w-1/2 animate-pulse rounded-full bg-purple-100" />
-            </div>
-        </div>
-    );
 }
 
 function TeamPowerCounter({
@@ -791,15 +765,27 @@ export default function DraftPage() {
                 grade: completedGrade,
 
                 lineup: finalPicks.map((pick) => ({
-                    position: pick.position,
-                    power: pick.power,
-                    grade: pick.grade,
+                    position:
+                        pick.position as DraftPosition,
+
+                    power:
+                    pick.power,
+
+                    grade:
+                    pick.grade,
 
                     character: {
-                        id: pick.character.id,
-                        name: pick.character.name,
-                        anime: pick.character.anime,
-                        imageUrl: pick.character.imageUrl ?? "",
+                        id:
+                        pick.character.id,
+
+                        name:
+                        pick.character.name,
+
+                        anime:
+                        pick.character.anime,
+
+                        imageUrl:
+                            pick.character.imageUrl ?? "",
                     },
                 })),
             };
