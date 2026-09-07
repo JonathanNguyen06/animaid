@@ -4,7 +4,7 @@ import type {
 } from "@/data/draftCharacters";
 
 import type {
-    Ascension,
+    Ascension, Disruption,
 } from "@/data/draftLogic";
 import {Timestamp} from "@firebase/firestore";
 
@@ -13,6 +13,7 @@ export type DraftMatchStatus =
     | "power-selection"
     | "drafting"
     | "ascension"
+    | "disruption"
     | "reveal"
     | "complete"
     | "rematch";
@@ -64,6 +65,12 @@ export type DraftMatch = {
     hostAscensionSelected: boolean;
     guestAscensionSelected: boolean;
 
+    hostDisruptionSelected: boolean;
+    guestDisruptionSelected: boolean;
+
+    hostDrawOrder: string[];
+    guestDrawOrder: string[];
+
     hostRematchRequested: boolean;
     guestRematchRequested: boolean;
 
@@ -111,6 +118,10 @@ export type MultiplayerDraftPlayerState = {
 
     selectedAscension:
         Ascension | null;
+    disruptionChoices: Disruption[];
+
+    selectedDisruption:
+        Disruption | null;
 };
 
 export type MultiplayerDraftPick = {
@@ -124,6 +135,7 @@ export type MultiplayerDraftPick = {
     hasSynergy: boolean;
 
     ascensionBonus?: number;
+    disruptionPenalty?: number;
 };
 
 export type DraftMatchHistoryResult =

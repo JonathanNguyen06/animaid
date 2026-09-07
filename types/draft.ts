@@ -18,6 +18,7 @@ export type DraftPick = {
     hasSynergy?: boolean;
 
     ascensionBonus?: number;
+    disruptionPenalty?: number;
 };
 
 export type DraftResult = {

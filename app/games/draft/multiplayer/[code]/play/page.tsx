@@ -10,10 +10,19 @@ import {
     selectDraftPowerPosition,
     ensureDraftRoundCharacter,
     submitMultiplayerDraftPick, advanceDraftRoundIfReady, rerollMultiplayerDraftCharacter, selectMultiplayerAscension,
-    completeDraftMatch, claimDraftForfeit, listenToDraftRoundReveal, lockDraftRoundCharacter,
-    advanceDraftAscensionIfReady
+    claimDraftForfeit, listenToDraftRoundReveal, lockDraftRoundCharacter,
+    advanceDraftAscensionIfReady, selectMultiplayerDisruption, advanceAscensionToDisruptionIfReady,
+    advanceDisruptionToRevealIfReady
 } from "@/lib/multiplayerDraft";
-import {Ascension, ascensionInfo, draftPositions, getAscensionPreview, powerPositionInfo,} from "@/data/draftLogic";
+import {
+    type Ascension,
+    ascensionInfo,
+    type Disruption,
+    disruptionInfo,
+    draftPositions,
+    getAscensionPreview,
+    powerPositionInfo,
+} from "@/data/draftLogic";
 import type {DraftMatch, MultiplayerDraftPlayerState,} from "@/types/multiplayerDraft";
 import type {AnyDraftPosition, DraftPosition, PowerPosition,} from "@/data/draftCharacters";
 import {draftCharacters,} from "@/data/draftCharacters";
@@ -26,11 +35,158 @@ type DecisionTimerMode =
     | "roll"
     | "position"
     | "ascension"
+    | "disruption"
     | null;
 
 
 const DECISION_TIME_SECONDS =
     15;
+
+function OpponentDraftOrderPreview({
+                                       characterIds,
+                                       opponentName,
+                                   }: {
+    characterIds: string[];
+    opponentName: string;
+}) {
+    return (
+        <div
+            className="
+                mt-7
+                overflow-hidden
+                rounded-3xl
+                border border-purple-400/15
+                bg-black/35
+                p-5
+            "
+        >
+            <div className="text-center">
+                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-purple-300/45">
+                    Opponent Draft
+                </p>
+
+                <h3 className="mt-1 text-xl font-black text-white">
+                    {opponentName}&apos;s Draw Order
+                </h3>
+
+                <p className="mt-1 text-xs text-white/35">
+                    Characters are shown in the exact order they were drafted.
+                    Positions and ratings remain hidden.
+                </p>
+            </div>
+
+
+            <div
+                className="
+                    mt-5
+                    grid
+                    grid-cols-3
+                    gap-3
+                    sm:grid-cols-5
+                    xl:grid-cols-9
+                "
+            >
+                {characterIds.map(
+                    (
+                        characterId,
+                        index
+                    ) => {
+                        const character =
+                            draftCharacters.find(
+                                (character) =>
+                                    character.id ===
+                                    characterId
+                            );
+
+                        if (!character) {
+                            return null;
+                        }
+
+                        return (
+                            <div
+                                key={`${characterId}-${index}`}
+                                className="
+                                    group
+                                    relative
+                                    aspect-[2/3]
+                                    overflow-hidden
+                                    rounded-2xl
+                                    border
+                                    border-purple-400/20
+                                    bg-black
+                                    shadow-[0_0_18px_rgba(168,85,247,0.07)]
+                                "
+                            >
+                                <img
+                                    src={
+                                        character.imageUrl
+                                    }
+                                    alt={
+                                        character.name
+                                    }
+                                    draggable={
+                                        false
+                                    }
+                                    className="
+                                        absolute
+                                        inset-0
+                                        h-full
+                                        w-full
+                                        object-cover
+                                        object-top
+                                    "
+                                />
+
+                                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/10 to-transparent" />
+
+
+                                <div
+                                    className="
+                                        absolute
+                                        left-2
+                                        top-2
+                                        flex
+                                        h-7
+                                        w-7
+                                        items-center
+                                        justify-center
+                                        rounded-full
+                                        border
+                                        border-purple-300/25
+                                        bg-black/75
+                                        text-[10px]
+                                        font-black
+                                        text-purple-200
+                                        backdrop-blur
+                                    "
+                                >
+                                    {index + 1}
+                                </div>
+
+
+                                <div className="absolute bottom-0 left-0 right-0 p-3 text-left">
+
+                                    <p className="text-[8px] font-black uppercase tracking-widest text-purple-300/55">
+                                        Round {index + 1}
+                                    </p>
+
+                                    <p className="mt-1 line-clamp-2 text-sm font-black leading-tight text-white">
+                                        {character.name}
+                                    </p>
+
+                                    <p className="mt-1 truncate text-[9px] font-semibold text-white/40">
+                                        {character.anime}
+                                    </p>
+
+                                </div>
+                            </div>
+                        );
+                    }
+                )}
+            </div>
+        </div>
+    );
+}
 
 export default function MultiplayerDraftPlayPage() {
     const router = useRouter();
@@ -48,6 +204,7 @@ export default function MultiplayerDraftPlayPage() {
     const advancingRoundRef = useRef(false);
     const [rerolling, setRerolling,] = useState(false);
     const [selectingAscension, setSelectingAscension,] = useState(false);
+    const [selectingDisruption, setSelectingDisruption,] = useState(false);
     const [opponentOnline, setOpponentOnline,] = useState<boolean | null>(null);
     const [disconnectSecondsRemaining, setDisconnectSecondsRemaining,] = useState<number | null>(null);
     const [processingForfeit, setProcessingForfeit,] = useState(false);
@@ -65,7 +222,6 @@ export default function MultiplayerDraftPlayPage() {
     const latestMatchRef = useRef<DraftMatch | null>(null);
     const latestPlayerStateRef = useRef<MultiplayerDraftPlayerState | null>(null);
     const autoLockingRollRef = useRef(false);
-    const advancingAscensionRef = useRef(false);
     const [hoveredInfoPosition, setHoveredInfoPosition,] = useState<AnyDraftPosition | null>(null);
 
     const positionIcons:
@@ -363,82 +519,6 @@ export default function MultiplayerDraftPlayPage() {
     ]);
 
     useEffect(() => {
-        if (
-            !user ||
-            !code ||
-            !match
-        ) {
-            return;
-        }
-
-
-        if (
-            match.status !==
-            "ascension"
-        ) {
-            return;
-        }
-
-
-        /*
-         * Only host advances the
-         * public match phase.
-         */
-        if (
-            match.host.uid !==
-            user.uid
-        ) {
-            return;
-        }
-
-
-        /*
-         * Wait for both players.
-         */
-        if (
-            !match.hostAscensionSelected ||
-            !match.guestAscensionSelected
-        ) {
-            return;
-        }
-
-
-        if (
-            advancingAscensionRef.current
-        ) {
-            return;
-        }
-
-
-        advancingAscensionRef.current =
-            true;
-
-
-        advanceDraftAscensionIfReady(
-            code,
-            user.uid
-        )
-            .catch((error) => {
-                console.error(
-                    "Failed to advance Ascension phase:",
-                    error
-                );
-            })
-            .finally(() => {
-                advancingAscensionRef.current =
-                    false;
-            });
-
-    }, [
-        user,
-        code,
-        match?.status,
-        match?.host.uid,
-        match?.hostAscensionSelected,
-        match?.guestAscensionSelected,
-    ]);
-
-    useEffect(() => {
         if (!code) {
             return;
         }
@@ -604,6 +684,7 @@ export default function MultiplayerDraftPlayPage() {
             "power-selection",
             "drafting",
             "ascension",
+            "disruption",
         ];
 
         if (!activeStatuses.includes(match.status)) {
@@ -890,6 +971,17 @@ export default function MultiplayerDraftPlayPage() {
                 ? currentMatch.hostRollLocked
                 : currentMatch.guestRollLocked;
 
+        const myDisruptionSelected =
+            isHost
+                ? match.hostDisruptionSelected
+                : match.guestDisruptionSelected;
+
+
+        const opponentDisruptionSelected =
+            isHost
+                ? match.guestDisruptionSelected
+                : match.hostDisruptionSelected;
+
         const mySubmitted =
             isHost
                 ? currentMatch.hostSubmitted
@@ -987,6 +1079,19 @@ export default function MultiplayerDraftPlayPage() {
 
             nextKey =
                 `ascension-${gameNumber}`;
+        }
+
+        else if (
+            currentMatch.status ===
+            "disruption" &&
+            !currentState.selectedDisruption &&
+            !myDisruptionSelected
+        ) {
+            nextMode =
+                "disruption";
+
+            nextKey =
+                `disruption-${gameNumber}`;
         }
 
 
@@ -1165,6 +1270,11 @@ export default function MultiplayerDraftPlayPage() {
                     ? liveMatch.hostAscensionSelected
                     : liveMatch.guestAscensionSelected;
 
+            const liveMyDisruptionSelected =
+                liveIsHost
+                    ? liveMatch.hostDisruptionSelected
+                    : liveMatch.guestDisruptionSelected;
+
             let decisionStillValid =
                 false;
 
@@ -1211,6 +1321,19 @@ export default function MultiplayerDraftPlayPage() {
                     !liveState
                         .selectedAscension &&
                     !liveMyAscensionSelected;
+            }
+
+            if (
+                nextMode === "disruption"
+            ) {
+                decisionStillValid =
+                    liveMatch.status ===
+                    "disruption" &&
+
+                    !liveState
+                        .selectedDisruption &&
+
+                    !liveMyDisruptionSelected;
             }
 
             if (!decisionStillValid) {
@@ -1261,6 +1384,14 @@ export default function MultiplayerDraftPlayPage() {
             if (
                 nextMode === "ascension" &&
                 selectingAscension
+            ) {
+                return;
+            }
+
+            if (
+                nextMode ===
+                "disruption" &&
+                selectingDisruption
             ) {
                 return;
             }
@@ -1491,6 +1622,48 @@ export default function MultiplayerDraftPlayPage() {
                     );
                 }
 
+                // =================================================
+                // AUTO DISRUPTION
+                // =================================================
+
+                if (
+                    nextMode ===
+                    "disruption"
+                ) {
+                    const choices =
+                        currentState
+                            .disruptionChoices;
+
+                    if (
+                        choices.length ===
+                        0
+                    ) {
+                        throw new Error(
+                            "NO_DISRUPTION_CHOICES"
+                        );
+                    }
+
+                    const randomChoice =
+                        choices[
+                            Math.floor(
+                                Math.random() *
+                                choices.length
+                            )
+                            ];
+
+                    setSelectingDisruption(
+                        true
+                    );
+
+                    await selectMultiplayerDisruption(
+                        currentCode,
+                        currentUid,
+                        randomChoice
+                    );
+
+                    return;
+                }
+
             } catch (error) {
                 console.error(
                     "Automatic Draft decision failed:",
@@ -1519,6 +1692,7 @@ export default function MultiplayerDraftPlayPage() {
                 setLockingRoll(false);
                 setSubmittingPick(false);
                 setSelectingAscension(false);
+                setSelectingDisruption(false);
             }
         }
 
@@ -1551,6 +1725,7 @@ export default function MultiplayerDraftPlayPage() {
         rerolling,
         submittingPick,
         selectingAscension,
+        selectingDisruption,
     ]);
 
     useEffect(() => {
@@ -1609,6 +1784,112 @@ export default function MultiplayerDraftPlayPage() {
         match?.host.uid,
         match?.hostSubmitted,
         match?.guestSubmitted,
+    ]);
+
+    useEffect(() => {
+        if (
+            !user ||
+            !code ||
+            !match
+        ) {
+            return;
+        }
+
+        if (
+            match.status !==
+            "ascension"
+        ) {
+            return;
+        }
+
+        if (
+            match.host.uid !==
+            user.uid
+        ) {
+            return;
+        }
+
+        if (
+            !match
+                .hostAscensionSelected ||
+
+            !match
+                .guestAscensionSelected
+        ) {
+            return;
+        }
+
+        advanceAscensionToDisruptionIfReady(
+            code,
+            user.uid
+        ).catch(
+            (error) => {
+                console.error(
+                    "Failed to advance to Disruption:",
+                    error
+                );
+            }
+        );
+    }, [
+        user,
+        code,
+        match?.status,
+        match?.host.uid,
+        match?.hostAscensionSelected,
+        match?.guestAscensionSelected,
+    ]);
+
+    useEffect(() => {
+        if (
+            !user ||
+            !code ||
+            !match
+        ) {
+            return;
+        }
+
+        if (
+            match.status !==
+            "disruption"
+        ) {
+            return;
+        }
+
+        if (
+            match.host.uid !==
+            user.uid
+        ) {
+            return;
+        }
+
+        if (
+            !match
+                .hostDisruptionSelected ||
+
+            !match
+                .guestDisruptionSelected
+        ) {
+            return;
+        }
+
+        advanceDisruptionToRevealIfReady(
+            code,
+            user.uid
+        ).catch(
+            (error) => {
+                console.error(
+                    "Failed to advance to Reveal:",
+                    error
+                );
+            }
+        );
+    }, [
+        user,
+        code,
+        match?.status,
+        match?.host.uid,
+        match?.hostDisruptionSelected,
+        match?.guestDisruptionSelected,
     ]);
 
     useEffect(() => {
@@ -1755,6 +2036,41 @@ export default function MultiplayerDraftPlayPage() {
             );
 
             setSelectingAscension(false);
+        }
+    }
+
+    async function handleSelectDisruption(
+        disruption: Disruption
+    ) {
+        if (
+            !user ||
+            !code ||
+            !match ||
+            !playerState ||
+            selectingDisruption
+        ) {
+            return;
+        }
+
+        setSelectingDisruption(
+            true
+        );
+
+        try {
+            await selectMultiplayerDisruption(
+                code,
+                user.uid,
+                disruption
+            );
+        } catch (error) {
+            console.error(
+                "Failed to select Disruption:",
+                error
+            );
+        } finally {
+            setSelectingDisruption(
+                false
+            );
         }
     }
 
@@ -1911,6 +2227,11 @@ export default function MultiplayerDraftPlayPage() {
         isHost
             ? match.guestAscensionSelected
             : match.hostAscensionSelected;
+
+    const opponentDisruptionSelected =
+        isHost
+            ? match.guestDisruptionSelected
+            : match.hostDisruptionSelected;
 
     const mySubmitted =
         isHost
@@ -2082,6 +2403,11 @@ export default function MultiplayerDraftPlayPage() {
         isHost
             ? match.guest?.displayName ?? "Opponent"
             : match.host.displayName;
+
+    const opponentDrawOrder =
+        isHost
+            ? match.guestDrawOrder ?? []
+            : match.hostDrawOrder ?? [];
 
     return (
         <main className="mx-auto min-h-[calc(100vh-130px)] max-w-[1700px] px-4 py-6">
@@ -2288,6 +2614,10 @@ export default function MultiplayerDraftPlayPage() {
                                                 {decisionTimerMode ===
                                                     "ascension" &&
                                                     "Choose Ascension"}
+
+                                                {decisionTimerMode ===
+                                                    "disruption" &&
+                                                    "Choose Disruption"}
                                             </p>
                                         </div>
 
@@ -3982,6 +4312,213 @@ export default function MultiplayerDraftPlayPage() {
                         )}
                     </div>
                 )}
+
+                {match.status ===
+                    "disruption" && (
+                        <div
+                            className="
+                                mt-8
+                                rounded-3xl
+                                border border-red-400/20
+                                bg-red-500/[0.04]
+                                p-6
+                                shadow-[0_0_30px_rgba(248,113,113,0.08)]
+                            "
+                        >
+                            <div className="text-center">
+
+                                <p className="text-xs font-black uppercase tracking-[0.35em] text-red-300/60">
+                                    Disruption
+                                </p>
+
+                                <h2 className="mt-2 text-3xl font-black text-white">
+                                    Choose Your Counter
+                                </h2>
+
+                                <p className="mx-auto mt-2 max-w-2xl text-sm text-white/45">
+                                    Choose one effect to weaken your opponent&apos;s final lineup.
+                                    Your choice remains hidden until the Final Showdown.
+                                </p>
+
+                            </div>
+
+                            <OpponentDraftOrderPreview
+                                characterIds={
+                                    opponentDrawOrder
+                                }
+                                opponentName={
+                                    opponentName
+                                }
+                            />
+
+
+                            {!playerState.selectedDisruption ? (
+                                <div className="mt-7 grid gap-4 md:grid-cols-3">
+
+                                    {playerState
+                                        .disruptionChoices
+                                        .map(
+                                            (disruption) => {
+                                                const info =
+                                                    disruptionInfo[
+                                                        disruption
+                                                        ];
+
+                                                return (
+                                                    <button
+                                                        key={
+                                                            disruption
+                                                        }
+                                                        type="button"
+
+                                                        disabled={
+                                                            selectingDisruption
+                                                        }
+
+                                                        onClick={() =>
+                                                            handleSelectDisruption(
+                                                                disruption
+                                                            )
+                                                        }
+
+                                                        className="
+                                                            group
+                                                            relative
+                                                            overflow-hidden
+                                                            rounded-3xl
+                                                            border
+                                                            border-red-400/25
+                                                            bg-black/60
+                                                            p-5
+                                                            text-left
+                                                            transition-all
+                                                            duration-300
+
+                                                            hover:-translate-y-1
+                                                            hover:border-red-300/70
+                                                            hover:bg-red-500/10
+                                                            hover:shadow-[0_0_30px_rgba(248,113,113,0.18)]
+                                                            hover:cursor-pointer
+
+                                                            disabled:pointer-events-none
+                                                            disabled:opacity-50
+                                                        "
+                                                    >
+
+                                                        <div className="absolute -right-10 -top-10 h-28 w-28 rounded-full bg-red-400/10 blur-3xl transition group-hover:bg-red-400/20" />
+
+                                                        <div className="relative z-10">
+
+                                                            <p className="text-[10px] font-black uppercase tracking-[0.25em] text-red-300/55">
+                                                                Disruption
+                                                            </p>
+
+                                                            <h3 className="mt-3 text-xl font-black text-white">
+                                                                {
+                                                                    disruption
+                                                                }
+                                                            </h3>
+
+                                                            <p className="mt-3 min-h-[72px] text-sm leading-6 text-white/55">
+                                                                {
+                                                                    info.description
+                                                                }
+                                                            </p>
+
+                                                            <div className="mt-5 border-t border-white/[0.06] pt-4">
+
+                                                                <p className="text-center text-[10px] font-black uppercase tracking-[0.2em] text-red-300/50 transition group-hover:text-red-200">
+                                                                    {selectingDisruption
+                                                                        ? "Locking In..."
+                                                                        : "Deploy Disruption"}
+                                                                </p>
+
+                                                            </div>
+
+                                                        </div>
+
+                                                    </button>
+                                                );
+                                            }
+                                        )}
+
+                                </div>
+                            ) : (
+                                <div className="mx-auto mt-8 max-w-xl">
+
+                                    <div
+                                        className="
+                                            relative
+                                            overflow-hidden
+                                            rounded-3xl
+                                            border
+                                            border-red-300/30
+                                            bg-black/60
+                                            p-7
+                                            text-center
+                                            shadow-[0_0_35px_rgba(248,113,113,0.15)]
+                                        "
+                                    >
+
+                                        <div className="absolute left-1/2 top-0 h-40 w-72 -translate-x-1/2 rounded-full bg-red-400/10 blur-[70px]" />
+
+                                        <div className="relative z-10">
+
+                                            <p className="text-xs font-black uppercase tracking-[0.3em] text-red-300/60">
+                                                Disruption Locked
+                                            </p>
+
+                                            <h3 className="mt-3 text-3xl font-black text-red-200 drop-shadow-[0_0_18px_rgba(248,113,113,0.4)]">
+                                                {
+                                                    playerState
+                                                        .selectedDisruption
+                                                }
+                                            </h3>
+
+                                            <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-white/50">
+                                                {
+                                                    disruptionInfo[
+                                                        playerState
+                                                            .selectedDisruption
+                                                        ].description
+                                                }
+                                            </p>
+
+
+                                            <div className="mt-6 border-t border-white/10 pt-5">
+
+                                                {opponentDisruptionSelected ? (
+                                                    <div className="flex items-center justify-center gap-2">
+
+                                                        <span className="h-2 w-2 rounded-full bg-green-400 shadow-[0_0_8px_rgba(74,222,128,0.8)]" />
+
+                                                        <p className="text-sm font-black text-green-300">
+                                                            Opponent locked in
+                                                        </p>
+
+                                                    </div>
+                                                ) : (
+                                                    <div className="flex items-center justify-center gap-2">
+
+                                                        <span className="h-2 w-2 animate-pulse rounded-full bg-red-400 shadow-[0_0_8px_rgba(248,113,113,0.8)]" />
+
+                                                        <p className="animate-pulse text-sm font-semibold text-white/40">
+                                                            Waiting for {opponentName}...
+                                                        </p>
+
+                                                    </div>
+                                                )}
+
+                                            </div>
+
+                                        </div>
+
+                                    </div>
+
+                                </div>
+                            )}
+                        </div>
+                    )}
 
                 {match.status === "reveal" && (
                     <div className="mt-8 rounded-3xl border border-yellow-400/20 bg-black/50 p-12 text-center">

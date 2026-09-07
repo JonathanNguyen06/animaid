@@ -9,11 +9,11 @@ import type {
 } from "@/types/multiplayerDraft";
 import {db} from "./firebase";
 import {
-    applyAscension, Ascension,
-    calculateDraftPower,
+    applyAscension, applyDisruption, applySynergyBonuses, Ascension,
+    calculateDraftPower, Disruption,
     draftPositions, getDraftPickGrade,
     getLetterGrade, getPowerPositionMatchupPoints,
-    getRandomAscensions,
+    getRandomAscensions, getRandomDisruptions,
     getRandomPowerPositions
 } from "@/data/draftLogic";
 import {PowerPosition, draftCharacters, AnyDraftPosition} from "@/data/draftCharacters";
@@ -36,6 +36,90 @@ function generateDraftCode(length = 6) {
     }
 
     return code;
+}
+
+function multiplayerPicksToDraftPicks(
+    picks: MultiplayerDraftPick[]
+): DraftPick[] {
+    return picks.map(
+        (pick) => {
+            const character =
+                draftCharacters.find(
+                    (character) =>
+                        character.id ===
+                        pick.characterId
+                );
+
+            if (!character) {
+                throw new Error(
+                    "CHARACTER_NOT_FOUND"
+                );
+            }
+
+            return {
+                character,
+
+                position:
+                pick.position,
+
+                basePower:
+                pick.basePower,
+
+                power:
+                pick.power,
+
+                grade:
+                pick.grade,
+
+                hasSynergy:
+                pick.hasSynergy,
+
+                ascensionBonus:
+                    pick.ascensionBonus ??
+                    0,
+
+                disruptionPenalty:
+                    pick.disruptionPenalty ??
+                    0,
+            };
+        }
+    );
+}
+
+
+function draftPicksToMultiplayerPicks(
+    picks: DraftPick[]
+): MultiplayerDraftPick[] {
+    return picks.map(
+        (pick) => ({
+            characterId:
+            pick.character.id,
+
+            position:
+            pick.position,
+
+            basePower:
+            pick.basePower,
+
+            power:
+            pick.power,
+
+            grade:
+            pick.grade,
+
+            hasSynergy:
+                pick.hasSynergy ??
+                false,
+
+            ascensionBonus:
+                pick.ascensionBonus ??
+                0,
+
+            disruptionPenalty:
+                pick.disruptionPenalty ??
+                0,
+        })
+    );
 }
 
 export async function createDraftMatch(
@@ -85,6 +169,14 @@ export async function createDraftMatch(
 
                         hostAscensionSelected: false,
                         guestAscensionSelected: false,
+
+                        hostDisruptionSelected:
+                            false,
+
+                        guestDisruptionSelected:
+                            false,
+                        hostDrawOrder: [],
+                        guestDrawOrder: [],
 
                         hostRematchRequested: false,
                         guestRematchRequested: false,
@@ -167,6 +259,18 @@ export function listenToDraftMatch(
                     data.hostAscensionSelected ?? false,
                 guestAscensionSelected:
                     data.guestAscensionSelected ?? false,
+                hostDisruptionSelected:
+                    data.hostDisruptionSelected ??
+                    false,
+                guestDisruptionSelected:
+                    data.guestDisruptionSelected ??
+                    false,
+                hostDrawOrder:
+                    data.hostDrawOrder ??
+                    [],
+                guestDrawOrder:
+                    data.guestDrawOrder ??
+                    [],
                 hostRematchRequested:
                     data.hostRematchRequested ?? false,
                 guestRematchRequested:
@@ -743,6 +847,8 @@ async function tryMatchOpenDraftQueue(
                                         false,
                                     guestAscensionSelected:
                                         false,
+                                    hostDisruptionSelected: false,
+                                    guestDisruptionSelected: false,
                                     hostRematchRequested:
                                         false,
                                     guestRematchRequested:
@@ -1205,6 +1311,9 @@ export async function ensureDraftPlayerState(
             const ascensionChoices =
                 getRandomAscensions(3);
 
+            const disruptionChoices =
+                getRandomDisruptions(3);
+
             transaction.set(
                 playerStateRef,
                 {
@@ -1233,6 +1342,11 @@ export async function ensureDraftPlayerState(
                     ascensionChoices,
 
                     selectedAscension:
+                        null,
+
+                    disruptionChoices,
+
+                    selectedDisruption:
                         null,
 
                     createdAt:
@@ -1604,87 +1718,18 @@ export async function ensureDraftRoundCharacter(
 function applyMultiplayerSynergyBonuses(
     picks: MultiplayerDraftPick[]
 ) {
-    const animeCounts =
-        picks.reduce<
-            Record<string, number>
-        >(
-            (counts, pick) => {
-                const character =
-                    draftCharacters.find(
-                        (character) =>
-                            character.id ===
-                            pick.characterId
-                    );
-
-                if (!character) {
-                    return counts;
-                }
-
-                counts[
-                    character.anime
-                    ] =
-                    (
-                        counts[
-                            character.anime
-                            ] ?? 0
-                    ) + 1;
-
-                return counts;
-            },
-            {}
+    const normalPicks =
+        multiplayerPicksToDraftPicks(
+            picks
         );
 
-    return picks.map(
-        (pick) => {
-            const character =
-                draftCharacters.find(
-                    (character) =>
-                        character.id ===
-                        pick.characterId
-                );
+    const linkedPicks =
+        applySynergyBonuses(
+            normalPicks
+        );
 
-            if (!character) {
-                return pick;
-            }
-
-            const sameAnimeCount =
-                animeCounts[
-                    character.anime
-                    ] ?? 1;
-
-            const hasSynergy =
-                sameAnimeCount >= 2;
-
-            const synergyBonus =
-                hasSynergy
-                    ? Math.min(
-                        sameAnimeCount - 1,
-                        3
-                    )
-                    : 0;
-
-            const power =
-                Math.min(
-                    99,
-                    pick.basePower +
-                    synergyBonus
-                );
-
-            return {
-                ...pick,
-
-                power,
-
-                grade:
-                    getDraftPickGrade(
-                        character,
-                        pick.position,
-                        power
-                    ),
-
-                hasSynergy,
-            };
-        }
+    return draftPicksToMultiplayerPicks(
+        linkedPicks
     );
 }
 
@@ -1916,16 +1961,35 @@ export async function submitMultiplayerDraftPick(
              * Only say that this player
              * finished the round.
              */
+            const hostDrawOrder =
+                match.hostDrawOrder ??
+                [];
+
+            const guestDrawOrder =
+                match.guestDrawOrder ??
+                [];
+
+
             transaction.update(
                 matchRef,
                 isHost
                     ? {
                         hostSubmitted:
                             true,
+
+                        hostDrawOrder: [
+                            ...hostDrawOrder,
+                            character.id,
+                        ],
                     }
                     : {
                         guestSubmitted:
                             true,
+
+                        guestDrawOrder: [
+                            ...guestDrawOrder,
+                            character.id,
+                        ],
                     }
             );
         }
@@ -2186,19 +2250,21 @@ export async function selectMultiplayerAscension(
     const normalizedCode =
         code.trim().toUpperCase();
 
-    const matchRef = doc(
-        db,
-        "draftMatches",
-        normalizedCode
-    );
+    const matchRef =
+        doc(
+            db,
+            "draftMatches",
+            normalizedCode
+        );
 
-    const playerStateRef = doc(
-        db,
-        "draftMatches",
-        normalizedCode,
-        "playerStates",
-        uid
-    );
+    const playerStateRef =
+        doc(
+            db,
+            "draftMatches",
+            normalizedCode,
+            "playerStates",
+            uid
+        );
 
     await runTransaction(
         db,
@@ -2213,13 +2279,17 @@ export async function selectMultiplayerAscension(
                     playerStateRef
                 );
 
-            if (!matchSnapshot.exists()) {
+            if (
+                !matchSnapshot.exists()
+            ) {
                 throw new Error(
                     "MATCH_NOT_FOUND"
                 );
             }
 
-            if (!playerSnapshot.exists()) {
+            if (
+                !playerSnapshot.exists()
+            ) {
                 throw new Error(
                     "PLAYER_STATE_NOT_FOUND"
                 );
@@ -2229,7 +2299,8 @@ export async function selectMultiplayerAscension(
                 matchSnapshot.data();
 
             const playerState =
-                playerSnapshot.data();
+                playerSnapshot.data() as
+                    MultiplayerDraftPlayerState;
 
             if (
                 match.status !==
@@ -2241,42 +2312,37 @@ export async function selectMultiplayerAscension(
             }
 
             const isHost =
-                match.host.uid === uid;
+                match.host.uid ===
+                uid;
 
             const isGuest =
-                match.guest?.uid === uid;
+                match.guest?.uid ===
+                uid;
 
-            if (!isHost && !isGuest) {
+            if (
+                !isHost &&
+                !isGuest
+            ) {
                 throw new Error(
                     "NOT_IN_MATCH"
                 );
             }
 
-            const publicAscensionAlreadySelected =
-                isHost
-                    ? match.hostAscensionSelected ===
-                    true
-                    : match.guestAscensionSelected ===
-                    true;
-
-
             if (
-                playerState.selectedAscension ||
-                publicAscensionAlreadySelected
+                playerState
+                    .selectedAscension
             ) {
-                /*
-                 * Idempotent no-op.
-                 *
-                 * A stale timer or double click may
-                 * arrive after the choice succeeded.
-                 */
-                return;
+                throw new Error(
+                    "ASCENSION_ALREADY_SELECTED"
+                );
             }
 
             if (
                 !playerState
                     .ascensionChoices
-                    ?.includes(ascension)
+                    .includes(
+                        ascension
+                    )
             ) {
                 throw new Error(
                     "INVALID_ASCENSION"
@@ -2292,12 +2358,8 @@ export async function selectMultiplayerAscension(
                 );
             }
 
-            const multiplayerPicks:
-                MultiplayerDraftPick[] =
-                playerState.picks ?? [];
-
             if (
-                multiplayerPicks.length !==
+                playerState.picks.length !==
                 9
             ) {
                 throw new Error(
@@ -2305,54 +2367,10 @@ export async function selectMultiplayerAscension(
                 );
             }
 
-            /*
-             * Turn our smaller multiplayer
-             * picks back into normal DraftPick
-             * objects so we can reuse your
-             * existing applyAscension().
-             */
-
-            const normalPicks:
-                DraftPick[] =
-                multiplayerPicks.map(
-                    (pick) => {
-                        const character =
-                            draftCharacters.find(
-                                (character) =>
-                                    character.id ===
-                                    pick.characterId
-                            );
-
-                        if (!character) {
-                            throw new Error(
-                                "CHARACTER_NOT_FOUND"
-                            );
-                        }
-
-                        return {
-                            character,
-
-                            position:
-                            pick.position,
-
-                            basePower:
-                            pick.basePower,
-
-                            power:
-                            pick.power,
-
-                            grade:
-                            pick.grade,
-
-                            hasSynergy:
-                            pick.hasSynergy,
-                        };
-                    }
+            const normalPicks =
+                multiplayerPicksToDraftPicks(
+                    playerState.picks
                 );
-
-            /*
-             * Reuse your SOLO Ascension logic.
-             */
 
             const ascendedPicks =
                 applyAscension(
@@ -2362,43 +2380,10 @@ export async function selectMultiplayerAscension(
                         .selectedPowerPosition
                 );
 
-            /*
-             * Convert them back into our
-             * smaller Firestore format.
-             */
-
-            const updatedPicks:
-                MultiplayerDraftPick[] =
-                ascendedPicks.map(
-                    (pick) => ({
-                        characterId:
-                        pick.character.id,
-
-                        position:
-                        pick.position,
-
-                        basePower:
-                        pick.basePower,
-
-                        power:
-                        pick.power,
-
-                        grade:
-                        pick.grade,
-
-                        hasSynergy:
-                            pick.hasSynergy ??
-                            false,
-
-                        ascensionBonus:
-                            pick.ascensionBonus ??
-                            0,
-                    })
+            const updatedPicks =
+                draftPicksToMultiplayerPicks(
+                    ascendedPicks
                 );
-
-            /*
-             * PRIVATE DATA
-             */
 
             transaction.update(
                 playerStateRef,
@@ -2411,29 +2396,297 @@ export async function selectMultiplayerAscension(
                 }
             );
 
-
-            /*
-             * PUBLIC DATA
-             *
-             * Selecting an Ascension ONLY marks
-             * this player as finished.
-             *
-             * A separate host-controlled function
-             * will move the match to reveal once
-             * both players are done.
-             */
-
             transaction.update(
                 matchRef,
+
                 isHost
                     ? {
                         hostAscensionSelected:
                             true,
                     }
+
                     : {
                         guestAscensionSelected:
                             true,
                     }
+            );
+        }
+    );
+}
+
+export async function advanceAscensionToDisruptionIfReady(
+    code: string,
+    uid: string
+) {
+    const normalizedCode =
+        code.trim().toUpperCase();
+
+    const matchRef =
+        doc(
+            db,
+            "draftMatches",
+            normalizedCode
+        );
+
+    await runTransaction(
+        db,
+        async (transaction) => {
+            const snapshot =
+                await transaction.get(
+                    matchRef
+                );
+
+            if (!snapshot.exists()) {
+                throw new Error(
+                    "MATCH_NOT_FOUND"
+                );
+            }
+
+            const match =
+                snapshot.data();
+
+            if (
+                match.status !==
+                "ascension"
+            ) {
+                return;
+            }
+
+            if (
+                match.host.uid !==
+                uid
+            ) {
+                throw new Error(
+                    "ONLY_HOST_CAN_ADVANCE"
+                );
+            }
+
+            if (
+                !match
+                    .hostAscensionSelected ||
+
+                !match
+                    .guestAscensionSelected
+            ) {
+                return;
+            }
+
+            transaction.update(
+                matchRef,
+                {
+                    status:
+                        "disruption",
+                }
+            );
+        }
+    );
+}
+
+export async function selectMultiplayerDisruption(
+    code: string,
+    uid: string,
+    disruption: Disruption
+) {
+    const normalizedCode =
+        code.trim().toUpperCase();
+
+    const matchRef =
+        doc(
+            db,
+            "draftMatches",
+            normalizedCode
+        );
+
+    const playerStateRef =
+        doc(
+            db,
+            "draftMatches",
+            normalizedCode,
+            "playerStates",
+            uid
+        );
+
+    await runTransaction(
+        db,
+        async (transaction) => {
+            const matchSnapshot =
+                await transaction.get(
+                    matchRef
+                );
+
+            const playerSnapshot =
+                await transaction.get(
+                    playerStateRef
+                );
+
+            if (
+                !matchSnapshot.exists()
+            ) {
+                throw new Error(
+                    "MATCH_NOT_FOUND"
+                );
+            }
+
+            if (
+                !playerSnapshot.exists()
+            ) {
+                throw new Error(
+                    "PLAYER_STATE_NOT_FOUND"
+                );
+            }
+
+            const match =
+                matchSnapshot.data();
+
+            const playerState =
+                playerSnapshot.data() as
+                    MultiplayerDraftPlayerState;
+
+            if (
+                match.status !==
+                "disruption"
+            ) {
+                throw new Error(
+                    "NOT_DISRUPTION_PHASE"
+                );
+            }
+
+            const isHost =
+                match.host.uid ===
+                uid;
+
+            const isGuest =
+                match.guest?.uid ===
+                uid;
+
+            if (
+                !isHost &&
+                !isGuest
+            ) {
+                throw new Error(
+                    "NOT_IN_MATCH"
+                );
+            }
+
+            if (
+                playerState
+                    .selectedDisruption
+            ) {
+                throw new Error(
+                    "DISRUPTION_ALREADY_SELECTED"
+                );
+            }
+
+            if (
+                !playerState
+                    .disruptionChoices
+                    .includes(
+                        disruption
+                    )
+            ) {
+                throw new Error(
+                    "INVALID_DISRUPTION"
+                );
+            }
+
+            /*
+             * IMPORTANT:
+             *
+             * We only save what THIS player
+             * selected.
+             *
+             * We DO NOT modify the opponent's
+             * picks here.
+             */
+            transaction.update(
+                playerStateRef,
+                {
+                    selectedDisruption:
+                    disruption,
+                }
+            );
+
+            transaction.update(
+                matchRef,
+
+                isHost
+                    ? {
+                        hostDisruptionSelected:
+                            true,
+                    }
+
+                    : {
+                        guestDisruptionSelected:
+                            true,
+                    }
+            );
+        }
+    );
+}
+
+export async function advanceDisruptionToRevealIfReady(
+    code: string,
+    uid: string
+) {
+    const normalizedCode =
+        code.trim().toUpperCase();
+
+    const matchRef =
+        doc(
+            db,
+            "draftMatches",
+            normalizedCode
+        );
+
+    await runTransaction(
+        db,
+        async (transaction) => {
+            const snapshot =
+                await transaction.get(
+                    matchRef
+                );
+
+            if (!snapshot.exists()) {
+                throw new Error(
+                    "MATCH_NOT_FOUND"
+                );
+            }
+
+            const match =
+                snapshot.data();
+
+            if (
+                match.status !==
+                "disruption"
+            ) {
+                return;
+            }
+
+            if (
+                match.host.uid !==
+                uid
+            ) {
+                throw new Error(
+                    "ONLY_HOST_CAN_ADVANCE"
+                );
+            }
+
+            if (
+                !match
+                    .hostDisruptionSelected ||
+
+                !match
+                    .guestDisruptionSelected
+            ) {
+                return;
+            }
+
+            transaction.update(
+                matchRef,
+                {
+                    status:
+                        "reveal",
+                }
             );
         }
     );
@@ -2584,10 +2837,12 @@ export async function completeDraftMatch(
 
             if (
                 !match.hostAscensionSelected ||
-                !match.guestAscensionSelected
+                !match.guestAscensionSelected ||
+                !match.hostDisruptionSelected ||
+                !match.guestDisruptionSelected
             ) {
                 throw new Error(
-                    "ASCENSIONS_NOT_COMPLETE"
+                    "FINAL_SELECTIONS_NOT_COMPLETE"
                 );
             }
 
@@ -2640,27 +2895,49 @@ export async function completeDraftMatch(
                 guestStateSnapshot.data() as
                     MultiplayerDraftPlayerState;
 
+            if (
+                !hostState.selectedDisruption ||
+                !guestState.selectedDisruption
+            ) {
+                throw new Error(
+                    "DISRUPTIONS_NOT_COMPLETE"
+                );
+            }
 
-            let hostPositionWins = 0;
-            let guestPositionWins = 0;
+
+            const finalHostPicks =
+                getFinalMultiplayerPicks(
+                    hostState,
+                    guestState
+                        .selectedDisruption
+                );
 
 
-            /*
-             * Compare the 8 normal positions.
-             */
+            const finalGuestPicks =
+                getFinalMultiplayerPicks(
+                    guestState,
+                    hostState
+                        .selectedDisruption
+                );
+
+
+            let hostMatchupPoints = 0;
+            let guestMatchupPoints = 0;
+
+
             for (
                 const position
                 of draftPositions
                 ) {
                 const hostPick =
-                    hostState.picks.find(
+                    finalHostPicks.find(
                         (pick) =>
                             pick.position ===
                             position
                     );
 
                 const guestPick =
-                    guestState.picks.find(
+                    finalGuestPicks.find(
                         (pick) =>
                             pick.position ===
                             position
@@ -2679,33 +2956,36 @@ export async function completeDraftMatch(
                     hostPick.power >
                     guestPick.power
                 ) {
-                    hostPositionWins++;
+                    hostMatchupPoints++;
                 } else if (
                     guestPick.power >
                     hostPick.power
                 ) {
-                    guestPositionWins++;
+                    guestMatchupPoints++;
                 }
             }
 
+            if (
+                !hostState.selectedPowerPosition ||
+                !guestState.selectedPowerPosition
+            ) {
+                throw new Error(
+                    "POWER_POSITION_MISSING"
+                );
+            }
 
-            /*
-             * Compare the Power Positions.
-             *
-             * They don't have to be the same
-             * position type. This is simply
-             * Power Position vs Power Position.
-             */
+
             const hostPowerPick =
-                hostState.picks.find(
+                finalHostPicks.find(
                     (pick) =>
                         pick.position ===
                         hostState
                             .selectedPowerPosition
                 );
 
+
             const guestPowerPick =
-                guestState.picks.find(
+                finalGuestPicks.find(
                     (pick) =>
                         pick.position ===
                         guestState
@@ -2718,7 +2998,7 @@ export async function completeDraftMatch(
                 !guestPowerPick
             ) {
                 throw new Error(
-                    "POWER_POSITION_MISSING"
+                    "POWER_POSITION_PICK_MISSING"
                 );
             }
 
@@ -2727,35 +3007,35 @@ export async function completeDraftMatch(
                 hostPowerPick.power >
                 guestPowerPick.power
             ) {
-                hostPositionWins +=
+                hostMatchupPoints +=
                     getPowerPositionMatchupPoints(
-                        hostState.selectedPowerPosition
+                        hostState
+                            .selectedPowerPosition
                     );
             } else if (
                 guestPowerPick.power >
                 hostPowerPick.power
             ) {
-                guestPositionWins +=
+                guestMatchupPoints +=
                     getPowerPositionMatchupPoints(
-                        guestState.selectedPowerPosition
+                        guestState
+                            .selectedPowerPosition
                     );
             }
 
 
             const hostTotalPower =
-                hostState.picks.reduce(
+                finalHostPicks.reduce(
                     (total, pick) =>
-                        total +
-                        pick.power,
+                        total + pick.power,
                     0
                 );
 
 
             const guestTotalPower =
-                guestState.picks.reduce(
+                finalGuestPicks.reduce(
                     (total, pick) =>
-                        total +
-                        pick.power,
+                        total + pick.power,
                     0
                 );
 
@@ -2765,29 +3045,19 @@ export async function completeDraftMatch(
                 null;
 
 
-            /*
-             * Primary:
-             * Position victories.
-             */
             if (
-                hostPositionWins >
-                guestPositionWins
+                hostMatchupPoints >
+                guestMatchupPoints
             ) {
                 winnerUid =
                     match.host.uid;
             } else if (
-                guestPositionWins >
-                hostPositionWins
+                guestMatchupPoints >
+                hostMatchupPoints
             ) {
                 winnerUid =
                     match.guest.uid;
-            }
-
-            /*
-             * Tiebreak:
-             * Total team power.
-             */
-            else if (
+            } else if (
                 hostTotalPower >
                 guestTotalPower
             ) {
@@ -2802,10 +3072,6 @@ export async function completeDraftMatch(
             }
 
 
-            /*
-             * winnerUid remains null
-             * only for a true draw.
-             */
             transaction.update(
                 matchRef,
                 {
@@ -2819,6 +3085,40 @@ export async function completeDraftMatch(
                 }
             );
         }
+    );
+}
+
+export function getFinalMultiplayerPicks(
+    state:
+    MultiplayerDraftPlayerState,
+
+    incomingDisruption:
+        Disruption | null
+): MultiplayerDraftPick[] {
+    const normalPicks =
+        multiplayerPicksToDraftPicks(
+            state.picks
+        );
+
+    if (!incomingDisruption) {
+        return draftPicksToMultiplayerPicks(
+            normalPicks
+        );
+    }
+
+    const disruptedPicks =
+        applyDisruption(
+            normalPicks,
+
+            incomingDisruption,
+
+            state.selectedPowerPosition,
+
+            state.selectedAscension
+        );
+
+    return draftPicksToMultiplayerPicks(
+        disruptedPicks
     );
 }
 
@@ -3004,6 +3304,9 @@ export async function prepareDraftRematch(
     const ascensionChoices =
         getRandomAscensions(3);
 
+    const disruptionChoices =
+        getRandomDisruptions(3);
+
     await runTransaction(
         db,
         async (transaction) => {
@@ -3088,6 +3391,11 @@ export async function prepareDraftRematch(
                     ascensionChoices,
 
                     selectedAscension:
+                        null,
+
+                    disruptionChoices,
+
+                    selectedDisruption:
                         null,
                 }
             );
@@ -3209,6 +3517,14 @@ export async function startDraftRematchIfReady(
 
                     guestAscensionSelected:
                         false,
+
+                    hostDisruptionSelected:
+                        false,
+
+                    guestDisruptionSelected:
+                        false,
+                    hostDrawOrder: [],
+                    guestDrawOrder: [],
 
                     // -------------------------
                     // REMATCH FLAGS
@@ -3517,6 +3833,7 @@ export async function claimDraftForfeit(
                 "power-selection",
                 "drafting",
                 "ascension",
+                "disruption",
             ];
 
             if (

@@ -1543,3 +1543,850 @@ export function applySynergyBonuses(
         }
     );
 }
+
+// =============================================================
+// DISRUPTIONS
+// =============================================================
+
+export type Disruption =
+    | "Sabotage"
+    | "Pressure Point"
+    | "Disrupt Formation"
+    | "Break the Line"
+    | "Cut the Supply"
+    | "Target Lock"
+    | "Anti-Synergy"
+    | "Crush Momentum"
+    | "Expose Weakness"
+    | "Level the Field"
+    | "Isolation"
+    | "Decapitation Strike"
+    | "Disarm"
+    | "Fortress Breaker";
+
+
+export const disruptionInfo: Record<
+    Disruption,
+    {
+        description: string;
+    }
+> = {
+    Sabotage: {
+        description:
+            "Enemy's highest-rated character loses 6% Power.",
+    },
+
+    "Pressure Point": {
+        description:
+            "Enemy's lowest-rated character loses 8% Power.",
+    },
+
+    "Disrupt Formation": {
+        description:
+            "Enemy Captain, Vice Captain, and Strategist lose 3% Power.",
+    },
+
+    "Break the Line": {
+        description:
+            "Enemy Vanguard, Ace, and Power Position lose 3% Power.",
+    },
+
+    "Cut the Supply": {
+        description:
+            "Enemy Support, Scout, and Strategist lose 3% Power.",
+    },
+
+    "Target Lock": {
+        description:
+            "Enemy Power Position loses 8% Power.",
+    },
+
+    "Anti-Synergy": {
+        description:
+            "Enemy cannot have Series Link bonuses.",
+    },
+
+    "Crush Momentum": {
+        description:
+            "Enemy characters rated A or higher lose 2% Power.",
+    },
+
+    "Expose Weakness": {
+        description:
+            "Enemy's bottom 3 characters lose 4% Power.",
+    },
+
+    "Level the Field": {
+        description:
+            "Enemy's top 3 characters lose 3% Power.",
+    },
+
+    Isolation: {
+        description:
+            "Enemy's largest same-series group loses 3% Power.",
+    },
+
+    "Decapitation Strike": {
+        description:
+            "Enemy Captain loses 8% Power.",
+    },
+
+    Disarm: {
+        description:
+            "Enemy Assassin, Ace, and Scout lose 3% Power.",
+    },
+
+    "Fortress Breaker": {
+        description:
+            "Enemy Vanguard and Support lose 4% Power.",
+    },
+};
+
+
+export function getRandomDisruptions(
+    count = 3
+): Disruption[] {
+    const disruptions =
+        Object.keys(
+            disruptionInfo
+        ) as Disruption[];
+
+    return [...disruptions]
+        .sort(
+            () =>
+                Math.random() - 0.5
+        )
+        .slice(
+            0,
+            count
+        );
+}
+
+
+// =============================================================
+// DISRUPTION POWER HELPERS
+// =============================================================
+
+function removePower(
+    pick: DraftPick,
+    amount: number
+): DraftPick {
+    /*
+     * U characters are completely immune
+     * to Disruptions.
+     */
+    if (
+        isUltraPick(
+            pick.character,
+            pick.position
+        )
+    ) {
+        return {
+            ...pick,
+
+            power: 99,
+            grade: "U",
+
+            disruptionPenalty:
+                pick.disruptionPenalty ??
+                0,
+        };
+    }
+
+    const previousPower =
+        pick.power;
+
+    const power =
+        Math.max(
+            0,
+            previousPower - amount
+        );
+
+    const actualLoss =
+        previousPower - power;
+
+    return {
+        ...pick,
+
+        power,
+
+        grade:
+            getDraftPickGrade(
+                pick.character,
+                pick.position,
+                power
+            ),
+
+        disruptionPenalty:
+            (
+                pick.disruptionPenalty ??
+                0
+            ) + actualLoss,
+    };
+}
+
+
+function removePercentagePower(
+    pick: DraftPick,
+    percentage: number
+): DraftPick {
+    const loss =
+        Math.round(
+            pick.power *
+            percentage
+        );
+
+    return removePower(
+        pick,
+        loss
+    );
+}
+
+export function applyDisruption(
+    picks: DraftPick[],
+    disruption: Disruption,
+    powerPosition: PowerPosition | null,
+    selectedAscension: Ascension | null = null
+): DraftPick[] {
+    switch (disruption) {
+        // =====================================================
+        // HIGHEST CHARACTER -6%
+        // =====================================================
+
+        case "Sabotage": {
+            if (picks.length === 0) {
+                return picks;
+            }
+
+            const highestPower =
+                Math.max(
+                    ...picks.map(
+                        (pick) =>
+                            pick.power
+                    )
+                );
+
+            let applied = false;
+
+            return picks.map(
+                (pick) => {
+                    if (
+                        applied ||
+                        pick.power !==
+                        highestPower
+                    ) {
+                        return pick;
+                    }
+
+                    applied = true;
+
+                    return removePercentagePower(
+                        pick,
+                        0.06
+                    );
+                }
+            );
+        }
+
+
+        // =====================================================
+        // LOWEST CHARACTER -8%
+        // =====================================================
+
+        case "Pressure Point": {
+            if (picks.length === 0) {
+                return picks;
+            }
+
+            const lowestPower =
+                Math.min(
+                    ...picks.map(
+                        (pick) =>
+                            pick.power
+                    )
+                );
+
+            let applied = false;
+
+            return picks.map(
+                (pick) => {
+                    if (
+                        applied ||
+                        pick.power !==
+                        lowestPower
+                    ) {
+                        return pick;
+                    }
+
+                    applied = true;
+
+                    return removePercentagePower(
+                        pick,
+                        0.08
+                    );
+                }
+            );
+        }
+
+
+        // =====================================================
+        // CAPTAIN / VICE / STRATEGIST -3%
+        // =====================================================
+
+        case "Disrupt Formation": {
+            return picks.map(
+                (pick) =>
+                    pick.position ===
+                    "Captain" ||
+
+                    pick.position ===
+                    "Vice Captain" ||
+
+                    pick.position ===
+                    "Strategist"
+
+                        ? removePercentagePower(
+                            pick,
+                            0.03
+                        )
+
+                        : pick
+            );
+        }
+
+
+        // =====================================================
+        // VANGUARD / ACE / POWER POSITION -3%
+        // =====================================================
+
+        case "Break the Line": {
+            return picks.map(
+                (pick) => {
+                    const affected =
+                        pick.position ===
+                        "Vanguard" ||
+
+                        pick.position ===
+                        "Ace" ||
+
+                        (
+                            powerPosition !==
+                            null &&
+
+                            pick.position ===
+                            powerPosition
+                        );
+
+                    return affected
+                        ? removePercentagePower(
+                            pick,
+                            0.03
+                        )
+                        : pick;
+                }
+            );
+        }
+
+
+        // =====================================================
+        // SUPPORT / SCOUT / STRATEGIST -3%
+        // =====================================================
+
+        case "Cut the Supply": {
+            return picks.map(
+                (pick) =>
+                    pick.position ===
+                    "Support" ||
+
+                    pick.position ===
+                    "Scout" ||
+
+                    pick.position ===
+                    "Strategist"
+
+                        ? removePercentagePower(
+                            pick,
+                            0.03
+                        )
+
+                        : pick
+            );
+        }
+
+
+        // =====================================================
+        // POWER POSITION -8%
+        // =====================================================
+
+        case "Target Lock": {
+            if (!powerPosition) {
+                return picks;
+            }
+
+            return picks.map(
+                (pick) =>
+                    pick.position ===
+                    powerPosition
+
+                        ? removePercentagePower(
+                            pick,
+                            0.08
+                        )
+
+                        : pick
+            );
+        }
+
+
+        // =====================================================
+        // REMOVE SERIES LINK
+        // =====================================================
+
+        case "Anti-Synergy": {
+            return picks.map(
+                (pick) => {
+                    /*
+                     * Current stored Power is:
+                     *
+                     * Base
+                     * + Series Link
+                     * + Ascension
+                     */
+
+                    const ascensionBonus =
+                        pick.ascensionBonus ??
+                        0;
+
+                    const preAscensionPower =
+                        pick.power -
+                        ascensionBonus;
+
+                    /*
+                     * This gives us the ACTUAL
+                     * Series Link bonus, including
+                     * any 99 cap that occurred.
+                     */
+                    const seriesLinkBonus =
+                        Math.max(
+                            0,
+
+                            preAscensionPower -
+                            pick.basePower
+                        );
+
+                    /*
+                     * Perfect Chemistry is literally
+                     * an amplification of Series Link.
+                     *
+                     * If Series Link is disabled,
+                     * Perfect Chemistry must disappear
+                     * too.
+                     */
+                    const perfectChemistryBonus =
+                        selectedAscension ===
+                        "Perfect Chemistry"
+
+                            ? ascensionBonus
+
+                            : 0;
+
+                    const updated =
+                        removePower(
+                            pick,
+
+                            seriesLinkBonus +
+                            perfectChemistryBonus
+                        );
+
+                    return {
+                        ...updated,
+
+                        /*
+                         * Visually remove the
+                         * Series Link indicator too.
+                         */
+                        hasSynergy:
+                            false,
+                    };
+                }
+            );
+        }
+
+
+        // =====================================================
+        // A OR HIGHER -2%
+        // =====================================================
+
+        case "Crush Momentum": {
+            return picks.map(
+                (pick) =>
+                    pick.power >= 80
+
+                        ? removePercentagePower(
+                            pick,
+                            0.02
+                        )
+
+                        : pick
+            );
+        }
+
+
+        // =====================================================
+        // BOTTOM 3 -4%
+        // =====================================================
+
+        case "Expose Weakness": {
+            const bottomThree =
+                [...picks]
+                    .sort(
+                        (a, b) =>
+                            a.power -
+                            b.power
+                    )
+                    .slice(
+                        0,
+                        3
+                    );
+
+            const positions =
+                new Set(
+                    bottomThree.map(
+                        (pick) =>
+                            pick.position
+                    )
+                );
+
+            return picks.map(
+                (pick) =>
+                    positions.has(
+                        pick.position
+                    )
+
+                        ? removePercentagePower(
+                            pick,
+                            0.04
+                        )
+
+                        : pick
+            );
+        }
+
+
+        // =====================================================
+        // TOP 3 -3%
+        // =====================================================
+
+        case "Level the Field": {
+            const topThree =
+                [...picks]
+                    .sort(
+                        (a, b) =>
+                            b.power -
+                            a.power
+                    )
+                    .slice(
+                        0,
+                        3
+                    );
+
+            const positions =
+                new Set(
+                    topThree.map(
+                        (pick) =>
+                            pick.position
+                    )
+                );
+
+            return picks.map(
+                (pick) =>
+                    positions.has(
+                        pick.position
+                    )
+
+                        ? removePercentagePower(
+                            pick,
+                            0.03
+                        )
+
+                        : pick
+            );
+        }
+
+
+        // =====================================================
+        // LARGEST SAME-SERIES GROUP -3%
+        // =====================================================
+
+        case "Isolation": {
+            const groups =
+                new Map<
+                    string,
+                    DraftPick[]
+                >();
+
+            for (
+                const pick
+                of picks
+                ) {
+                const anime =
+                    pick.character.anime;
+
+                const current =
+                    groups.get(
+                        anime
+                    ) ?? [];
+
+                current.push(
+                    pick
+                );
+
+                groups.set(
+                    anime,
+                    current
+                );
+            }
+
+            const largestGroup =
+                [...groups.entries()]
+                    .filter(
+                        ([, group]) =>
+                            group.length >= 2
+                    )
+                    .sort(
+                        (a, b) => {
+                            /*
+                             * Biggest group wins.
+                             */
+                            if (
+                                b[1].length !==
+                                a[1].length
+                            ) {
+                                return (
+                                    b[1].length -
+                                    a[1].length
+                                );
+                            }
+
+                            /*
+                             * Tie:
+                             * target the stronger
+                             * group.
+                             */
+                            const aPower =
+                                a[1].reduce(
+                                    (
+                                        total,
+                                        pick
+                                    ) =>
+                                        total +
+                                        pick.power,
+                                    0
+                                );
+
+                            const bPower =
+                                b[1].reduce(
+                                    (
+                                        total,
+                                        pick
+                                    ) =>
+                                        total +
+                                        pick.power,
+                                    0
+                                );
+
+                            return (
+                                bPower -
+                                aPower
+                            );
+                        }
+                    )[0];
+
+            if (!largestGroup) {
+                return picks;
+            }
+
+            const selectedAnime =
+                largestGroup[0];
+
+            return picks.map(
+                (pick) =>
+                    pick.character.anime ===
+                    selectedAnime
+
+                        ? removePercentagePower(
+                            pick,
+                            0.03
+                        )
+
+                        : pick
+            );
+        }
+
+
+        // =====================================================
+        // CAPTAIN -8%
+        // =====================================================
+
+        case "Decapitation Strike": {
+            return picks.map(
+                (pick) =>
+                    pick.position ===
+                    "Captain"
+
+                        ? removePercentagePower(
+                            pick,
+                            0.08
+                        )
+
+                        : pick
+            );
+        }
+
+
+        // =====================================================
+        // ASSASSIN / ACE / SCOUT -3%
+        // =====================================================
+
+        case "Disarm": {
+            return picks.map(
+                (pick) =>
+                    pick.position ===
+                    "Assassin" ||
+
+                    pick.position ===
+                    "Ace" ||
+
+                    pick.position ===
+                    "Scout"
+
+                        ? removePercentagePower(
+                            pick,
+                            0.03
+                        )
+
+                        : pick
+            );
+        }
+
+
+        // =====================================================
+        // VANGUARD / SUPPORT -4%
+        // =====================================================
+
+        case "Fortress Breaker": {
+            return picks.map(
+                (pick) =>
+                    pick.position ===
+                    "Vanguard" ||
+
+                    pick.position ===
+                    "Support"
+
+                        ? removePercentagePower(
+                            pick,
+                            0.04
+                        )
+
+                        : pick
+            );
+        }
+
+
+        default:
+            return picks;
+    }
+}
+
+export type DisruptionPreviewEntry = {
+    position:
+        DraftPick["position"];
+
+    affected: boolean;
+
+    beforePower: number;
+    afterPower: number;
+
+    powerLoss: number;
+
+    beforeGrade: string;
+    afterGrade: string;
+};
+
+
+export function getDisruptionPreview(
+    picks: DraftPick[],
+    disruption: Disruption,
+    powerPosition: PowerPosition | null,
+    selectedAscension: Ascension | null = null
+): DisruptionPreviewEntry[] {
+    const previewPicks =
+        applyDisruption(
+            picks,
+            disruption,
+            powerPosition,
+            selectedAscension
+        );
+
+    return picks.map(
+        (originalPick) => {
+            const previewPick =
+                previewPicks.find(
+                    (pick) =>
+                        pick.position ===
+                        originalPick.position
+                );
+
+            if (!previewPick) {
+                return {
+                    position:
+                    originalPick.position,
+
+                    affected:
+                        false,
+
+                    beforePower:
+                    originalPick.power,
+
+                    afterPower:
+                    originalPick.power,
+
+                    powerLoss:
+                        0,
+
+                    beforeGrade:
+                    originalPick.grade,
+
+                    afterGrade:
+                    originalPick.grade,
+                };
+            }
+
+            const powerLoss =
+                originalPick.power -
+                previewPick.power;
+
+            return {
+                position:
+                originalPick.position,
+
+                affected:
+                    powerLoss > 0,
+
+                beforePower:
+                originalPick.power,
+
+                afterPower:
+                previewPick.power,
+
+                powerLoss,
+
+                beforeGrade:
+                originalPick.grade,
+
+                afterGrade:
+                previewPick.grade,
+            };
+        }
+    );
+}

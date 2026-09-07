@@ -5,20 +5,27 @@ import {onAuthStateChanged, type User,} from "firebase/auth";
 import {auth,} from "@/lib/firebase";
 import {
     beginDraftRematchIfReady,
-    completeDraftMatch, getDraftPlayerState,
+    completeDraftMatch, getDraftPlayerState, getFinalMultiplayerPicks,
     listenToDraftMatch,
     prepareDraftRematch,
     requestDraftRematch, saveDraftMatchHistory, startDraftRematchIfReady,
 } from "@/lib/multiplayerDraft";
 import {draftCharacters,} from "@/data/draftCharacters";
-import {draftPositions, ascensionInfo, getDraftPickGrade, getPowerPositionMatchupPoints,} from "@/data/draftLogic";
+import {
+    draftPositions,
+    ascensionInfo,
+    getDraftPickGrade,
+    getPowerPositionMatchupPoints,
+    getLetterGrade, disruptionInfo,
+} from "@/data/draftLogic";
 import type {DraftMatch, MultiplayerDraftPlayerState,} from "@/types/multiplayerDraft";
 
 type MultiplayerRevealPhase =
     | "intro"
+    | "lineup"
     | "ascension"
-    | "matchups"
-    | "summary";
+    | "disruption"
+    | "final";
 
 type MatchupOutcome =
     | "win"
@@ -686,6 +693,73 @@ function getPreAscensionPower(
     );
 }
 
+function getPreAscensionPick(
+    pick:
+    MultiplayerDraftPlayerState[
+        "picks"
+        ][number]
+) {
+    const power =
+        getPreAscensionPower(
+            pick
+        );
+
+    const character =
+        draftCharacters.find(
+            (character) =>
+                character.id ===
+                pick.characterId
+        );
+
+    return {
+        ...pick,
+
+        power,
+
+        grade:
+            character
+                ? getDraftPickGrade(
+                    character,
+                    pick.position,
+                    power
+                )
+                : getLetterGrade(
+                    power
+                ),
+
+        disruptionPenalty:
+            0,
+    };
+}
+
+function getMultiplayerPickGrade(
+    pick:
+    MultiplayerDraftPlayerState[
+        "picks"
+        ][number],
+
+    power: number
+) {
+    const character =
+        draftCharacters.find(
+            (character) =>
+                character.id ===
+                pick.characterId
+        );
+
+    if (!character) {
+        return getLetterGrade(
+            power
+        );
+    }
+
+    return getDraftPickGrade(
+        character,
+        pick.position,
+        power
+    );
+}
+
 function getMatchupOutcome(
     slot: {
         myPick:
@@ -772,10 +846,14 @@ function CinematicMatchup({
     }
 
     const myPower =
-        slot.myPick.power;
+        getPreAscensionPower(
+            slot.myPick
+        );
 
     const opponentPower =
-        slot.opponentPick.power;
+        getPreAscensionPower(
+            slot.opponentPick
+        );
 
     const myGrade =
         getDraftPickGrade(
@@ -790,31 +868,6 @@ function CinematicMatchup({
             slot.opponentPick.position,
             opponentPower
         );
-
-    const outcome =
-        getMatchupOutcome(slot);
-
-    const myWon =
-        outcome === "win";
-
-    const opponentWon =
-        outcome === "loss";
-
-    const myMatchupPoints =
-        slot.isPowerPosition
-            ? getPowerPositionMatchupPoints(
-                myState.selectedPowerPosition
-            )
-            : 1;
-
-
-    const opponentMatchupPoints =
-        slot.isPowerPosition
-            ? getPowerPositionMatchupPoints(
-                opponentState
-                    .selectedPowerPosition
-            )
-            : 1;
 
     const myGradeStyle =
         getGradeStyle(myGrade);
@@ -912,17 +965,7 @@ function CinematicMatchup({
                 <div className="flex justify-end">
                     <div className="animate-[battleCardLeft_850ms_cubic-bezier(.16,1,.3,1)_both]">
 
-                        <div
-                            className={`
-                                ${
-                                myWon
-                                    ? "animate-[battleWinner_700ms_950ms_cubic-bezier(.16,1,.3,1)_both]"
-                                    : opponentWon
-                                        ? "animate-[battleLoser_700ms_950ms_ease-out_both]"
-                                        : ""
-                            }
-                            `}
-                        >
+                        <div>
                             <div
                                 className={`
                                     relative
@@ -1017,19 +1060,6 @@ function CinematicMatchup({
                                             }
                                         </p>
                                     )}
-
-                                    {(slot.myPick
-                                            .ascensionBonus ??
-                                        0) > 0 && (
-                                        <p className="mt-2 text-xs font-black text-yellow-200">
-                                            +
-                                            {
-                                                slot.myPick
-                                                    .ascensionBonus
-                                            }{" "}
-                                            Ascension
-                                        </p>
-                                    )}
                                 </div>
                             </div>
                         </div>
@@ -1090,17 +1120,7 @@ function CinematicMatchup({
                 <div className="flex justify-start">
                     <div className="animate-[battleCardRight_850ms_cubic-bezier(.16,1,.3,1)_both]">
 
-                        <div
-                            className={`
-                                ${
-                                opponentWon
-                                    ? "animate-[battleWinner_700ms_950ms_cubic-bezier(.16,1,.3,1)_both]"
-                                    : myWon
-                                        ? "animate-[battleLoser_700ms_950ms_ease-out_both]"
-                                        : ""
-                            }
-                            `}
-                        >
+                        <div>
                             <div
                                 className={`
                                     relative
@@ -1186,83 +1206,1076 @@ function CinematicMatchup({
                                             }
                                         </p>
                                     )}
-
-                                    {(slot.opponentPick
-                                            .ascensionBonus ??
-                                        0) > 0 && (
-                                        <p className="mt-2 text-xs font-black text-yellow-200">
-                                            +
-                                            {
-                                                slot.opponentPick
-                                                    .ascensionBonus
-                                            }{" "}
-                                            Ascension
-                                        </p>
-                                    )}
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
+        </div>
+    );
+}
+
+function AnimatedPowerNumber({
+                                 from,
+                                 to,
+                                 effectType,
+                             }: {
+    from: number;
+    to: number;
+    effectType:
+        | "ascension"
+        | "disruption";
+}) {
+    const [
+        displayedPower,
+        setDisplayedPower,
+    ] = useState(from);
+
+    useEffect(() => {
+        setDisplayedPower(from);
+
+        let frameId = 0;
+
+        const delay =
+            window.setTimeout(
+                () => {
+                    const start =
+                        performance.now();
+
+                    const duration =
+                        850;
+
+                    function animate(
+                        now: number
+                    ) {
+                        const progress =
+                            Math.min(
+                                1,
+                                (
+                                    now -
+                                    start
+                                ) /
+                                duration
+                            );
+
+                        const eased =
+                            1 -
+                            Math.pow(
+                                1 -
+                                progress,
+                                3
+                            );
+
+                        setDisplayedPower(
+                            Math.round(
+                                from +
+                                (
+                                    to -
+                                    from
+                                ) *
+                                eased
+                            )
+                        );
+
+                        if (
+                            progress < 1
+                        ) {
+                            frameId =
+                                requestAnimationFrame(
+                                    animate
+                                );
+                        }
+                    }
+
+                    frameId =
+                        requestAnimationFrame(
+                            animate
+                        );
+                },
+                500
+            );
+
+        return () => {
+            clearTimeout(delay);
+
+            cancelAnimationFrame(
+                frameId
+            );
+        };
+    }, [
+        from,
+        to,
+    ]);
+
+    return (
+        <div className="flex items-center gap-1.5">
+
+            <span className="text-sm font-black tabular-nums text-white/35">
+                {from}
+            </span>
+
+            <span
+                className={`
+                    text-xs
+                    font-black
+
+                    ${
+                    effectType ===
+                    "ascension"
+                        ? "text-yellow-300/60"
+                        : "text-red-300/60"
+                }
+                `}
+            >
+                →
+            </span>
+
+            <span
+                className={`
+                    text-xl
+                    font-black
+                    tabular-nums
+
+                    ${
+                    effectType ===
+                    "ascension"
+                        ? `
+                                text-yellow-100
+                                drop-shadow-[0_0_10px_rgba(250,204,21,0.75)]
+                              `
+                        : `
+                                text-red-200
+                                drop-shadow-[0_0_10px_rgba(248,113,113,0.7)]
+                              `
+                }
+                `}
+            >
+                {displayedPower}
+            </span>
+
+        </div>
+    );
+}
+
+function EffectCharacterReveal({
+                                   beforePick,
+                                   afterPick,
+                                   character,
+                                   effectType,
+                               }: {
+    beforePick:
+        MultiplayerDraftPlayerState[
+            "picks"
+            ][number];
+
+    afterPick:
+        MultiplayerDraftPlayerState[
+            "picks"
+            ][number];
+
+    character:
+        typeof draftCharacters[number];
+
+    effectType:
+        | "ascension"
+        | "disruption";
+}) {
+    const difference =
+        afterPick.power -
+        beforePick.power;
+
+    const gradeStyle =
+        getGradeStyle(
+            afterPick.grade
+        );
+
+    return (
+        <div
+            className="
+                relative
+                flex
+                flex-col
+                items-center
+            "
+        >
+
+            {/* ===================================== */}
+            {/* AURA */}
+            {/* ===================================== */}
+
+            <div
+                className={`
+                    pointer-events-none
+                    absolute
+                    left-1/2
+                    top-[42%]
+                    h-[80%]
+                    w-[125%]
+                    -translate-x-1/2
+                    -translate-y-1/2
+                    rounded-full
+                    blur-[42px]
+
+                    ${
+                    effectType ===
+                    "ascension"
+                        ? `
+                                bg-yellow-300/20
+                                animate-pulse
+                              `
+                        : `
+                                bg-red-500/20
+                                animate-pulse
+                              `
+                }
+                `}
+            />
 
 
-            {/* MATCHUP RESULT */}
+            {/* SECONDARY AURA */}
+
+            <div
+                className={`
+                    pointer-events-none
+                    absolute
+                    left-1/2
+                    top-[42%]
+                    h-[55%]
+                    w-[90%]
+                    -translate-x-1/2
+                    -translate-y-1/2
+                    rounded-full
+                    blur-[22px]
+
+                    ${
+                    effectType ===
+                    "ascension"
+                        ? "bg-amber-100/15"
+                        : "bg-rose-300/10"
+                }
+                `}
+            />
+
+
+            {/* ===================================== */}
+            {/* ASCENSION ENERGY RING */}
+            {/* ===================================== */}
+
+            {effectType ===
+                "ascension" && (
+                    <>
+                        <div
+                            className="
+                            pointer-events-none
+                            absolute
+                            left-1/2
+                            top-[43%]
+                            h-[78%]
+                            w-[105%]
+                            -translate-x-1/2
+                            -translate-y-1/2
+                            rounded-[50%]
+                            border
+                            border-yellow-200/25
+                            animate-ping
+                        "
+                        />
+
+                        <div
+                            className="
+                            pointer-events-none
+                            absolute
+                            bottom-[14%]
+                            left-1/2
+                            h-[65%]
+                            w-[3px]
+                            -translate-x-1/2
+                            bg-gradient-to-t
+                            from-yellow-300/0
+                            via-yellow-200/35
+                            to-transparent
+                            blur-sm
+                        "
+                        />
+                    </>
+                )}
+
+
+            {/* ===================================== */}
+            {/* DISRUPTION ENERGY */}
+            {/* ===================================== */}
+
+            {effectType ===
+                "disruption" && (
+                    <>
+                        <div
+                            className="
+                            pointer-events-none
+                            absolute
+                            left-1/2
+                            top-[42%]
+                            h-[75%]
+                            w-[105%]
+                            -translate-x-1/2
+                            -translate-y-1/2
+                            rounded-[50%]
+                            border
+                            border-red-400/25
+                            animate-ping
+                        "
+                        />
+
+                        <div
+                            className="
+                            pointer-events-none
+                            absolute
+                            left-[12%]
+                            top-[20%]
+                            h-[3px]
+                            w-[78%]
+                            -rotate-[18deg]
+                            bg-gradient-to-r
+                            from-transparent
+                            via-red-400/70
+                            to-transparent
+                            blur-[1px]
+                        "
+                        />
+
+                        <div
+                            className="
+                            pointer-events-none
+                            absolute
+                            left-[15%]
+                            top-[55%]
+                            h-[2px]
+                            w-[72%]
+                            rotate-[13deg]
+                            bg-gradient-to-r
+                            from-transparent
+                            via-red-300/50
+                            to-transparent
+                            blur-[1px]
+                        "
+                        />
+                    </>
+                )}
+
+
+            {/* ===================================== */}
+            {/* CHARACTER */}
+            {/* ===================================== */}
+
+            <div
+                className={`
+                    relative
+                    z-10
+                    h-[285px]
+                    w-[195px]
+            
+                    ${
+                    effectType ===
+                    "ascension"
+                        ? `
+                            drop-shadow-[0_0_22px_rgba(250,204,21,0.5)]
+                          `
+                        : `
+                            drop-shadow-[0_0_22px_rgba(248,113,113,0.45)]
+                        `
+                    }
+                `}
+            >
+                <img
+                    src={
+                        character.imageUrl
+                    }
+                    alt={
+                        character.name
+                    }
+                    className="
+                        absolute
+                        inset-0
+                        h-full
+                        w-full
+                        rounded-[1.75rem]
+                        object-cover
+                        object-top
+                    "
+                />
+
+
+                {/* EDGE FADE */}
+
+                <div
+                    className="
+                        absolute
+                        inset-0
+                        rounded-[1.75rem]
+                        bg-gradient-to-t
+                        from-black
+                        via-transparent
+                        to-black/10
+                    "
+                />
+
+
+                {/* GRADE */}
+
+                <div
+                    className="
+                        absolute
+                        left-2.5
+                        top-2.5
+                        rounded-lg
+                        bg-black/65
+                        px-2
+                        py-1
+                        backdrop-blur-md
+                    "
+                >
+                    <span
+                        className={`
+                            text-xl
+                            font-black
+                            italic
+
+                            ${gradeStyle.grade}
+                        `}
+                    >
+                        {
+                            afterPick.grade
+                        }
+                    </span>
+                </div>
+
+
+                {/* NAME */}
+
+                <div
+                    className="
+                        absolute
+                        bottom-3
+                        left-3
+                        right-3
+                        text-left
+                    "
+                >
+                    <p className="truncate text-base font-black text-white">
+                        {
+                            character.name
+                        }
+                    </p>
+
+                    <p className="mt-0.5 truncate text-[9px] font-black uppercase tracking-widest text-white/40">
+                        {
+                            beforePick.position
+                        }
+                    </p>
+                </div>
+
+            </div>
+
+
+            {/* ===================================== */}
+            {/* POWER CHANGE */}
+            {/* ===================================== */}
+
+            <div
+                className={`
+                    relative
+                    z-20
+                    -mt-3
+                    flex
+                    items-center
+                    gap-2
+                    rounded-full
+                    border
+                    bg-black/80
+                    px-4
+                    py-2
+                    backdrop-blur-xl
+
+                    ${
+                    effectType ===
+                    "ascension"
+                        ? `
+                                border-yellow-300/30
+                                shadow-[0_0_18px_rgba(250,204,21,0.15)]
+                              `
+                        : `
+                                border-red-400/30
+                                shadow-[0_0_18px_rgba(248,113,113,0.14)]
+                              `
+                }
+                `}
+            >
+                <AnimatedPowerNumber
+                    from={
+                        beforePick.power
+                    }
+                    to={
+                        afterPick.power
+                    }
+                    effectType={
+                        effectType
+                    }
+                />
+
+
+                <span
+                    className={`
+                        text-[9px]
+                        font-black
+                        uppercase
+
+                        ${
+                        effectType ===
+                        "ascension"
+                            ? "text-yellow-300/70"
+                            : "text-red-300/70"
+                    }
+                    `}
+                >
+                    {difference > 0
+                        ? `+${difference}`
+                        : difference}
+                </span>
+
+            </div>
+
+        </div>
+    );
+}
+
+function getEffectColumns(
+    count: number
+) {
+    if (count <= 1) {
+        return 1;
+    }
+
+    if (count === 2) {
+        return 2;
+    }
+
+    if (count <= 6) {
+        return 3;
+    }
+
+    return 3;
+}
+
+
+function getEffectCardWidth(
+    count: number
+) {
+    if (count <= 1) {
+        return "w-[200px]";
+    }
+
+    if (count === 2) {
+        return "w-[170px]";
+    }
+
+    if (count === 3) {
+        return "w-[145px]";
+    }
+
+    if (count <= 6) {
+        return "w-[125px]";
+    }
+
+    return "w-[105px]";
+}
+
+function EffectRevealTeam({
+                              eyebrow,
+                              effectName,
+                              description,
+                              teamLabel,
+                              beforePicks,
+                              afterPicks,
+                              effectType,
+                          }: {
+    eyebrow: string;
+
+    effectName:
+        string | null;
+
+    description:
+        string | null;
+
+    teamLabel: string;
+
+    beforePicks:
+        MultiplayerDraftPlayerState[
+            "picks"
+            ];
+
+    afterPicks:
+        MultiplayerDraftPlayerState[
+            "picks"
+            ];
+
+    effectType:
+        | "ascension"
+        | "disruption";
+}) {
+    const changes =
+        beforePicks.flatMap(
+            (beforePick) => {
+                const afterPick =
+                    afterPicks.find(
+                        (pick) =>
+                            pick.position ===
+                            beforePick.position
+                    );
+
+                if (!afterPick) {
+                    return [];
+                }
+
+                const difference =
+                    afterPick.power -
+                    beforePick.power;
+
+                const affected =
+                    effectType ===
+                    "ascension"
+                        ? difference > 0
+                        : difference < 0;
+
+                if (!affected) {
+                    return [];
+                }
+
+                const character =
+                    draftCharacters.find(
+                        (character) =>
+                            character.id ===
+                            beforePick.characterId
+                    );
+
+                if (!character) {
+                    return [];
+                }
+
+                return [
+                    {
+                        beforePick,
+                        afterPick,
+                        character,
+                    },
+                ];
+            }
+        );
+
+
+    /*
+     * Shrink portraits when a large
+     * number of characters are affected.
+     */
+    const scaleClass =
+        changes.length <= 2
+            ? "scale-100"
+            : changes.length <= 4
+                ? "scale-[0.92]"
+                : changes.length <= 6
+                    ? "scale-[0.82]"
+                    : "scale-[0.72]";
+
+
+    return (
+        <div
+            className="
+                relative
+                flex
+                min-h-[470px]
+                flex-col
+            "
+        >
+
+            {/* EFFECT TITLE */}
+
+            <div className="relative z-20 text-center">
+
+                <p
+                    className={`
+                        text-[9px]
+                        font-black
+                        uppercase
+                        tracking-[0.32em]
+
+                        ${
+                        effectType ===
+                        "ascension"
+                            ? "text-yellow-300/55"
+                            : "text-red-300/55"
+                    }
+                    `}
+                >
+                    {eyebrow}
+                </p>
+
+
+                <h3
+                    className={`
+                        mt-1
+                        text-2xl
+                        font-black
+
+                        ${
+                        effectType ===
+                        "ascension"
+                            ? "text-yellow-100"
+                            : "text-red-100"
+                    }
+                    `}
+                >
+                    {
+                        effectName ??
+                        "None"
+                    }
+                </h3>
+
+
+                {description && (
+                    <p
+                        className="
+                            mx-auto
+                            mt-1
+                            max-w-lg
+                            line-clamp-2
+                            text-[10px]
+                            leading-4
+                            text-white/30
+                        "
+                    >
+                        {description}
+                    </p>
+                )}
+
+
+                <p className="mt-2 text-[8px] font-black uppercase tracking-[0.28em] text-white/20">
+                    {teamLabel}
+                </p>
+
+            </div>
+
+
+            {/* CHARACTERS */}
 
             <div
                 className="
-                    absolute
-                    inset-x-0
-                    bottom-6
-                    z-20
+                    relative
+                    z-10
                     flex
+                    flex-1
+                    items-start
                     justify-center
-                    px-4
+                    pt-3
                 "
             >
-                <div
-                    className={`
-                        animate-[battleResult_650ms_1150ms_cubic-bezier(.16,1,.3,1)_both]
-                        rounded-full
-                        border
-                        px-6
-                        py-3
-                        backdrop-blur-xl
-            
-                        ${
-                        outcome === "win"
-                            ? `
-                                border-emerald-400/40
-                                bg-emerald-500/15
-                                text-emerald-200
-                                shadow-[0_0_30px_rgba(52,211,153,0.20)]
-                            `
-                            : outcome === "loss"
-                                ? `
-                                    border-red-400/40
-                                    bg-red-500/15
-                                    text-red-200
-                                    shadow-[0_0_30px_rgba(248,113,113,0.18)]
-                                `
-                                : `
-                                    border-white/20
-                                    bg-white/10
-                                    text-white/70
-                                `
-                        }
-                    `}
-                >
-                    <p className="text-xs font-black uppercase tracking-[0.25em]">
-                        {outcome === "win"
-                            ? `✓ You Win This Matchup +${myMatchupPoints}`
-                            : outcome === "loss"
-                                ? `${opponentName} Wins This Matchup +${opponentMatchupPoints}`
-                                : "Tie • No Point"}
+                {changes.length === 0 ? (
+                    <p className="text-xs font-black uppercase tracking-widest text-white/20">
+                        No Effect
                     </p>
-                </div>
+                ) : changes.length === 9 ? (
+
+                    // =====================================================
+                    // 9 AFFECTED:
+                    // 8 IN TWO ROWS OF 4
+                    // + 9TH CENTERED ON THE SIDE
+                    // =====================================================
+
+                    <div
+                        className={`
+                            flex
+                            origin-top
+                            items-center
+                            justify-center
+                            gap-x-7
+            
+                            ${scaleClass}
+                        `}
+                    >
+
+                        {/* FIRST 8 */}
+
+                        <div
+                            className="
+                                flex
+                                flex-col
+                                items-center
+                                gap-y-3
+                            "
+                        >
+
+                            {/* ROW 1 */}
+
+                            <div
+                                className="
+                                    flex
+                                    items-center
+                                    justify-center
+                                    gap-x-5
+                                "
+                            >
+                                {changes
+                                    .slice(0, 4)
+                                    .map(
+                                        ({
+                                             beforePick,
+                                             afterPick,
+                                             character,
+                                         }) => (
+                                            <EffectCharacterReveal
+                                                key={
+                                                    beforePick.position
+                                                }
+                                                beforePick={
+                                                    beforePick
+                                                }
+                                                afterPick={
+                                                    afterPick
+                                                }
+                                                character={
+                                                    character
+                                                }
+                                                effectType={
+                                                    effectType
+                                                }
+                                            />
+                                        )
+                                    )}
+                            </div>
+
+
+                            {/* ROW 2 */}
+
+                            <div
+                                className="
+                                    flex
+                                    items-center
+                                    justify-center
+                                    gap-x-5
+                                "
+                            >
+                                {changes
+                                    .slice(4, 8)
+                                    .map(
+                                        ({
+                                             beforePick,
+                                             afterPick,
+                                             character,
+                                         }) => (
+                                            <EffectCharacterReveal
+                                                key={
+                                                    beforePick.position
+                                                }
+                                                beforePick={
+                                                    beforePick
+                                                }
+                                                afterPick={
+                                                    afterPick
+                                                }
+                                                character={
+                                                    character
+                                                }
+                                                effectType={
+                                                    effectType
+                                                }
+                                            />
+                                        )
+                                    )}
+                            </div>
+
+                        </div>
+
+
+                        {/* 9TH CHARACTER */}
+
+                        <div
+                            className="
+                                flex
+                                items-center
+                                justify-center
+                                self-center
+                            "
+                        >
+                            <EffectCharacterReveal
+                                key={
+                                    changes[8]
+                                        .beforePick
+                                        .position
+                                }
+                                beforePick={
+                                    changes[8]
+                                        .beforePick
+                                }
+                                afterPick={
+                                    changes[8]
+                                        .afterPick
+                                }
+                                character={
+                                    changes[8]
+                                        .character
+                                }
+                                effectType={
+                                    effectType
+                                }
+                            />
+                        </div>
+
+                    </div>
+
+                ) : (
+
+                    // =====================================================
+                    // 1 - 8 AFFECTED:
+                    // MAX 4 PER ROW
+                    // EACH ROW CENTERED INDEPENDENTLY
+                    // =====================================================
+
+                    <div
+                        className={`
+                            flex
+                            origin-top
+                            flex-col
+                            items-center
+                            gap-y-3
+            
+                            ${scaleClass}
+                        `}
+                    >
+
+                        {/* FIRST ROW */}
+
+                        <div
+                            className="
+                                flex
+                                items-center
+                                justify-center
+                                gap-x-5
+                            "
+                        >
+                            {changes
+                                .slice(0, 4)
+                                .map(
+                                    ({
+                                         beforePick,
+                                         afterPick,
+                                         character,
+                                     }) => (
+                                        <EffectCharacterReveal
+                                            key={
+                                                beforePick.position
+                                            }
+                                            beforePick={
+                                                beforePick
+                                            }
+                                            afterPick={
+                                                afterPick
+                                            }
+                                            character={
+                                                character
+                                            }
+                                            effectType={
+                                                effectType
+                                            }
+                                        />
+                                    )
+                                )}
+                        </div>
+
+
+                        {/* SECOND ROW */}
+
+                        {changes.length > 4 && (
+                            <div
+                                className="
+                                    flex
+                                    items-center
+                                    justify-center
+                                    gap-x-5
+                                "
+                            >
+                                {changes
+                                    .slice(4, 8)
+                                    .map(
+                                        ({
+                                             beforePick,
+                                             afterPick,
+                                             character,
+                                         }) => (
+                                            <EffectCharacterReveal
+                                                key={
+                                                    beforePick.position
+                                                }
+                                                beforePick={
+                                                    beforePick
+                                                }
+                                                afterPick={
+                                                    afterPick
+                                                }
+                                                character={
+                                                    character
+                                                }
+                                                effectType={
+                                                    effectType
+                                                }
+                                            />
+                                        )
+                                    )}
+                            </div>
+                        )}
+
+                    </div>
+
+                )}
             </div>
+
         </div>
     );
+}
+
+function countAffectedPicks(
+    beforePicks:
+    MultiplayerDraftPlayerState[
+        "picks"
+        ],
+
+    afterPicks:
+    MultiplayerDraftPlayerState[
+        "picks"
+        ],
+
+    effectType:
+        | "ascension"
+        | "disruption"
+) {
+    return beforePicks.filter(
+        (beforePick) => {
+            const afterPick =
+                afterPicks.find(
+                    (pick) =>
+                        pick.position ===
+                        beforePick.position
+                );
+
+            if (!afterPick) {
+                return false;
+            }
+
+            return effectType ===
+            "ascension"
+                ? afterPick.power >
+                beforePick.power
+                : afterPick.power <
+                beforePick.power;
+        }
+    ).length;
 }
 
 export default function MultiplayerDraftResultsPage() {
@@ -1459,6 +2472,81 @@ export default function MultiplayerDraftResultsPage() {
                 : hostState
             : null;
 
+    const myPreAscensionPicks =
+        useMemo(
+            () =>
+                revealMyState
+                    ? revealMyState.picks.map(
+                        getPreAscensionPick
+                    )
+                    : [],
+            [
+                revealMyState,
+            ]
+        );
+
+
+    const opponentPreAscensionPicks =
+        useMemo(
+            () =>
+                revealOpponentState
+                    ? revealOpponentState.picks.map(
+                        getPreAscensionPick
+                    )
+                    : [],
+            [
+                revealOpponentState,
+            ]
+        );
+
+
+    const finalMyPicks =
+        useMemo(
+            () => {
+                if (
+                    !revealMyState ||
+                    !revealOpponentState
+                ) {
+                    return [];
+                }
+
+                return getFinalMultiplayerPicks(
+                    revealMyState,
+
+                    revealOpponentState
+                        .selectedDisruption
+                );
+            },
+            [
+                revealMyState,
+                revealOpponentState,
+            ]
+        );
+
+
+    const finalOpponentPicks =
+        useMemo(
+            () => {
+                if (
+                    !revealMyState ||
+                    !revealOpponentState
+                ) {
+                    return [];
+                }
+
+                return getFinalMultiplayerPicks(
+                    revealOpponentState,
+
+                    revealMyState
+                        .selectedDisruption
+                );
+            },
+            [
+                revealMyState,
+                revealOpponentState,
+            ]
+        );
+
 
 // ---------------------------------------------------------
 // BUILD 9 REVEAL MATCHUPS
@@ -1527,23 +2615,26 @@ export default function MultiplayerDraftResultsPage() {
     useEffect(() => {
         if (
             !hostState ||
-            !guestState
-        ) {
-            return;
-        }
-
-        if (
-            revealPhase !== "intro"
+            !guestState ||
+            revealPhase !==
+            "intro"
         ) {
             return;
         }
 
         const timeout =
-            window.setTimeout(() => {
-                setRevealPhase(
-                    "ascension"
-                );
-            }, 1200);
+            window.setTimeout(
+                () => {
+                    setCurrentMatchupIndex(
+                        0
+                    );
+
+                    setRevealPhase(
+                        "lineup"
+                    );
+                },
+                1200
+            );
 
         return () =>
             window.clearTimeout(
@@ -1557,37 +2648,15 @@ export default function MultiplayerDraftResultsPage() {
 
     useEffect(() => {
         if (
-            revealPhase !== "ascension"
-        ) {
-            return;
-        }
-
-        const timeout =
-            window.setTimeout(() => {
-                setCurrentMatchupIndex(0);
-
-                setRevealPhase(
-                    "matchups"
-                );
-            }, 3000);
-
-        return () =>
-            window.clearTimeout(
-                timeout
-            );
-    }, [
-        revealPhase,
-    ]);
-
-    useEffect(() => {
-        if (
-            revealPhase !== "matchups"
+            revealPhase !==
+            "lineup"
         ) {
             return;
         }
 
         if (
-            revealSlots.length === 0
+            revealSlots.length ===
+            0
         ) {
             return;
         }
@@ -1601,48 +2670,72 @@ export default function MultiplayerDraftResultsPage() {
             return;
         }
 
-        const isUltra =
-            currentSlot.myPick?.grade ===
-            "U" ||
-            currentSlot.opponentPick
-                ?.grade === "U";
+        const myPower =
+            currentSlot.myPick
+                ? getPreAscensionPower(
+                    currentSlot.myPick
+                )
+                : 0;
 
-        const isElite =
-            currentSlot.myPick?.grade ===
-            "S+" ||
-            currentSlot.myPick?.grade ===
-            "S" ||
+        const opponentPower =
             currentSlot.opponentPick
-                ?.grade === "S+" ||
+                ? getPreAscensionPower(
+                    currentSlot.opponentPick
+                )
+                : 0;
+
+        const myGrade =
+            currentSlot.myPick
+                ? getMultiplayerPickGrade(
+                    currentSlot.myPick,
+                    myPower
+                )
+                : null;
+
+        const opponentGrade =
             currentSlot.opponentPick
-                ?.grade === "S";
+                ? getMultiplayerPickGrade(
+                    currentSlot.opponentPick,
+                    opponentPower
+                )
+                : null;
+
+        const elite =
+            myGrade === "U" ||
+            myGrade === "S+" ||
+            myGrade === "S" ||
+            opponentGrade === "U" ||
+            opponentGrade === "S+" ||
+            opponentGrade === "S";
 
         const delay =
-            isUltra
-                ? 3000
-                : isElite
-                    ? 2600
-                    : 2300;
+            elite
+                ? 2200
+                : 1700;
 
         const timeout =
-            window.setTimeout(() => {
-                const isLast =
-                    currentMatchupIndex ===
-                    revealSlots.length - 1;
+            window.setTimeout(
+                () => {
+                    const isLast =
+                        currentMatchupIndex ===
+                        revealSlots.length -
+                        1;
 
-                if (isLast) {
-                    setRevealPhase(
-                        "summary"
+                    if (isLast) {
+                        setRevealPhase(
+                            "ascension"
+                        );
+
+                        return;
+                    }
+
+                    setCurrentMatchupIndex(
+                        (current) =>
+                            current + 1
                     );
-
-                    return;
-                }
-
-                setCurrentMatchupIndex(
-                    (current) =>
-                        current + 1
-                );
-            }, delay);
+                },
+                delay
+            );
 
         return () =>
             window.clearTimeout(
@@ -1656,6 +2749,58 @@ export default function MultiplayerDraftResultsPage() {
 
     useEffect(() => {
         if (
+            revealPhase !==
+            "ascension"
+        ) {
+            return;
+        }
+
+        const timeout =
+            window.setTimeout(
+                () => {
+                    setRevealPhase(
+                        "disruption"
+                    );
+                },
+                5200
+            );
+
+        return () =>
+            window.clearTimeout(
+                timeout
+            );
+    }, [
+        revealPhase,
+    ]);
+
+    useEffect(() => {
+        if (
+            revealPhase !==
+            "disruption"
+        ) {
+            return;
+        }
+
+        const timeout =
+            window.setTimeout(
+                () => {
+                    setRevealPhase(
+                        "final"
+                    );
+                },
+                5200
+            );
+
+        return () =>
+            window.clearTimeout(
+                timeout
+            );
+    }, [
+        revealPhase,
+    ]);
+
+    useEffect(() => {
+        if (
             !user ||
             !match ||
             !code
@@ -1664,7 +2809,8 @@ export default function MultiplayerDraftResultsPage() {
         }
 
         if (
-            revealPhase !== "summary"
+            revealPhase !==
+            "final"
         ) {
             return;
         }
@@ -2311,18 +3457,6 @@ export default function MultiplayerDraftResultsPage() {
         );
     }
 
-    const normalSummarySlots =
-        revealSlots.filter(
-            (slot) =>
-                !slot.isPowerPosition
-        );
-
-    const powerSummarySlot =
-        revealSlots.find(
-            (slot) =>
-                slot.isPowerPosition
-        ) ?? null;
-
     const myRematchRequested =
         amHost
             ? match.hostRematchRequested
@@ -2363,25 +3497,6 @@ export default function MultiplayerDraftResultsPage() {
 
 
     // ---------------------------------------------------------
-    // TOTAL POWER
-    // ---------------------------------------------------------
-
-    const hostTotalPower =
-        hostState.picks.reduce(
-            (total, pick) =>
-                total + pick.power,
-            0
-        );
-
-    const guestTotalPower =
-        guestState.picks.reduce(
-            (total, pick) =>
-                total + pick.power,
-            0
-        );
-
-
-    // ---------------------------------------------------------
     // YOUR SIDE
     // ---------------------------------------------------------
 
@@ -2401,24 +3516,126 @@ export default function MultiplayerDraftResultsPage() {
             : match.host;
 
     const myTotalPower =
-        amHost
-            ? hostTotalPower
-            : guestTotalPower;
+        finalMyPicks.reduce(
+            (total, pick) =>
+                total + pick.power,
+            0
+        );
+
 
     const opponentTotalPower =
-        amHost
-            ? guestTotalPower
-            : hostTotalPower;
+        finalOpponentPicks.reduce(
+            (total, pick) =>
+                total + pick.power,
+            0
+        );
+
+    const finalNormalSlots =
+        draftPositions.map(
+            (position) => ({
+                label:
+                position,
+
+                myPick:
+                    finalMyPicks.find(
+                        (pick) =>
+                            pick.position ===
+                            position
+                    ) ?? null,
+
+                opponentPick:
+                    finalOpponentPicks.find(
+                        (pick) =>
+                            pick.position ===
+                            position
+                    ) ?? null,
+
+                isPowerPosition:
+                    false,
+            })
+        );
+
+
+    const finalMyPowerPick =
+        finalMyPicks.find(
+            (pick) =>
+                pick.position ===
+                myState.selectedPowerPosition
+        ) ?? null;
+
+
+    const finalOpponentPowerPick =
+        finalOpponentPicks.find(
+            (pick) =>
+                pick.position ===
+                opponentState.selectedPowerPosition
+        ) ?? null;
+
+
+    const finalRevealSlots = [
+        ...finalNormalSlots,
+
+        {
+            label:
+                "Power Position",
+
+            myPick:
+            finalMyPowerPick,
+
+            opponentPick:
+            finalOpponentPowerPick,
+
+            isPowerPosition:
+                true,
+        },
+    ];
 
     const matchupOutcomes =
-        revealSlots.map(
+        finalRevealSlots.map(
             (slot) =>
                 getMatchupOutcome(slot)
         );
 
+    const myAscensionAffected =
+        countAffectedPicks(
+            myPreAscensionPicks,
+            revealMyState?.picks ??
+            [],
+            "ascension"
+        );
+
+
+    const opponentAscensionAffected =
+        countAffectedPicks(
+            opponentPreAscensionPicks,
+            revealOpponentState
+                ?.picks ??
+            [],
+            "ascension"
+        );
+
+
+    const myDisruptionAffected =
+        countAffectedPicks(
+            revealMyState?.picks ??
+            [],
+            finalMyPicks,
+            "disruption"
+        );
+
+
+    const opponentDisruptionAffected =
+        countAffectedPicks(
+            revealOpponentState
+                ?.picks ??
+            [],
+            finalOpponentPicks,
+            "disruption"
+        );
+
 
     const myPositionWins =
-        revealSlots.reduce(
+        finalRevealSlots.reduce(
             (
                 total,
                 slot,
@@ -2451,7 +3668,7 @@ export default function MultiplayerDraftResultsPage() {
 
 
     const opponentPositionWins =
-        revealSlots.reduce(
+        finalRevealSlots.reduce(
             (
                 total,
                 slot,
@@ -2481,6 +3698,12 @@ export default function MultiplayerDraftResultsPage() {
             },
             0
         );
+
+    const finalPowerSummarySlot =
+        finalRevealSlots.find(
+            (slot) =>
+                slot.isPowerPosition
+        ) ?? null;
 
 
     const tiedPositions =
@@ -2526,7 +3749,7 @@ export default function MultiplayerDraftResultsPage() {
             </div>
 
             {/* REMATCH REQUEST NOTIFICATION */}
-            {revealPhase === "summary" &&
+            {revealPhase === "final" &&
                 match.status === "complete" &&
                 opponentRematchRequested &&
                 !myRematchRequested && (
@@ -2682,111 +3905,397 @@ export default function MultiplayerDraftResultsPage() {
 
 
                 {/* ============================== */}
-                {/* ASCENSION SPLASH */}
+                {/* ASCENSION REVEAL */}
                 {/* ============================== */}
 
-                {revealPhase === "ascension" && (
-                    <div
-                        className="
-                            flex
-                            min-h-[650px]
-                            items-center
-                            justify-center
-                            animate-[finalReveal_700ms_cubic-bezier(.16,1,.3,1)_both]
-                        "
-                    >
-                        <div className="w-full max-w-4xl">
+                {revealPhase ===
+                    "ascension" && (
+                        <div
+                            className="
+                                relative
+                                flex
+                                min-h-[680px]
+                                flex-col
+                                justify-center
+                                overflow-hidden
+                                animate-[finalReveal_700ms_cubic-bezier(.16,1,.3,1)_both]
+                            "
+                        >
 
-                            <p className="text-xs font-black uppercase tracking-[0.4em] text-yellow-300/60">
-                                Final Modifiers
-                            </p>
+                            {/* AMBIENT ASCENSION GLOW */}
 
-                            <h2 className="mt-2 text-5xl font-black text-white">
-                                ASCENSIONS
-                            </h2>
+                            <div
+                                className="
+                                    pointer-events-none
+                                    absolute
+                                    left-1/2
+                                    top-1/2
+                                    h-[500px]
+                                    w-[900px]
+                                    -translate-x-1/2
+                                    -translate-y-1/2
+                                    rounded-full
+                                    bg-yellow-400/[0.04]
+                                    blur-[120px]
+                                "
+                            />
 
-                            <div className="mt-10 grid items-stretch gap-6 md:grid-cols-[1fr_auto_1fr]">
 
-                                <div
+                            {/* PHASE HEADER */}
+
+                            <div className="relative z-10 mb-3 text-center">
+
+                                <p
                                     className="
-                                        rounded-3xl
-                                        border
-                                        border-pink-500/30
-                                        bg-zinc-950
-                                        p-7
-                                        shadow-[0_0_30px_rgba(236,72,153,0.08)]
+                                        text-[10px]
+                                        font-black
+                                        uppercase
+                                        tracking-[0.4em]
+                                        text-yellow-300/55
                                     "
                                 >
-                                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-pink-300/50">
-                                        Your Ascension
-                                    </p>
+                                    Ascension Reveal
+                                </p>
 
-                                    <h3 className="mt-3 text-3xl font-black text-yellow-200">
-                                        {
-                                            myState.selectedAscension
-                                        }
-                                    </h3>
-
-                                    <p className="mt-3 text-sm leading-6 text-white/40">
-                                        {myState.selectedAscension
-                                            ? ascensionInfo[
-                                                myState
-                                                    .selectedAscension
-                                                ].description
-                                            : ""}
-                                    </p>
-                                </div>
-
-
-                                <div className="flex items-center justify-center">
-                                    <p className="text-3xl font-black italic text-white/20">
-                                        VS
-                                    </p>
-                                </div>
-
-
-                                <div
+                                <h2
                                     className="
-                                        rounded-3xl
-                                        border
-                                        border-purple-500/30
-                                        bg-zinc-950
-                                        p-7
-                                        shadow-[0_0_30px_rgba(168,85,247,0.08)]
+                                        mt-1
+                                        text-4xl
+                                        font-black
+                                        text-yellow-100
+                                        drop-shadow-[0_0_18px_rgba(250,204,21,0.15)]
                                     "
                                 >
-                                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-purple-300/50">
-                                        {
-                                            opponentPlayer.displayName
-                                        }
-                                    </p>
+                                    POWER AWAKENS
+                                </h2>
 
-                                    <h3 className="mt-3 text-3xl font-black text-yellow-200">
-                                        {
-                                            opponentState.selectedAscension
-                                        }
-                                    </h3>
+                                <p className="mt-1 text-xs font-semibold text-white/25">
+                                    Ascensions empower the final lineup.
+                                </p>
 
-                                    <p className="mt-3 text-sm leading-6 text-white/40">
-                                        {opponentState.selectedAscension
-                                            ? ascensionInfo[
-                                                opponentState
-                                                    .selectedAscension
-                                                ].description
-                                            : ""}
-                                    </p>
-                                </div>
                             </div>
+
+
+                            {/* BOTH PLAYERS */}
+
+                            <div
+                                className="
+                                    relative
+                                    z-10
+                                    mx-auto
+                                    grid
+                                    min-h-[540px]
+                                    w-full
+                                    max-w-[1500px]
+                                    grid-cols-1
+                                    gap-5
+                                    lg:grid-cols-2
+                                "
+                            >
+
+                                {/* CENTER DIVIDER */}
+
+                                <div
+                                    className="
+                                        pointer-events-none
+                                        absolute
+                                        bottom-[8%]
+                                        left-1/2
+                                        top-[8%]
+                                        hidden
+                                        w-px
+                                        -translate-x-1/2
+                                        bg-gradient-to-b
+                                        from-transparent
+                                        via-yellow-200/10
+                                        to-transparent
+                                        lg:block
+                                    "
+                                />
+
+
+                                {/* YOUR ASCENSION */}
+
+                                <EffectRevealTeam
+                                    eyebrow="Your Ascension"
+                                    effectName={
+                                        revealMyState
+                                            ?.selectedAscension ??
+                                        null
+                                    }
+                                    description={
+                                        revealMyState
+                                            ?.selectedAscension
+
+                                            ? ascensionInfo[
+                                                revealMyState
+                                                    .selectedAscension
+                                                ].description
+
+                                            : null
+                                    }
+                                    teamLabel="Your Team"
+                                    beforePicks={
+                                        myPreAscensionPicks
+                                    }
+                                    afterPicks={
+                                        revealMyState
+                                            ?.picks ??
+                                        []
+                                    }
+                                    effectType="ascension"
+                                />
+
+
+                                {/* OPPONENT ASCENSION */}
+
+                                <EffectRevealTeam
+                                    eyebrow={`${opponentPlayer.displayName}'s Ascension`}
+                                    effectName={
+                                        revealOpponentState
+                                            ?.selectedAscension ??
+                                        null
+                                    }
+                                    description={
+                                        revealOpponentState
+                                            ?.selectedAscension
+
+                                            ? ascensionInfo[
+                                                revealOpponentState
+                                                    .selectedAscension
+                                                ].description
+
+                                            : null
+                                    }
+                                    teamLabel={`${opponentPlayer.displayName}'s Team`}
+                                    beforePicks={
+                                        opponentPreAscensionPicks
+                                    }
+                                    afterPicks={
+                                        revealOpponentState
+                                            ?.picks ??
+                                        []
+                                    }
+                                    effectType="ascension"
+                                />
+
+                            </div>
+
                         </div>
-                    </div>
-                )}
+                    )}
+
+                {/* ============================== */}
+                {/* DISRUPTION REVEAL */}
+                {/* ============================== */}
+
+                {revealPhase ===
+                    "disruption" && (
+                        <div
+                            className="
+                                relative
+                                flex
+                                min-h-[680px]
+                                flex-col
+                                justify-center
+                                overflow-hidden
+                                animate-[finalReveal_700ms_cubic-bezier(.16,1,.3,1)_both]
+                            "
+                        >
+
+                            {/* AMBIENT DISRUPTION GLOW */}
+
+                            <div
+                                className="
+                                    pointer-events-none
+                                    absolute
+                                    left-1/2
+                                    top-1/2
+                                    h-[500px]
+                                    w-[900px]
+                                    -translate-x-1/2
+                                    -translate-y-1/2
+                                    rounded-full
+                                    bg-red-500/[0.05]
+                                    blur-[120px]
+                                "
+                            />
+
+
+                            {/* SUBTLE RED ENERGY STREAK */}
+
+                            <div
+                                className="
+                                    pointer-events-none
+                                    absolute
+                                    left-1/2
+                                    top-1/2
+                                    h-px
+                                    w-[70%]
+                                    -translate-x-1/2
+                                    -translate-y-1/2
+                                    -rotate-[8deg]
+                                    bg-gradient-to-r
+                                    from-transparent
+                                    via-red-400/15
+                                    to-transparent
+                                    blur-sm
+                                "
+                            />
+
+
+                            {/* PHASE HEADER */}
+
+                            <div className="relative z-10 mb-3 text-center">
+
+                                <p
+                                    className="
+                                        text-[10px]
+                                        font-black
+                                        uppercase
+                                        tracking-[0.4em]
+                                        text-red-300/55
+                                    "
+                                >
+                                    Disruption Reveal
+                                </p>
+
+                                <h2
+                                    className="
+                                        mt-1
+                                        text-4xl
+                                        font-black
+                                        text-red-100
+                                        drop-shadow-[0_0_18px_rgba(248,113,113,0.15)]
+                                    "
+                                >
+                                    COUNTERATTACK
+                                </h2>
+
+                                <p className="mt-1 text-xs font-semibold text-white/25">
+                                    Disruptions strike the opposing lineup.
+                                </p>
+
+                            </div>
+
+
+                            {/* BOTH PLAYERS */}
+
+                            <div
+                                className="
+                                    relative
+                                    z-10
+                                    mx-auto
+                                    grid
+                                    min-h-[540px]
+                                    w-full
+                                    max-w-[1500px]
+                                    grid-cols-1
+                                    gap-5
+                                    lg:grid-cols-2
+                                "
+                            >
+
+                                {/* CENTER DIVIDER */}
+
+                                <div
+                                    className="
+                                        pointer-events-none
+                                        absolute
+                                        bottom-[8%]
+                                        left-1/2
+                                        top-[8%]
+                                        hidden
+                                        w-px
+                                        -translate-x-1/2
+                                        bg-gradient-to-b
+                                        from-transparent
+                                        via-red-300/10
+                                        to-transparent
+                                        lg:block
+                                    "
+                                />
+
+
+                                {/* ======================================= */}
+                                {/* YOUR DISRUPTION HITS OPPONENT */}
+                                {/* ======================================= */}
+
+                                <EffectRevealTeam
+                                    eyebrow="Your Disruption"
+                                    effectName={
+                                        revealMyState
+                                            ?.selectedDisruption ??
+                                        null
+                                    }
+                                    description={
+                                        revealMyState
+                                            ?.selectedDisruption
+
+                                            ? disruptionInfo[
+                                                revealMyState
+                                                    .selectedDisruption
+                                                ].description
+
+                                            : null
+                                    }
+                                    teamLabel={`${opponentPlayer.displayName}'s Team`}
+                                    beforePicks={
+                                        revealOpponentState
+                                            ?.picks ??
+                                        []
+                                    }
+                                    afterPicks={
+                                        finalOpponentPicks
+                                    }
+                                    effectType="disruption"
+                                />
+
+
+                                {/* ======================================= */}
+                                {/* OPPONENT DISRUPTION HITS YOU */}
+                                {/* ======================================= */}
+
+                                <EffectRevealTeam
+                                    eyebrow={`${opponentPlayer.displayName}'s Disruption`}
+                                    effectName={
+                                        revealOpponentState
+                                            ?.selectedDisruption ??
+                                        null
+                                    }
+                                    description={
+                                        revealOpponentState
+                                            ?.selectedDisruption
+
+                                            ? disruptionInfo[
+                                                revealOpponentState
+                                                    .selectedDisruption
+                                                ].description
+
+                                            : null
+                                    }
+                                    teamLabel="Your Team"
+                                    beforePicks={
+                                        revealMyState
+                                            ?.picks ??
+                                        []
+                                    }
+                                    afterPicks={
+                                        finalMyPicks
+                                    }
+                                    effectType="disruption"
+                                />
+
+                            </div>
+
+                        </div>
+                    )}
 
 
                 {/* ============================== */}
                 {/* SINGLE MATCHUP */}
                 {/* ============================== */}
 
-                {revealPhase === "matchups" &&
+                {revealPhase === "lineup" &&
                     revealSlots[
                         currentMatchupIndex
                         ] && (
@@ -2823,7 +4332,7 @@ export default function MultiplayerDraftResultsPage() {
                 {/* FINAL SUMMARY */}
                 {/* ============================== */}
 
-                {revealPhase === "summary" && (
+                {revealPhase === "final" && (
                     <div className="animate-[finalReveal_900ms_cubic-bezier(.16,1,.3,1)_both]">
 
                         <p className="text-xs font-black uppercase tracking-[0.4em] text-yellow-300/60">
@@ -3091,12 +4600,10 @@ export default function MultiplayerDraftResultsPage() {
                                     grid
                                     gap-4
                                     xl:grid-cols-[minmax(0,4fr)_minmax(240px,1fr)]
-                                    xl:items-stretch
+                                    xl:items-center
                                 "
                             >
-                                {/* ======================================= */}
                                 {/* NORMAL POSITIONS */}
-                                {/* ======================================= */}
 
                                 <div
                                     className="
@@ -3106,15 +4613,13 @@ export default function MultiplayerDraftResultsPage() {
                                         lg:grid-cols-4
                                     "
                                 >
-                                    {normalSummarySlots.map(
+                                    {finalNormalSlots.map(
                                         (slot) => (
                                             <HeadToHeadReveal
                                                 key={slot.label}
                                                 slot={slot}
                                                 revealed={true}
-                                                ascensionApplied={
-                                                    true
-                                                }
+                                                ascensionApplied={true}
                                                 myState={myState}
                                                 opponentState={
                                                     opponentState
@@ -3133,27 +4638,24 @@ export default function MultiplayerDraftResultsPage() {
                                 </div>
 
 
-                                {/* ======================================= */}
                                 {/* POWER POSITION */}
-                                {/* ======================================= */}
 
-                                {powerSummarySlot && (
+                                {finalPowerSummarySlot && (
                                     <div
                                         className="
                                             flex
                                             items-center
                                             justify-center
+                                            xl:self-center
                                         "
                                     >
                                         <div className="w-full">
                                             <HeadToHeadReveal
                                                 slot={
-                                                    powerSummarySlot
+                                                    finalPowerSummarySlot
                                                 }
                                                 revealed={true}
-                                                ascensionApplied={
-                                                    true
-                                                }
+                                                ascensionApplied={true}
                                                 myState={myState}
                                                 opponentState={
                                                     opponentState
@@ -3163,7 +4665,7 @@ export default function MultiplayerDraftResultsPage() {
                                                 }
                                                 outcome={
                                                     getMatchupOutcome(
-                                                        powerSummarySlot
+                                                        finalPowerSummarySlot
                                                     )
                                                 }
                                             />
