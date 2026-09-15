@@ -12,6 +12,7 @@ import type {
     DraftPick,
     DraftResult,
 } from "@/types/draft";
+import {draftPositions} from "@/data/draftLogic";
 
 type RevealPhase =
     | "lineup"
@@ -27,17 +28,6 @@ const positionIcons: Record<DraftPosition, string> = {
     Ace: "🔥",
     Vanguard: "🛡️",
 };
-
-const positionOrder: DraftPosition[] = [
-    "Captain",
-    "Vice Captain",
-    "Support",
-    "Scout",
-    "Strategist",
-    "Assassin",
-    "Ace",
-    "Vanguard",
-];
 
 function getPositionIcon(position: AnyDraftPosition) {
     if (position in positionIcons) {
@@ -85,21 +75,18 @@ function getGradeStyle(grade: string) {
 
 export default function DraftResultsPage() {
     const router = useRouter();
-
     const [result, setResult] =
         useState<DraftResult | null>(null);
-
     const [loading, setLoading] =
         useState(true);
-
     const [shareMessage, setShareMessage] =
         useState("");
-
     const [revealPhase, setRevealPhase] =
         useState<RevealPhase>("lineup");
-
     const [revealedCount, setRevealedCount] =
         useState(0);
+    const [revealSkipped, setRevealSkipped] =
+        useState(false);
 
     useEffect(() => {
         const savedResult = sessionStorage.getItem(
@@ -131,20 +118,30 @@ export default function DraftResultsPage() {
      * Always display the eight Solo positions
      * in their intended formation order.
      */
-    const sortedPicks = useMemo(() => {
-        if (!result) return [];
+    const gridPicks = useMemo<DraftPick[]>(() => {
+        if (!result) {
+            return [];
+        }
 
-        return positionOrder.flatMap((position) => {
-            const pick = result.picks.find(
-                (pick) =>
-                    pick.position === position
-            );
+        return draftPositions.flatMap(
+            (position) => {
+                const pick =
+                    result.picks.find(
+                        (pick) =>
+                            pick.position ===
+                            position
+                    );
 
-            return pick ? [pick] : [];
-        });
+                return pick
+                    ? [pick]
+                    : [];
+            }
+        );
     }, [result]);
 
-    const gridPicks = sortedPicks;
+
+    const sortedPicks =
+        gridPicks;
 
     /*
      * Sequential lineup reveal.
@@ -242,6 +239,24 @@ export default function DraftResultsPage() {
         router.push("/games/draft");
     }
 
+    function skipReveal() {
+        if (!result) {
+            return;
+        }
+
+        setRevealSkipped(true);
+
+        // Reveal every card immediately.
+        setRevealedCount(
+            gridPicks.length
+        );
+
+        // Jump directly to completed results.
+        setRevealPhase(
+            "final"
+        );
+    }
+
     async function shareDraft() {
         if (!result) return;
 
@@ -336,6 +351,46 @@ export default function DraftResultsPage() {
 
     return (
         <main className="relative min-h-[calc(100vh-130px)] overflow-hidden px-4 py-10">
+            {revealPhase !== "final" && (
+                <button
+                    type="button"
+                    onClick={skipReveal}
+                    className="
+                        fixed
+                        right-6
+                        top-32
+                        z-[200]
+                        flex
+                        items-center
+                        gap-2
+                        rounded-full
+                        border
+                        border-white/15
+                        bg-black/75
+                        px-4
+                        py-2.5
+                        text-xs
+                        font-black
+                        uppercase
+                        tracking-[0.18em]
+                        text-white/60
+                        shadow-[0_0_20px_rgba(0,0,0,0.3)]
+                        backdrop-blur-xl
+                        transition
+                        hover:cursor-pointer
+                        hover:border-pink-400/40
+                        hover:bg-pink-500/10
+                        hover:text-pink-200
+                    "
+                >
+                    <span className="text-sm">
+                        ⏭
+                    </span>
+
+                    Skip Reveal
+                </button>
+            )}
+
             {/* Background glow */}
             <div className="pointer-events-none fixed inset-0">
                 <div className="absolute left-0 top-0 h-[550px] w-[550px] rounded-full bg-pink-500/10 blur-[160px]" />
@@ -520,7 +575,20 @@ export default function DraftResultsPage() {
                         </p>
                     </div>
 
-                    <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+                    <div
+                        className={`
+                            grid
+                            gap-5
+                            sm:grid-cols-2
+                            xl:grid-cols-4
+
+                            ${
+                            revealSkipped
+                                ? "skipped-solo-reveal"
+                                : ""
+                            }
+                        `}
+                    >
                         {gridPicks.map(
                             (pick, index) => {
                                 const isRevealed =
@@ -1456,6 +1524,14 @@ export default function DraftResultsPage() {
                         transform:
                             scale(1)
                             rotate(0);
+                    }
+                    
+                    .skipped-solo-reveal *,
+                    .skipped-solo-reveal *::before,
+                    .skipped-solo-reveal *::after {
+                        animation: none !important;
+                        animation-delay: 0ms !important;
+                        transition-duration: 0ms !important;
                     }
                 }
             `}</style>
