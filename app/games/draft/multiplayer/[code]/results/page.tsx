@@ -19,13 +19,20 @@ import {
     getLetterGrade, disruptionInfo,
 } from "@/data/draftLogic";
 import type {DraftMatch, MultiplayerDraftPlayerState,} from "@/types/multiplayerDraft";
+import {RevealProgressBar} from "@/app/components/RevealProgressBar";
 
 type MultiplayerRevealPhase =
     | "intro"
-    | "lineup"
     | "ascension"
     | "disruption"
+    | "matchups"
     | "final";
+
+type MatchupEffectStage =
+    | "initial"
+    | "ascension"
+    | "disruption"
+    | "resolved";
 
 type MatchupOutcome =
     | "win"
@@ -732,34 +739,6 @@ function getPreAscensionPick(
     };
 }
 
-function getMultiplayerPickGrade(
-    pick:
-    MultiplayerDraftPlayerState[
-        "picks"
-        ][number],
-
-    power: number
-) {
-    const character =
-        draftCharacters.find(
-            (character) =>
-                character.id ===
-                pick.characterId
-        );
-
-    if (!character) {
-        return getLetterGrade(
-            power
-        );
-    }
-
-    return getDraftPickGrade(
-        character,
-        pick.position,
-        power
-    );
-}
-
 function getMatchupOutcome(
     slot: {
         myPick:
@@ -788,6 +767,96 @@ function getMatchupOutcome(
     return "tie";
 }
 
+function RollingPower({
+                          value,
+                      }: {
+    value: number;
+}) {
+    const [
+        displayed,
+        setDisplayed,
+    ] = useState(value);
+
+    useEffect(() => {
+        const from =
+            displayed;
+
+        if (
+            from === value
+        ) {
+            return;
+        }
+
+        const start =
+            performance.now();
+
+        const duration =
+            650;
+
+        let frame = 0;
+
+        function animate(
+            now: number
+        ) {
+            const progress =
+                Math.min(
+                    1,
+                    (
+                        now -
+                        start
+                    ) /
+                    duration
+                );
+
+            const eased =
+                1 -
+                Math.pow(
+                    1 -
+                    progress,
+                    3
+                );
+
+            setDisplayed(
+                Math.round(
+                    from +
+                    (
+                        value -
+                        from
+                    ) *
+                    eased
+                )
+            );
+
+            if (
+                progress < 1
+            ) {
+                frame =
+                    requestAnimationFrame(
+                        animate
+                    );
+            }
+        }
+
+        frame =
+            requestAnimationFrame(
+                animate
+            );
+
+        return () =>
+            cancelAnimationFrame(
+                frame
+            );
+    }, [
+        value,
+    ]);
+
+    return (
+        <span className="tabular-nums">
+            {displayed}
+        </span>
+    );
+}
+
 function CinematicMatchup({
                               slot,
                               matchupNumber,
@@ -795,6 +864,13 @@ function CinematicMatchup({
                               myState,
                               opponentState,
                               opponentName,
+                              myInitialPower,
+                              myAscendedPower,
+                              myFinalPower,
+                              opponentInitialPower,
+                              opponentAscendedPower,
+                              opponentFinalPower,
+                              effectStage,
                           }: {
     slot: {
         label: string;
@@ -817,6 +893,16 @@ function CinematicMatchup({
     opponentState: MultiplayerDraftPlayerState;
 
     opponentName: string;
+
+    myInitialPower: number;
+    myAscendedPower: number;
+    myFinalPower: number;
+
+    opponentInitialPower: number;
+    opponentAscendedPower: number;
+    opponentFinalPower: number;
+
+    effectStage: MatchupEffectStage;
 }) {
     const myCharacter =
         slot.myPick
@@ -845,15 +931,68 @@ function CinematicMatchup({
         return null;
     }
 
+    const label =
+        slot.isPowerPosition
+            ? "⚡ POWER POSITION"
+            : `${
+                positionIcons[
+                    slot.label as keyof typeof positionIcons
+                    ] ?? ""
+            } ${slot.label}`;
+
+    const ascensionApplied =
+        effectStage ===
+        "ascension" ||
+        effectStage ===
+        "disruption" ||
+        effectStage ===
+        "resolved";
+
+
+    const disruptionApplied =
+        effectStage ===
+        "disruption" ||
+        effectStage ===
+        "resolved";
+
+
     const myPower =
-        getPreAscensionPower(
-            slot.myPick
-        );
+        disruptionApplied
+            ? myFinalPower
+            : ascensionApplied
+                ? myAscendedPower
+                : myInitialPower;
+
 
     const opponentPower =
-        getPreAscensionPower(
-            slot.opponentPick
-        );
+        disruptionApplied
+            ? opponentFinalPower
+            : ascensionApplied
+                ? opponentAscendedPower
+                : opponentInitialPower;
+
+    const myPowerColor =
+        disruptionApplied &&
+        myFinalPower !==
+        myAscendedPower
+            ? "text-red-200"
+            : ascensionApplied &&
+            myAscendedPower !==
+            myInitialPower
+                ? "text-yellow-200"
+                : "text-white";
+
+
+    const opponentPowerColor =
+        disruptionApplied &&
+        opponentFinalPower !==
+        opponentAscendedPower
+            ? "text-red-200"
+            : ascensionApplied &&
+            opponentAscendedPower !==
+            opponentInitialPower
+                ? "text-yellow-200"
+                : "text-white";
 
     const myGrade =
         getDraftPickGrade(
@@ -870,19 +1009,47 @@ function CinematicMatchup({
         );
 
     const myGradeStyle =
-        getGradeStyle(myGrade);
+        getGradeStyle(
+            myGrade
+        );
 
     const opponentGradeStyle =
-        getGradeStyle(opponentGrade);
+        getGradeStyle(
+            opponentGrade
+        );
 
-    const label =
-        slot.isPowerPosition
-            ? "⚡ POWER POSITION"
-            : `${
-                positionIcons[
-                    slot.label as keyof typeof positionIcons
-                    ] ?? ""
-            } ${slot.label}`;
+    const finalOutcome:
+        MatchupOutcome =
+        myFinalPower >
+        opponentFinalPower
+            ? "win"
+            : myFinalPower <
+            opponentFinalPower
+                ? "loss"
+                : "tie";
+
+
+    const showResult =
+        effectStage ===
+        "resolved";
+
+
+    const myWon =
+        showResult &&
+        finalOutcome ===
+        "win";
+
+
+    const opponentWon =
+        showResult &&
+        finalOutcome ===
+        "loss";
+
+
+    const matchupTied =
+        showResult &&
+        finalOutcome ===
+        "tie";
 
     return (
         <div
@@ -965,7 +1132,16 @@ function CinematicMatchup({
                 <div className="flex justify-end">
                     <div className="animate-[battleCardLeft_850ms_cubic-bezier(.16,1,.3,1)_both]">
 
-                        <div>
+                        <div
+                            className={
+                                myWon
+                                    ? "animate-[battleWinner_700ms_cubic-bezier(.16,1,.3,1)_forwards]"
+                                    : showResult &&
+                                    !matchupTied
+                                        ? "animate-[battleLoser_500ms_ease-out_forwards]"
+                                        : ""
+                            }
+                        >
                             <div
                                 className={`
                                     relative
@@ -1023,8 +1199,19 @@ function CinematicMatchup({
                                 {/* POWER */}
 
                                 <div className="absolute right-4 top-4 rounded-xl border border-white/10 bg-black/75 px-3 py-2 text-center backdrop-blur-xl">
-                                    <p className="text-2xl font-black text-white">
-                                        {myPower}
+                                    <p
+                                        className={`
+                                            text-2xl
+                                            font-black
+                                            transition-colors
+                                            duration-300
+                                    
+                                            ${myPowerColor}
+                                        `}
+                                    >
+                                        <RollingPower
+                                            value={myPower}
+                                        />
                                     </p>
 
                                     <p className="text-[8px] font-black uppercase tracking-widest text-white/35">
@@ -1120,7 +1307,16 @@ function CinematicMatchup({
                 <div className="flex justify-start">
                     <div className="animate-[battleCardRight_850ms_cubic-bezier(.16,1,.3,1)_both]">
 
-                        <div>
+                        <div
+                            className={
+                                opponentWon
+                                    ? "animate-[battleWinner_700ms_cubic-bezier(.16,1,.3,1)_forwards]"
+                                    : showResult &&
+                                    !matchupTied
+                                        ? "animate-[battleLoser_500ms_ease-out_forwards]"
+                                        : ""
+                            }
+                        >
                             <div
                                 className={`
                                     relative
@@ -1172,8 +1368,19 @@ function CinematicMatchup({
                                 </div>
 
                                 <div className="absolute right-4 top-4 rounded-xl border border-white/10 bg-black/75 px-3 py-2 text-center backdrop-blur-xl">
-                                    <p className="text-2xl font-black text-white">
-                                        {opponentPower}
+                                    <p
+                                        className={`
+                                            text-2xl
+                                            font-black
+                                            transition-colors
+                                            duration-300
+                                    
+                                            ${opponentPowerColor}
+                                        `}
+                                    >
+                                        <RollingPower
+                                            value={opponentPower}
+                                        />
                                     </p>
 
                                     <p className="text-[8px] font-black uppercase tracking-widest text-white/35">
@@ -1212,1070 +1419,481 @@ function CinematicMatchup({
                     </div>
                 </div>
             </div>
-        </div>
-    );
-}
 
-function AnimatedPowerNumber({
-                                 from,
-                                 to,
-                                 effectType,
-                             }: {
-    from: number;
-    to: number;
-    effectType:
-        | "ascension"
-        | "disruption";
-}) {
-    const [
-        displayedPower,
-        setDisplayedPower,
-    ] = useState(from);
+            {/* ======================================= */}
+            {/* MATCHUP RESOLUTION CINEMATIC */}
+            {/* ======================================= */}
 
-    useEffect(() => {
-        setDisplayedPower(from);
-
-        let frameId = 0;
-
-        const delay =
-            window.setTimeout(
-                () => {
-                    const start =
-                        performance.now();
-
-                    const duration =
-                        850;
-
-                    function animate(
-                        now: number
-                    ) {
-                        const progress =
-                            Math.min(
-                                1,
-                                (
-                                    now -
-                                    start
-                                ) /
-                                duration
-                            );
-
-                        const eased =
-                            1 -
-                            Math.pow(
-                                1 -
-                                progress,
-                                3
-                            );
-
-                        setDisplayedPower(
-                            Math.round(
-                                from +
-                                (
-                                    to -
-                                    from
-                                ) *
-                                eased
-                            )
-                        );
-
-                        if (
-                            progress < 1
-                        ) {
-                            frameId =
-                                requestAnimationFrame(
-                                    animate
-                                );
-                        }
-                    }
-
-                    frameId =
-                        requestAnimationFrame(
-                            animate
-                        );
-                },
-                500
-            );
-
-        return () => {
-            clearTimeout(delay);
-
-            cancelAnimationFrame(
-                frameId
-            );
-        };
-    }, [
-        from,
-        to,
-    ]);
-
-    return (
-        <div className="flex items-center gap-1.5">
-
-            <span className="text-sm font-black tabular-nums text-white/35">
-                {from}
-            </span>
-
-            <span
-                className={`
-                    text-xs
-                    font-black
-
-                    ${
-                    effectType ===
-                    "ascension"
-                        ? "text-yellow-300/60"
-                        : "text-red-300/60"
-                }
-                `}
-            >
-                →
-            </span>
-
-            <span
-                className={`
-                    text-xl
-                    font-black
-                    tabular-nums
-
-                    ${
-                    effectType ===
-                    "ascension"
-                        ? `
-                                text-yellow-100
-                                drop-shadow-[0_0_10px_rgba(250,204,21,0.75)]
-                              `
-                        : `
-                                text-red-200
-                                drop-shadow-[0_0_10px_rgba(248,113,113,0.7)]
-                              `
-                }
-                `}
-            >
-                {displayedPower}
-            </span>
-
-        </div>
-    );
-}
-
-function EffectCharacterReveal({
-                                   beforePick,
-                                   afterPick,
-                                   character,
-                                   effectType,
-                               }: {
-    beforePick:
-        MultiplayerDraftPlayerState[
-            "picks"
-            ][number];
-
-    afterPick:
-        MultiplayerDraftPlayerState[
-            "picks"
-            ][number];
-
-    character:
-        typeof draftCharacters[number];
-
-    effectType:
-        | "ascension"
-        | "disruption";
-}) {
-    const difference =
-        afterPick.power -
-        beforePick.power;
-
-    const gradeStyle =
-        getGradeStyle(
-            afterPick.grade
-        );
-
-    return (
-        <div
-            className="
-                relative
-                flex
-                flex-col
-                items-center
-            "
-        >
-
-            {/* ===================================== */}
-            {/* AURA */}
-            {/* ===================================== */}
-
-            <div
-                className={`
-                    pointer-events-none
-                    absolute
-                    left-1/2
-                    top-[42%]
-                    h-[80%]
-                    w-[125%]
-                    -translate-x-1/2
-                    -translate-y-1/2
-                    rounded-full
-                    blur-[42px]
-
-                    ${
-                    effectType ===
-                    "ascension"
-                        ? `
-                                bg-yellow-300/20
-                                animate-pulse
-                              `
-                        : `
-                                bg-red-500/20
-                                animate-pulse
-                              `
-                }
-                `}
-            />
-
-
-            {/* SECONDARY AURA */}
-
-            <div
-                className={`
-                    pointer-events-none
-                    absolute
-                    left-1/2
-                    top-[42%]
-                    h-[55%]
-                    w-[90%]
-                    -translate-x-1/2
-                    -translate-y-1/2
-                    rounded-full
-                    blur-[22px]
-
-                    ${
-                    effectType ===
-                    "ascension"
-                        ? "bg-amber-100/15"
-                        : "bg-rose-300/10"
-                }
-                `}
-            />
-
-
-            {/* ===================================== */}
-            {/* ASCENSION ENERGY RING */}
-            {/* ===================================== */}
-
-            {effectType ===
-                "ascension" && (
-                    <>
-                        <div
-                            className="
-                            pointer-events-none
-                            absolute
-                            left-1/2
-                            top-[43%]
-                            h-[78%]
-                            w-[105%]
-                            -translate-x-1/2
-                            -translate-y-1/2
-                            rounded-[50%]
-                            border
-                            border-yellow-200/25
-                            animate-ping
-                        "
-                        />
-
-                        <div
-                            className="
-                            pointer-events-none
-                            absolute
-                            bottom-[14%]
-                            left-1/2
-                            h-[65%]
-                            w-[3px]
-                            -translate-x-1/2
-                            bg-gradient-to-t
-                            from-yellow-300/0
-                            via-yellow-200/35
-                            to-transparent
-                            blur-sm
-                        "
-                        />
-                    </>
-                )}
-
-
-            {/* ===================================== */}
-            {/* DISRUPTION ENERGY */}
-            {/* ===================================== */}
-
-            {effectType ===
-                "disruption" && (
-                    <>
-                        <div
-                            className="
-                            pointer-events-none
-                            absolute
-                            left-1/2
-                            top-[42%]
-                            h-[75%]
-                            w-[105%]
-                            -translate-x-1/2
-                            -translate-y-1/2
-                            rounded-[50%]
-                            border
-                            border-red-400/25
-                            animate-ping
-                        "
-                        />
-
-                        <div
-                            className="
-                            pointer-events-none
-                            absolute
-                            left-[12%]
-                            top-[20%]
-                            h-[3px]
-                            w-[78%]
-                            -rotate-[18deg]
-                            bg-gradient-to-r
-                            from-transparent
-                            via-red-400/70
-                            to-transparent
-                            blur-[1px]
-                        "
-                        />
-
-                        <div
-                            className="
-                            pointer-events-none
-                            absolute
-                            left-[15%]
-                            top-[55%]
-                            h-[2px]
-                            w-[72%]
-                            rotate-[13deg]
-                            bg-gradient-to-r
-                            from-transparent
-                            via-red-300/50
-                            to-transparent
-                            blur-[1px]
-                        "
-                        />
-                    </>
-                )}
-
-
-            {/* ===================================== */}
-            {/* CHARACTER */}
-            {/* ===================================== */}
-
-            <div
-                className={`
-                    relative
-                    z-10
-                    h-[285px]
-                    w-[195px]
-            
-                    ${
-                    effectType ===
-                    "ascension"
-                        ? `
-                            drop-shadow-[0_0_22px_rgba(250,204,21,0.5)]
-                          `
-                        : `
-                            drop-shadow-[0_0_22px_rgba(248,113,113,0.45)]
-                        `
-                    }
-                `}
-            >
-                <img
-                    src={
-                        character.imageUrl
-                    }
-                    alt={
-                        character.name
-                    }
-                    className="
-                        absolute
-                        inset-0
-                        h-full
-                        w-full
-                        rounded-[1.75rem]
-                        object-cover
-                        object-top
-                    "
-                />
-
-
-                {/* EDGE FADE */}
-
-                <div
-                    className="
-                        absolute
-                        inset-0
-                        rounded-[1.75rem]
-                        bg-gradient-to-t
-                        from-black
-                        via-transparent
-                        to-black/10
-                    "
-                />
-
-
-                {/* GRADE */}
-
-                <div
-                    className="
-                        absolute
-                        left-2.5
-                        top-2.5
-                        rounded-lg
-                        bg-black/65
-                        px-2
-                        py-1
-                        backdrop-blur-md
-                    "
-                >
-                    <span
+            {showResult &&
+                !matchupTied && (
+                    <div
                         className={`
-                            text-xl
-                            font-black
-                            italic
-
-                            ${gradeStyle.grade}
+                            pointer-events-none
+                            absolute
+                            inset-y-0
+                            z-30
+                            w-1/2
+                            overflow-hidden
+            
+                            ${
+                            myWon
+                                ? "left-0"
+                                : "right-0"
+                            }
                         `}
                     >
-                        {
-                            afterPick.grade
-                        }
-                    </span>
-                </div>
+
+                        {/* LARGE SIDE GLOW */}
+
+                        <div
+                            className={`
+                                absolute
+                                inset-0
+                                animate-[victoryWash_850ms_cubic-bezier(.16,1,.3,1)_both]
+            
+                                ${
+                                myWon
+                                    ? `
+                                        bg-gradient-to-r
+                                        from-pink-500/20
+                                        via-fuchsia-400/10
+                                        to-transparent
+                                    `
+                                    : `
+                                        bg-gradient-to-l
+                                        from-purple-500/20
+                                        via-violet-400/10
+                                        to-transparent
+                                    `
+                                }
+                            `}
+                        />
 
 
-                {/* NAME */}
+                        {/* FLASH BURST */}
 
+                        <div
+                            className={`
+                                absolute
+                                top-1/2
+                                h-[420px]
+                                w-[420px]
+                                -translate-y-1/2
+                                animate-[victoryBurst_800ms_ease-out_both]
+                                rounded-full
+                                blur-[90px]
+            
+                                ${
+                                myWon
+                                    ? `
+                                        left-[18%]
+                                        bg-pink-400/25
+                                    `
+                                    : `
+                                        right-[18%]
+                                        bg-purple-400/25
+                                    `
+                                }
+                            `}
+                        />
+
+
+                        {/* DIAGONAL ENERGY SLASH */}
+
+                        <div
+                            className={`
+                                absolute
+                                top-[47%]
+                                h-[4px]
+                                w-[130%]
+                                -translate-y-1/2
+                                animate-[victorySlash_650ms_cubic-bezier(.16,1,.3,1)_both]
+                                bg-gradient-to-r
+                                from-transparent
+                                via-white
+                                to-transparent
+                                shadow-[0_0_22px_rgba(255,255,255,0.9)]
+            
+                                ${
+                                myWon
+                                    ? `
+                                        -left-[15%]
+                                        -rotate-[12deg]
+                                    `
+                                    : `
+                                        -right-[15%]
+                                        rotate-[12deg]
+                                    `
+                                }
+                            `}
+                        />
+
+
+                        {/* SECONDARY SLASH */}
+
+                        <div
+                            className={`
+                                absolute
+                                top-[51%]
+                                h-px
+                                w-[115%]
+                                -translate-y-1/2
+                                animate-[victorySlashSecondary_750ms_80ms_cubic-bezier(.16,1,.3,1)_both]
+            
+                                ${
+                                myWon
+                                    ? `
+                                        -left-[10%]
+                                        -rotate-[8deg]
+                                        bg-gradient-to-r
+                                        from-transparent
+                                        via-pink-200/80
+                                        to-transparent
+                                    `
+                                    : `
+                                        -right-[10%]
+                                        rotate-[8deg]
+                                        bg-gradient-to-r
+                                        from-transparent
+                                        via-purple-200/80
+                                        to-transparent
+                                    `
+                                }
+                            `}
+                        />
+
+
+                        {/* SIDE FRAME */}
+
+                        <div
+                            className={`
+                                absolute
+                                inset-x-[8%]
+                                bottom-[9%]
+                                top-[9%]
+                                animate-[victoryFrame_750ms_cubic-bezier(.16,1,.3,1)_both]
+                                rounded-[2.5rem]
+                                border
+            
+                                ${
+                                myWon
+                                    ? `
+                                        border-pink-300/35
+                                        shadow-[inset_0_0_35px_rgba(236,72,153,0.08),0_0_35px_rgba(236,72,153,0.12)]
+                                    `
+                                    : `
+                                        border-purple-300/35
+                                        shadow-[inset_0_0_35px_rgba(168,85,247,0.08),0_0_35px_rgba(168,85,247,0.12)]
+                                    `
+                                }
+                            `}
+                        />
+
+
+                        {/* GIANT BACKGROUND TEXT */}
+
+                        <p
+                            className={`
+                                absolute
+                                top-1/2
+                                -translate-y-1/2
+                                animate-[victoryWord_850ms_cubic-bezier(.16,1,.3,1)_both]
+                                whitespace-nowrap
+                                text-[7rem]
+                                font-black
+                                italic
+                                tracking-[-0.08em]
+                                text-white/[0.045]
+                                sm:text-[9rem]
+            
+                                ${
+                                myWon
+                                    ? "-left-5"
+                                    : "-right-5"
+                                }
+                            `}
+                        >
+                            VICTOR
+                        </p>
+
+
+                        {/* RESULT STAMP */}
+
+                        <div
+                            className={`
+                                absolute
+                                bottom-[15%]
+                                animate-[victoryStamp_700ms_120ms_cubic-bezier(.16,1,.3,1)_both]
+            
+                                ${
+                                myWon
+                                    ? `
+                                        left-[14%]
+                                        text-left
+                                    `
+                                    : `
+                                        right-[14%]
+                                        text-right
+                                    `
+                                }
+                            `}
+                        >
+                            <p
+                                className={`
+                                    text-[10px]
+                                    font-black
+                                    uppercase
+                                    tracking-[0.4em]
+            
+                                    ${
+                                    myWon
+                                        ? "text-pink-200/70"
+                                        : "text-purple-200/70"
+                                    }
+                                `}
+                            >
+                                ✦ Position Secured ✦
+                            </p>
+
+                            <p
+                                className="
+                                    mt-1
+                                    text-4xl
+                                    font-black
+                                    italic
+                                    tracking-tight
+                                    text-white
+                                    drop-shadow-[0_0_18px_rgba(255,255,255,0.35)]
+                                "
+                            >
+                                {myWon
+                                    ? myCharacter.name
+                                    : opponentCharacter.name}
+                            </p>
+                        </div>
+
+                    </div>
+                )}
+
+            {matchupTied && (
                 <div
                     className="
+                        pointer-events-none
                         absolute
-                        bottom-3
-                        left-3
-                        right-3
-                        text-left
+                        inset-0
+                        z-30
+                        flex
+                        items-center
+                        justify-center
+                        overflow-hidden
                     "
                 >
-                    <p className="truncate text-base font-black text-white">
-                        {
-                            character.name
-                        }
-                    </p>
 
-                    <p className="mt-0.5 truncate text-[9px] font-black uppercase tracking-widest text-white/40">
-                        {
-                            beforePick.position
-                        }
-                    </p>
+                    <div
+                        className="
+                            absolute
+                            left-1/2
+                            top-1/2
+                            h-[320px]
+                            w-[600px]
+                            -translate-x-1/2
+                            -translate-y-1/2
+                            animate-[tieBurst_800ms_ease-out_both]
+                            rounded-full
+                            bg-white/[0.07]
+                            blur-[100px]
+                        "
+                    />
+
+                    <div
+                        className="
+                            absolute
+                            left-1/2
+                            top-1/2
+                            h-[2px]
+                            w-[70%]
+                            -translate-x-1/2
+                            -translate-y-1/2
+                            animate-[tieSlash_650ms_cubic-bezier(.16,1,.3,1)_both]
+                            bg-gradient-to-r
+                            from-transparent
+                            via-white/80
+                            to-transparent
+                            shadow-[0_0_18px_rgba(255,255,255,0.5)]
+                        "
+                    />
+
+                    <div
+                        className="
+                            relative
+                            animate-[victoryStamp_700ms_cubic-bezier(.16,1,.3,1)_both]
+                            text-center
+                        "
+                    >
+                        <p className="text-[10px] font-black uppercase tracking-[0.5em] text-white/40">
+                            No Advantage
+                        </p>
+
+                        <p
+                            className="
+                                mt-1
+                                text-5xl
+                                font-black
+                                italic
+                                tracking-tight
+                                text-white
+                                drop-shadow-[0_0_25px_rgba(255,255,255,0.25)]
+                            "
+                        >
+                            DEADLOCK
+                        </p>
+                    </div>
                 </div>
-
-            </div>
-
-
-            {/* ===================================== */}
-            {/* POWER CHANGE */}
-            {/* ===================================== */}
-
-            <div
-                className={`
-                    relative
-                    z-20
-                    -mt-3
-                    flex
-                    items-center
-                    gap-2
-                    rounded-full
-                    border
-                    bg-black/80
-                    px-4
-                    py-2
-                    backdrop-blur-xl
-
-                    ${
-                    effectType ===
-                    "ascension"
-                        ? `
-                                border-yellow-300/30
-                                shadow-[0_0_18px_rgba(250,204,21,0.15)]
-                              `
-                        : `
-                                border-red-400/30
-                                shadow-[0_0_18px_rgba(248,113,113,0.14)]
-                              `
-                }
-                `}
-            >
-                <AnimatedPowerNumber
-                    from={
-                        beforePick.power
-                    }
-                    to={
-                        afterPick.power
-                    }
-                    effectType={
-                        effectType
-                    }
-                />
-
-
-                <span
-                    className={`
-                        text-[9px]
-                        font-black
-                        uppercase
-
-                        ${
-                        effectType ===
-                        "ascension"
-                            ? "text-yellow-300/70"
-                            : "text-red-300/70"
-                    }
-                    `}
-                >
-                    {difference > 0
-                        ? `+${difference}`
-                        : difference}
-                </span>
-
-            </div>
-
+            )}
         </div>
     );
 }
 
-function getEffectColumns(
-    count: number
-) {
-    if (count <= 1) {
-        return 1;
-    }
 
-    if (count === 2) {
-        return 2;
-    }
+function RevealEffectChoice({
+                                owner,
+                                name,
+                                description,
+                                type,
+                                compact,
+                                glowing,
+                            }: {
+    owner: string;
 
-    if (count <= 6) {
-        return 3;
-    }
-
-    return 3;
-}
-
-
-function getEffectCardWidth(
-    count: number
-) {
-    if (count <= 1) {
-        return "w-[200px]";
-    }
-
-    if (count === 2) {
-        return "w-[170px]";
-    }
-
-    if (count === 3) {
-        return "w-[145px]";
-    }
-
-    if (count <= 6) {
-        return "w-[125px]";
-    }
-
-    return "w-[105px]";
-}
-
-function EffectRevealTeam({
-                              eyebrow,
-                              effectName,
-                              description,
-                              teamLabel,
-                              beforePicks,
-                              afterPicks,
-                              effectType,
-                          }: {
-    eyebrow: string;
-
-    effectName:
-        string | null;
+    name: string | null;
 
     description:
         string | null;
 
-    teamLabel: string;
-
-    beforePicks:
-        MultiplayerDraftPlayerState[
-            "picks"
-            ];
-
-    afterPicks:
-        MultiplayerDraftPlayerState[
-            "picks"
-            ];
-
-    effectType:
+    type:
         | "ascension"
         | "disruption";
+
+    compact: boolean;
+
+    glowing: boolean;
 }) {
-    const changes =
-        beforePicks.flatMap(
-            (beforePick) => {
-                const afterPick =
-                    afterPicks.find(
-                        (pick) =>
-                            pick.position ===
-                            beforePick.position
-                    );
-
-                if (!afterPick) {
-                    return [];
-                }
-
-                const difference =
-                    afterPick.power -
-                    beforePick.power;
-
-                const affected =
-                    effectType ===
-                    "ascension"
-                        ? difference > 0
-                        : difference < 0;
-
-                if (!affected) {
-                    return [];
-                }
-
-                const character =
-                    draftCharacters.find(
-                        (character) =>
-                            character.id ===
-                            beforePick.characterId
-                    );
-
-                if (!character) {
-                    return [];
-                }
-
-                return [
-                    {
-                        beforePick,
-                        afterPick,
-                        character,
-                    },
-                ];
-            }
-        );
-
-
-    /*
-     * Shrink portraits when a large
-     * number of characters are affected.
-     */
-    const scaleClass =
-        changes.length <= 2
-            ? "scale-100"
-            : changes.length <= 4
-                ? "scale-[0.92]"
-                : changes.length <= 6
-                    ? "scale-[0.82]"
-                    : "scale-[0.72]";
-
-
     return (
         <div
-            className="
+            className={`
                 relative
-                flex
-                min-h-[470px]
-                flex-col
-            "
+                overflow-hidden
+                border
+                backdrop-blur-xl
+
+                transition-all
+                duration-700
+                ease-[cubic-bezier(.16,1,.3,1)]
+
+                ${
+                compact
+                    ? `
+                            w-[260px]
+                            rounded-2xl
+                            px-4
+                            py-3
+                        `
+                    : `
+                            w-[420px]
+                            rounded-3xl
+                            px-6
+                            py-6
+                        `
+            }
+
+                ${
+                type ===
+                "ascension"
+                    ? `
+                            border-yellow-400/30
+                            bg-yellow-500/[0.08]
+                        `
+                    : `
+                            border-red-400/30
+                            bg-red-500/[0.08]
+                        `
+            }
+
+                ${
+                glowing &&
+                type === "ascension"
+                    ? `
+                            scale-[1.06]
+                            border-yellow-200
+                            shadow-[0_0_40px_rgba(250,204,21,0.55)]
+                          `
+                    : ""
+            }
+
+                ${
+                glowing &&
+                type === "disruption"
+                    ? `
+                            scale-[1.06]
+                            border-red-300
+                            shadow-[0_0_40px_rgba(248,113,113,0.50)]
+                          `
+                    : ""
+            }
+            `}
         >
 
-            {/* EFFECT TITLE */}
+            <p
+                className={`
+                    text-[8px]
+                    font-black
+                    uppercase
+                    tracking-[0.3em]
 
-            <div className="relative z-20 text-center">
-
-                <p
-                    className={`
-                        text-[9px]
-                        font-black
-                        uppercase
-                        tracking-[0.32em]
-
-                        ${
-                        effectType ===
-                        "ascension"
-                            ? "text-yellow-300/55"
-                            : "text-red-300/55"
-                    }
-                    `}
-                >
-                    {eyebrow}
-                </p>
+                    ${
+                    type ===
+                    "ascension"
+                        ? "text-yellow-300/55"
+                        : "text-red-300/55"
+                }
+                `}
+            >
+                {owner}
+            </p>
 
 
-                <h3
-                    className={`
-                        mt-1
-                        text-2xl
-                        font-black
+            <p
+                className={`
+                    mt-1
+                    font-black
 
-                        ${
-                        effectType ===
-                        "ascension"
-                            ? "text-yellow-100"
-                            : "text-red-100"
-                    }
-                    `}
-                >
-                    {
-                        effectName ??
-                        "None"
-                    }
-                </h3>
+                    ${
+                    compact
+                        ? "text-base"
+                        : "text-2xl"
+                }
+
+                    ${
+                    type ===
+                    "ascension"
+                        ? "text-yellow-100"
+                        : "text-red-100"
+                }
+                `}
+            >
+                {name ?? "None"}
+            </p>
 
 
-                {description && (
-                    <p
-                        className="
-                            mx-auto
-                            mt-1
-                            max-w-lg
-                            line-clamp-2
-                            text-[10px]
-                            leading-4
-                            text-white/30
-                        "
-                    >
+            {!compact &&
+                description && (
+                    <p className="mt-2 text-xs leading-5 text-white/40">
                         {description}
                     </p>
                 )}
 
-
-                <p className="mt-2 text-[8px] font-black uppercase tracking-[0.28em] text-white/20">
-                    {teamLabel}
-                </p>
-
-            </div>
-
-
-            {/* CHARACTERS */}
-
-            <div
-                className="
-                    relative
-                    z-10
-                    flex
-                    flex-1
-                    items-start
-                    justify-center
-                    pt-3
-                "
-            >
-                {changes.length === 0 ? (
-                    <p className="text-xs font-black uppercase tracking-widest text-white/20">
-                        No Effect
-                    </p>
-                ) : changes.length === 9 ? (
-
-                    // =====================================================
-                    // 9 AFFECTED:
-                    // 8 IN TWO ROWS OF 4
-                    // + 9TH CENTERED ON THE SIDE
-                    // =====================================================
-
-                    <div
-                        className={`
-                            flex
-                            origin-top
-                            items-center
-                            justify-center
-                            gap-x-7
-            
-                            ${scaleClass}
-                        `}
-                    >
-
-                        {/* FIRST 8 */}
-
-                        <div
-                            className="
-                                flex
-                                flex-col
-                                items-center
-                                gap-y-3
-                            "
-                        >
-
-                            {/* ROW 1 */}
-
-                            <div
-                                className="
-                                    flex
-                                    items-center
-                                    justify-center
-                                    gap-x-5
-                                "
-                            >
-                                {changes
-                                    .slice(0, 4)
-                                    .map(
-                                        ({
-                                             beforePick,
-                                             afterPick,
-                                             character,
-                                         }) => (
-                                            <EffectCharacterReveal
-                                                key={
-                                                    beforePick.position
-                                                }
-                                                beforePick={
-                                                    beforePick
-                                                }
-                                                afterPick={
-                                                    afterPick
-                                                }
-                                                character={
-                                                    character
-                                                }
-                                                effectType={
-                                                    effectType
-                                                }
-                                            />
-                                        )
-                                    )}
-                            </div>
-
-
-                            {/* ROW 2 */}
-
-                            <div
-                                className="
-                                    flex
-                                    items-center
-                                    justify-center
-                                    gap-x-5
-                                "
-                            >
-                                {changes
-                                    .slice(4, 8)
-                                    .map(
-                                        ({
-                                             beforePick,
-                                             afterPick,
-                                             character,
-                                         }) => (
-                                            <EffectCharacterReveal
-                                                key={
-                                                    beforePick.position
-                                                }
-                                                beforePick={
-                                                    beforePick
-                                                }
-                                                afterPick={
-                                                    afterPick
-                                                }
-                                                character={
-                                                    character
-                                                }
-                                                effectType={
-                                                    effectType
-                                                }
-                                            />
-                                        )
-                                    )}
-                            </div>
-
-                        </div>
-
-
-                        {/* 9TH CHARACTER */}
-
-                        <div
-                            className="
-                                flex
-                                items-center
-                                justify-center
-                                self-center
-                            "
-                        >
-                            <EffectCharacterReveal
-                                key={
-                                    changes[8]
-                                        .beforePick
-                                        .position
-                                }
-                                beforePick={
-                                    changes[8]
-                                        .beforePick
-                                }
-                                afterPick={
-                                    changes[8]
-                                        .afterPick
-                                }
-                                character={
-                                    changes[8]
-                                        .character
-                                }
-                                effectType={
-                                    effectType
-                                }
-                            />
-                        </div>
-
-                    </div>
-
-                ) : (
-
-                    // =====================================================
-                    // 1 - 8 AFFECTED:
-                    // MAX 4 PER ROW
-                    // EACH ROW CENTERED INDEPENDENTLY
-                    // =====================================================
-
-                    <div
-                        className={`
-                            flex
-                            origin-top
-                            flex-col
-                            items-center
-                            gap-y-3
-            
-                            ${scaleClass}
-                        `}
-                    >
-
-                        {/* FIRST ROW */}
-
-                        <div
-                            className="
-                                flex
-                                items-center
-                                justify-center
-                                gap-x-5
-                            "
-                        >
-                            {changes
-                                .slice(0, 4)
-                                .map(
-                                    ({
-                                         beforePick,
-                                         afterPick,
-                                         character,
-                                     }) => (
-                                        <EffectCharacterReveal
-                                            key={
-                                                beforePick.position
-                                            }
-                                            beforePick={
-                                                beforePick
-                                            }
-                                            afterPick={
-                                                afterPick
-                                            }
-                                            character={
-                                                character
-                                            }
-                                            effectType={
-                                                effectType
-                                            }
-                                        />
-                                    )
-                                )}
-                        </div>
-
-
-                        {/* SECOND ROW */}
-
-                        {changes.length > 4 && (
-                            <div
-                                className="
-                                    flex
-                                    items-center
-                                    justify-center
-                                    gap-x-5
-                                "
-                            >
-                                {changes
-                                    .slice(4, 8)
-                                    .map(
-                                        ({
-                                             beforePick,
-                                             afterPick,
-                                             character,
-                                         }) => (
-                                            <EffectCharacterReveal
-                                                key={
-                                                    beforePick.position
-                                                }
-                                                beforePick={
-                                                    beforePick
-                                                }
-                                                afterPick={
-                                                    afterPick
-                                                }
-                                                character={
-                                                    character
-                                                }
-                                                effectType={
-                                                    effectType
-                                                }
-                                            />
-                                        )
-                                    )}
-                            </div>
-                        )}
-
-                    </div>
-
-                )}
-            </div>
-
         </div>
     );
-}
-
-function countAffectedPicks(
-    beforePicks:
-    MultiplayerDraftPlayerState[
-        "picks"
-        ],
-
-    afterPicks:
-    MultiplayerDraftPlayerState[
-        "picks"
-        ],
-
-    effectType:
-        | "ascension"
-        | "disruption"
-) {
-    return beforePicks.filter(
-        (beforePick) => {
-            const afterPick =
-                afterPicks.find(
-                    (pick) =>
-                        pick.position ===
-                        beforePick.position
-                );
-
-            if (!afterPick) {
-                return false;
-            }
-
-            return effectType ===
-            "ascension"
-                ? afterPick.power >
-                beforePick.power
-                : afterPick.power <
-                beforePick.power;
-        }
-    ).length;
 }
 
 export default function MultiplayerDraftResultsPage() {
@@ -2287,10 +1905,11 @@ export default function MultiplayerDraftResultsPage() {
     const [hostState, setHostState,] = useState<MultiplayerDraftPlayerState | null>(null);
     const [guestState, setGuestState,] = useState<MultiplayerDraftPlayerState | null>(null);
     const [revealPhase, setRevealPhase] = useState<MultiplayerRevealPhase>("intro");
-    const [currentMatchupIndex, setCurrentMatchupIndex,] = useState(0);
     const [requestingRematch, setRequestingRematch,] = useState(false);
     const [finalTeamsLoaded, setFinalTeamsLoaded,] = useState(false);
     const [historySaved, setHistorySaved,] = useState(false);
+    const [currentMatchupIndex, setCurrentMatchupIndex,] = useState(0);
+    const [matchupEffectStage, setMatchupEffectStage,] = useState<MatchupEffectStage>("initial");
 
 
     // ---------------------------------------------------------
@@ -2547,77 +2166,89 @@ export default function MultiplayerDraftResultsPage() {
             ]
         );
 
+    const finalRevealSlots =
+        useMemo(() => {
+            if (
+                !revealMyState ||
+                !revealOpponentState
+            ) {
+                return [];
+            }
+
+            const normalSlots =
+                draftPositions.map(
+                    (position) => ({
+                        label: position,
+
+                        myPick:
+                            finalMyPicks.find(
+                                (pick) =>
+                                    pick.position ===
+                                    position
+                            ) ?? null,
+
+                        opponentPick:
+                            finalOpponentPicks.find(
+                                (pick) =>
+                                    pick.position ===
+                                    position
+                            ) ?? null,
+
+                        isPowerPosition:
+                            false,
+                    })
+                );
+
+            const myPowerPick =
+                finalMyPicks.find(
+                    (pick) =>
+                        pick.position ===
+                        revealMyState
+                            .selectedPowerPosition
+                ) ?? null;
+
+            const opponentPowerPick =
+                finalOpponentPicks.find(
+                    (pick) =>
+                        pick.position ===
+                        revealOpponentState
+                            .selectedPowerPosition
+                ) ?? null;
+
+            return [
+                ...normalSlots,
+
+                {
+                    label:
+                        "Power Position",
+
+                    myPick:
+                    myPowerPick,
+
+                    opponentPick:
+                    opponentPowerPick,
+
+                    isPowerPosition:
+                        true,
+                },
+            ];
+        }, [
+            revealMyState,
+            revealOpponentState,
+            finalMyPicks,
+            finalOpponentPicks,
+        ]);
+
 
 // ---------------------------------------------------------
 // BUILD 9 REVEAL MATCHUPS
 // ---------------------------------------------------------
 
-    const revealSlots = useMemo(() => {
-        if (
-            !revealMyState ||
-            !revealOpponentState
-        ) {
-            return [];
-        }
-
-        const normalSlots =
-            draftPositions.map(
-                (position) => ({
-                    label: position,
-
-                    myPick:
-                        revealMyState.picks.find(
-                            (pick) =>
-                                pick.position ===
-                                position
-                        ) ?? null,
-
-                    opponentPick:
-                        revealOpponentState.picks.find(
-                            (pick) =>
-                                pick.position ===
-                                position
-                        ) ?? null,
-
-                    isPowerPosition: false,
-                })
-            );
-
-        const myPowerPick =
-            revealMyState.picks.find(
-                (pick) =>
-                    pick.position ===
-                    revealMyState.selectedPowerPosition
-            ) ?? null;
-
-        const opponentPowerPick =
-            revealOpponentState.picks.find(
-                (pick) =>
-                    pick.position ===
-                    revealOpponentState.selectedPowerPosition
-            ) ?? null;
-
-        return [
-            ...normalSlots,
-
-            {
-                label: "Power Position",
-                myPick: myPowerPick,
-                opponentPick: opponentPowerPick,
-                isPowerPosition: true,
-            },
-        ];
-    }, [
-        revealMyState,
-        revealOpponentState,
-    ]);
-
     useEffect(() => {
         if (
             !hostState ||
             !guestState ||
-            revealPhase !==
-            "intro"
+            revealPhase !== "intro"
         ) {
             return;
         }
@@ -2625,12 +2256,8 @@ export default function MultiplayerDraftResultsPage() {
         const timeout =
             window.setTimeout(
                 () => {
-                    setCurrentMatchupIndex(
-                        0
-                    );
-
                     setRevealPhase(
-                        "lineup"
+                        "ascension"
                     );
                 },
                 1200
@@ -2649,107 +2276,6 @@ export default function MultiplayerDraftResultsPage() {
     useEffect(() => {
         if (
             revealPhase !==
-            "lineup"
-        ) {
-            return;
-        }
-
-        if (
-            revealSlots.length ===
-            0
-        ) {
-            return;
-        }
-
-        const currentSlot =
-            revealSlots[
-                currentMatchupIndex
-                ];
-
-        if (!currentSlot) {
-            return;
-        }
-
-        const myPower =
-            currentSlot.myPick
-                ? getPreAscensionPower(
-                    currentSlot.myPick
-                )
-                : 0;
-
-        const opponentPower =
-            currentSlot.opponentPick
-                ? getPreAscensionPower(
-                    currentSlot.opponentPick
-                )
-                : 0;
-
-        const myGrade =
-            currentSlot.myPick
-                ? getMultiplayerPickGrade(
-                    currentSlot.myPick,
-                    myPower
-                )
-                : null;
-
-        const opponentGrade =
-            currentSlot.opponentPick
-                ? getMultiplayerPickGrade(
-                    currentSlot.opponentPick,
-                    opponentPower
-                )
-                : null;
-
-        const elite =
-            myGrade === "U" ||
-            myGrade === "S+" ||
-            myGrade === "S" ||
-            opponentGrade === "U" ||
-            opponentGrade === "S+" ||
-            opponentGrade === "S";
-
-        const delay =
-            elite
-                ? 2200
-                : 1700;
-
-        const timeout =
-            window.setTimeout(
-                () => {
-                    const isLast =
-                        currentMatchupIndex ===
-                        revealSlots.length -
-                        1;
-
-                    if (isLast) {
-                        setRevealPhase(
-                            "ascension"
-                        );
-
-                        return;
-                    }
-
-                    setCurrentMatchupIndex(
-                        (current) =>
-                            current + 1
-                    );
-                },
-                delay
-            );
-
-        return () =>
-            window.clearTimeout(
-                timeout
-            );
-    }, [
-        revealPhase,
-        currentMatchupIndex,
-        revealSlots,
-    ]);
-
-    useEffect(() => {
-        if (
-            revealPhase !==
             "ascension"
         ) {
             return;
@@ -2762,7 +2288,7 @@ export default function MultiplayerDraftResultsPage() {
                         "disruption"
                     );
                 },
-                5200
+                4500
             );
 
         return () =>
@@ -2784,11 +2310,19 @@ export default function MultiplayerDraftResultsPage() {
         const timeout =
             window.setTimeout(
                 () => {
+                    setCurrentMatchupIndex(
+                        0
+                    );
+
+                    setMatchupEffectStage(
+                        "initial"
+                    );
+
                     setRevealPhase(
-                        "final"
+                        "matchups"
                     );
                 },
-                5200
+                4500
             );
 
         return () =>
@@ -2797,6 +2331,95 @@ export default function MultiplayerDraftResultsPage() {
             );
     }, [
         revealPhase,
+    ]);
+
+    useEffect(() => {
+        if (
+            revealPhase !==
+            "matchups"
+        ) {
+            return;
+        }
+
+        setMatchupEffectStage(
+            "initial"
+        );
+
+        const ascensionTimer =
+            window.setTimeout(
+                () => {
+                    setMatchupEffectStage(
+                        "ascension"
+                    );
+                },
+                800
+            );
+
+        const disruptionTimer =
+            window.setTimeout(
+                () => {
+                    setMatchupEffectStage(
+                        "disruption"
+                    );
+                },
+                1600
+            );
+
+        const resolvedTimer =
+            window.setTimeout(
+                () => {
+                    setMatchupEffectStage(
+                        "resolved"
+                    );
+                },
+                2450
+            );
+
+        const nextTimer =
+            window.setTimeout(
+                () => {
+                    const isLast =
+                        currentMatchupIndex ===
+                        finalRevealSlots.length -
+                        1;
+
+                    if (isLast) {
+                        setRevealPhase(
+                            "final"
+                        );
+
+                        return;
+                    }
+
+                    setCurrentMatchupIndex(
+                        (current) =>
+                            current + 1
+                    );
+                },
+                3300
+            );
+
+        return () => {
+            window.clearTimeout(
+                ascensionTimer
+            );
+
+            window.clearTimeout(
+                disruptionTimer
+            );
+
+            window.clearTimeout(
+                resolvedTimer
+            );
+
+            window.clearTimeout(
+                nextTimer
+            );
+        };
+    }, [
+        revealPhase,
+        currentMatchupIndex,
+        finalRevealSlots.length,
     ]);
 
     useEffect(() => {
@@ -3531,106 +3154,15 @@ export default function MultiplayerDraftResultsPage() {
         );
 
     const finalNormalSlots =
-        draftPositions.map(
-            (position) => ({
-                label:
-                position,
-
-                myPick:
-                    finalMyPicks.find(
-                        (pick) =>
-                            pick.position ===
-                            position
-                    ) ?? null,
-
-                opponentPick:
-                    finalOpponentPicks.find(
-                        (pick) =>
-                            pick.position ===
-                            position
-                    ) ?? null,
-
-                isPowerPosition:
-                    false,
-            })
+        finalRevealSlots.filter(
+            (slot) =>
+                !slot.isPowerPosition
         );
-
-
-    const finalMyPowerPick =
-        finalMyPicks.find(
-            (pick) =>
-                pick.position ===
-                myState.selectedPowerPosition
-        ) ?? null;
-
-
-    const finalOpponentPowerPick =
-        finalOpponentPicks.find(
-            (pick) =>
-                pick.position ===
-                opponentState.selectedPowerPosition
-        ) ?? null;
-
-
-    const finalRevealSlots = [
-        ...finalNormalSlots,
-
-        {
-            label:
-                "Power Position",
-
-            myPick:
-            finalMyPowerPick,
-
-            opponentPick:
-            finalOpponentPowerPick,
-
-            isPowerPosition:
-                true,
-        },
-    ];
 
     const matchupOutcomes =
         finalRevealSlots.map(
             (slot) =>
                 getMatchupOutcome(slot)
-        );
-
-    const myAscensionAffected =
-        countAffectedPicks(
-            myPreAscensionPicks,
-            revealMyState?.picks ??
-            [],
-            "ascension"
-        );
-
-
-    const opponentAscensionAffected =
-        countAffectedPicks(
-            opponentPreAscensionPicks,
-            revealOpponentState
-                ?.picks ??
-            [],
-            "ascension"
-        );
-
-
-    const myDisruptionAffected =
-        countAffectedPicks(
-            revealMyState?.picks ??
-            [],
-            finalMyPicks,
-            "disruption"
-        );
-
-
-    const opponentDisruptionAffected =
-        countAffectedPicks(
-            revealOpponentState
-                ?.picks ??
-            [],
-            finalOpponentPicks,
-            "disruption"
         );
 
 
@@ -3735,6 +3267,145 @@ export default function MultiplayerDraftResultsPage() {
                 opponentTotalPower
             )
         );
+
+    const currentMatchupSlot =
+        revealPhase === "matchups"
+            ? finalRevealSlots[
+            currentMatchupIndex
+            ] ?? null
+            : null;
+
+    const currentMyInitialPick =
+        currentMatchupSlot
+            ? myPreAscensionPicks.find(
+            (pick) =>
+                pick.position ===
+                currentMatchupSlot
+                    .myPick
+                    ?.position
+        ) ?? null
+            : null;
+
+
+    const currentMyAscendedPick =
+        currentMatchupSlot
+            ? revealMyState?.picks.find(
+            (pick) =>
+                pick.position ===
+                currentMatchupSlot
+                    .myPick
+                    ?.position
+        ) ?? null
+            : null;
+
+
+    const currentMyFinalPick =
+        currentMatchupSlot
+            ? finalMyPicks.find(
+            (pick) =>
+                pick.position ===
+                currentMatchupSlot
+                    .myPick
+                    ?.position
+        ) ?? null
+            : null;
+
+    const currentOpponentInitialPick =
+        currentMatchupSlot
+            ? opponentPreAscensionPicks.find(
+            (pick) =>
+                pick.position ===
+                currentMatchupSlot
+                    .opponentPick
+                    ?.position
+        ) ?? null
+            : null;
+
+
+    const currentOpponentAscendedPick =
+        currentMatchupSlot
+            ? revealOpponentState
+            ?.picks.find(
+                (pick) =>
+                    pick.position ===
+                    currentMatchupSlot
+                        .opponentPick
+                        ?.position
+            ) ?? null
+            : null;
+
+
+    const currentOpponentFinalPick =
+        currentMatchupSlot
+            ? finalOpponentPicks.find(
+            (pick) =>
+                pick.position ===
+                currentMatchupSlot
+                    .opponentPick
+                    ?.position
+        ) ?? null
+            : null;
+
+    const myAscensionAffectsCurrent =
+        !!currentMyInitialPick &&
+        !!currentMyAscendedPick &&
+        currentMyAscendedPick.power >
+        currentMyInitialPick.power;
+
+
+    const opponentAscensionAffectsCurrent =
+        !!currentOpponentInitialPick &&
+        !!currentOpponentAscendedPick &&
+        currentOpponentAscendedPick.power >
+        currentOpponentInitialPick.power;
+
+
+    const opponentDisruptionAffectsCurrent =
+        !!currentMyAscendedPick &&
+        !!currentMyFinalPick &&
+        currentMyFinalPick.power <
+        currentMyAscendedPick.power;
+
+
+    const myDisruptionAffectsCurrent =
+        !!currentOpponentAscendedPick &&
+        !!currentOpponentFinalPick &&
+        currentOpponentFinalPick.power <
+        currentOpponentAscendedPick.power;
+
+    const ascensionStageActive =
+        matchupEffectStage ===
+        "ascension" ||
+        matchupEffectStage ===
+        "disruption" ||
+        matchupEffectStage ===
+        "resolved";
+
+
+    const disruptionStageActive =
+        matchupEffectStage ===
+        "disruption" ||
+        matchupEffectStage ===
+        "resolved";
+
+    const myAscensionActive =
+        ascensionStageActive &&
+        myAscensionAffectsCurrent;
+
+
+    const opponentAscensionActive =
+        ascensionStageActive &&
+        opponentAscensionAffectsCurrent;
+
+
+    const myDisruptionActive =
+        disruptionStageActive &&
+        myDisruptionAffectsCurrent;
+
+
+    const opponentDisruptionActive =
+        disruptionStageActive &&
+        opponentDisruptionAffectsCurrent;
 
     return (
         <main className="mx-auto min-h-[calc(100vh-130px)] max-w-[1700px] px-4 py-6">
@@ -3871,6 +3542,200 @@ export default function MultiplayerDraftResultsPage() {
                     </div>
                 )}
 
+            {(
+                revealPhase ===
+                        "ascension" ||
+                        revealPhase ===
+                        "disruption" ||
+                        revealPhase ===
+                        "matchups"
+                    ) && (
+                        <div
+                            className="
+                    pointer-events-none
+                    fixed
+                    inset-0
+                    z-40
+                "
+                >
+
+                    {/* ====================================== */}
+                    {/* ASCENSIONS */}
+                    {/* ====================================== */}
+
+                            <div
+                                className="
+                                        absolute
+                                        left-0
+                                        right-0
+                                        top-1/2
+                                        flex
+                                        justify-center
+                                        gap-10
+                                        transition-transform
+                                        duration-700
+                                        ease-[cubic-bezier(.16,1,.3,1)]
+                                    "
+                                style={{
+                                    transform:
+                                        revealPhase ===
+                                        "ascension"
+                                            ? "translateY(-50%)"
+                                            : "translateY(calc(50vh - 6.5rem))",
+                                }}
+                            >
+
+                        <RevealEffectChoice
+                            owner="Your Ascension"
+                            name={
+                                revealMyState
+                                    ?.selectedAscension ??
+                                null
+                            }
+                            description={
+                                revealMyState
+                                    ?.selectedAscension
+                                    ? ascensionInfo[
+                                        revealMyState
+                                            .selectedAscension
+                                        ].description
+                                    : null
+                            }
+                            type="ascension"
+                            compact={
+                                revealPhase !==
+                                "ascension"
+                            }
+                            glowing={
+                                revealPhase ===
+                                "matchups" &&
+                                myAscensionActive
+                            }
+                        />
+
+
+                        <RevealEffectChoice
+                            owner={`${opponentPlayer.displayName}'s Ascension`}
+                            name={
+                                revealOpponentState
+                                    ?.selectedAscension ??
+                                null
+                            }
+                            description={
+                                revealOpponentState
+                                    ?.selectedAscension
+                                    ? ascensionInfo[
+                                        revealOpponentState
+                                            .selectedAscension
+                                        ].description
+                                    : null
+                            }
+                            type="ascension"
+                            compact={
+                                revealPhase !==
+                                "ascension"
+                            }
+                            glowing={
+                                revealPhase ===
+                                "matchups" &&
+                                opponentAscensionActive
+                            }
+                        />
+
+                    </div>
+
+
+                    {/* ====================================== */}
+                    {/* DISRUPTIONS */}
+                    {/* ====================================== */}
+
+                    {revealPhase !==
+                        "ascension" && (
+                            <div
+                                className="
+                                    absolute
+                                    left-0
+                                    right-0
+                                    top-1/2
+                                    flex
+                                    justify-center
+                                    gap-10
+                                    transition-transform
+                                    duration-700
+                                    ease-[cubic-bezier(.16,1,.3,1)]
+                                "
+                                style={{
+                                    transform:
+                                        revealPhase ===
+                                        "disruption"
+                                            ? "translateY(-50%)"
+                                            : "translateY(calc(50vh - 12rem))",
+                                }}
+                            >
+
+                                <RevealEffectChoice
+                                    owner="Your Disruption"
+                                    name={
+                                        revealMyState
+                                            ?.selectedDisruption ??
+                                        null
+                                    }
+                                    description={
+                                        revealMyState
+                                            ?.selectedDisruption
+                                            ? disruptionInfo[
+                                                revealMyState
+                                                    .selectedDisruption
+                                                ].description
+                                            : null
+                                    }
+                                    type="disruption"
+                                    compact={
+                                        revealPhase !==
+                                        "disruption"
+                                    }
+                                    glowing={
+                                        revealPhase ===
+                                        "matchups" &&
+                                        myDisruptionActive
+                                    }
+                                />
+
+
+                                <RevealEffectChoice
+                                    owner={`${opponentPlayer.displayName}'s Disruption`}
+                                    name={
+                                        revealOpponentState
+                                            ?.selectedDisruption ??
+                                        null
+                                    }
+                                    description={
+                                        revealOpponentState
+                                            ?.selectedDisruption
+                                            ? disruptionInfo[
+                                                revealOpponentState
+                                                    .selectedDisruption
+                                                ].description
+                                            : null
+                                    }
+                                    type="disruption"
+                                    compact={
+                                        revealPhase !==
+                                        "disruption"
+                                    }
+                                    glowing={
+                                        revealPhase ===
+                                        "matchups" &&
+                                        opponentDisruptionActive
+                                    }
+                                />
+
+                            </div>
+                        )}
+
+                </div>
+            )}
+
 
             <div className="text-center">
 
@@ -3916,171 +3781,26 @@ export default function MultiplayerDraftResultsPage() {
                                 flex
                                 min-h-[680px]
                                 flex-col
-                                justify-center
-                                overflow-hidden
-                                animate-[finalReveal_700ms_cubic-bezier(.16,1,.3,1)_both]
+                                items-center
+                                justify-start
+                                pt-16
                             "
                         >
+                            <p className="text-xs font-black uppercase tracking-[0.4em] text-yellow-300/55">
+                                Ascension Reveal
+                            </p>
 
-                            {/* AMBIENT ASCENSION GLOW */}
+                            <h2 className="mt-2 text-4xl font-black text-yellow-100">
+                                POWER AWAKENS
+                            </h2>
 
-                            <div
-                                className="
-                                    pointer-events-none
-                                    absolute
-                                    left-1/2
-                                    top-1/2
-                                    h-[500px]
-                                    w-[900px]
-                                    -translate-x-1/2
-                                    -translate-y-1/2
-                                    rounded-full
-                                    bg-yellow-400/[0.04]
-                                    blur-[120px]
-                                "
+                            <p className="mt-2 text-sm text-white/35">
+                                Both players reveal their Ascension.
+                            </p>
+
+                            <RevealProgressBar
+                                tone="ascension"
                             />
-
-
-                            {/* PHASE HEADER */}
-
-                            <div className="relative z-10 mb-3 text-center">
-
-                                <p
-                                    className="
-                                        text-[10px]
-                                        font-black
-                                        uppercase
-                                        tracking-[0.4em]
-                                        text-yellow-300/55
-                                    "
-                                >
-                                    Ascension Reveal
-                                </p>
-
-                                <h2
-                                    className="
-                                        mt-1
-                                        text-4xl
-                                        font-black
-                                        text-yellow-100
-                                        drop-shadow-[0_0_18px_rgba(250,204,21,0.15)]
-                                    "
-                                >
-                                    POWER AWAKENS
-                                </h2>
-
-                                <p className="mt-1 text-xs font-semibold text-white/25">
-                                    Ascensions empower the final lineup.
-                                </p>
-
-                            </div>
-
-
-                            {/* BOTH PLAYERS */}
-
-                            <div
-                                className="
-                                    relative
-                                    z-10
-                                    mx-auto
-                                    grid
-                                    min-h-[540px]
-                                    w-full
-                                    max-w-[1500px]
-                                    grid-cols-1
-                                    gap-5
-                                    lg:grid-cols-2
-                                "
-                            >
-
-                                {/* CENTER DIVIDER */}
-
-                                <div
-                                    className="
-                                        pointer-events-none
-                                        absolute
-                                        bottom-[8%]
-                                        left-1/2
-                                        top-[8%]
-                                        hidden
-                                        w-px
-                                        -translate-x-1/2
-                                        bg-gradient-to-b
-                                        from-transparent
-                                        via-yellow-200/10
-                                        to-transparent
-                                        lg:block
-                                    "
-                                />
-
-
-                                {/* YOUR ASCENSION */}
-
-                                <EffectRevealTeam
-                                    eyebrow="Your Ascension"
-                                    effectName={
-                                        revealMyState
-                                            ?.selectedAscension ??
-                                        null
-                                    }
-                                    description={
-                                        revealMyState
-                                            ?.selectedAscension
-
-                                            ? ascensionInfo[
-                                                revealMyState
-                                                    .selectedAscension
-                                                ].description
-
-                                            : null
-                                    }
-                                    teamLabel="Your Team"
-                                    beforePicks={
-                                        myPreAscensionPicks
-                                    }
-                                    afterPicks={
-                                        revealMyState
-                                            ?.picks ??
-                                        []
-                                    }
-                                    effectType="ascension"
-                                />
-
-
-                                {/* OPPONENT ASCENSION */}
-
-                                <EffectRevealTeam
-                                    eyebrow={`${opponentPlayer.displayName}'s Ascension`}
-                                    effectName={
-                                        revealOpponentState
-                                            ?.selectedAscension ??
-                                        null
-                                    }
-                                    description={
-                                        revealOpponentState
-                                            ?.selectedAscension
-
-                                            ? ascensionInfo[
-                                                revealOpponentState
-                                                    .selectedAscension
-                                                ].description
-
-                                            : null
-                                    }
-                                    teamLabel={`${opponentPlayer.displayName}'s Team`}
-                                    beforePicks={
-                                        opponentPreAscensionPicks
-                                    }
-                                    afterPicks={
-                                        revealOpponentState
-                                            ?.picks ??
-                                        []
-                                    }
-                                    effectType="ascension"
-                                />
-
-                            </div>
-
                         </div>
                     )}
 
@@ -4096,197 +3816,26 @@ export default function MultiplayerDraftResultsPage() {
                                 flex
                                 min-h-[680px]
                                 flex-col
-                                justify-center
-                                overflow-hidden
-                                animate-[finalReveal_700ms_cubic-bezier(.16,1,.3,1)_both]
+                                items-center
+                                justify-start
+                                pt-16
                             "
                         >
+                            <p className="text-xs font-black uppercase tracking-[0.4em] text-red-300/55">
+                                Disruption Reveal
+                            </p>
 
-                            {/* AMBIENT DISRUPTION GLOW */}
+                            <h2 className="mt-2 text-4xl font-black text-red-100">
+                                COUNTERATTACK
+                            </h2>
 
-                            <div
-                                className="
-                                    pointer-events-none
-                                    absolute
-                                    left-1/2
-                                    top-1/2
-                                    h-[500px]
-                                    w-[900px]
-                                    -translate-x-1/2
-                                    -translate-y-1/2
-                                    rounded-full
-                                    bg-red-500/[0.05]
-                                    blur-[120px]
-                                "
+                            <p className="mt-2 text-sm text-white/35">
+                                Both players reveal their Disruption.
+                            </p>
+
+                            <RevealProgressBar
+                                tone="disruption"
                             />
-
-
-                            {/* SUBTLE RED ENERGY STREAK */}
-
-                            <div
-                                className="
-                                    pointer-events-none
-                                    absolute
-                                    left-1/2
-                                    top-1/2
-                                    h-px
-                                    w-[70%]
-                                    -translate-x-1/2
-                                    -translate-y-1/2
-                                    -rotate-[8deg]
-                                    bg-gradient-to-r
-                                    from-transparent
-                                    via-red-400/15
-                                    to-transparent
-                                    blur-sm
-                                "
-                            />
-
-
-                            {/* PHASE HEADER */}
-
-                            <div className="relative z-10 mb-3 text-center">
-
-                                <p
-                                    className="
-                                        text-[10px]
-                                        font-black
-                                        uppercase
-                                        tracking-[0.4em]
-                                        text-red-300/55
-                                    "
-                                >
-                                    Disruption Reveal
-                                </p>
-
-                                <h2
-                                    className="
-                                        mt-1
-                                        text-4xl
-                                        font-black
-                                        text-red-100
-                                        drop-shadow-[0_0_18px_rgba(248,113,113,0.15)]
-                                    "
-                                >
-                                    COUNTERATTACK
-                                </h2>
-
-                                <p className="mt-1 text-xs font-semibold text-white/25">
-                                    Disruptions strike the opposing lineup.
-                                </p>
-
-                            </div>
-
-
-                            {/* BOTH PLAYERS */}
-
-                            <div
-                                className="
-                                    relative
-                                    z-10
-                                    mx-auto
-                                    grid
-                                    min-h-[540px]
-                                    w-full
-                                    max-w-[1500px]
-                                    grid-cols-1
-                                    gap-5
-                                    lg:grid-cols-2
-                                "
-                            >
-
-                                {/* CENTER DIVIDER */}
-
-                                <div
-                                    className="
-                                        pointer-events-none
-                                        absolute
-                                        bottom-[8%]
-                                        left-1/2
-                                        top-[8%]
-                                        hidden
-                                        w-px
-                                        -translate-x-1/2
-                                        bg-gradient-to-b
-                                        from-transparent
-                                        via-red-300/10
-                                        to-transparent
-                                        lg:block
-                                    "
-                                />
-
-
-                                {/* ======================================= */}
-                                {/* YOUR DISRUPTION HITS OPPONENT */}
-                                {/* ======================================= */}
-
-                                <EffectRevealTeam
-                                    eyebrow="Your Disruption"
-                                    effectName={
-                                        revealMyState
-                                            ?.selectedDisruption ??
-                                        null
-                                    }
-                                    description={
-                                        revealMyState
-                                            ?.selectedDisruption
-
-                                            ? disruptionInfo[
-                                                revealMyState
-                                                    .selectedDisruption
-                                                ].description
-
-                                            : null
-                                    }
-                                    teamLabel={`${opponentPlayer.displayName}'s Team`}
-                                    beforePicks={
-                                        revealOpponentState
-                                            ?.picks ??
-                                        []
-                                    }
-                                    afterPicks={
-                                        finalOpponentPicks
-                                    }
-                                    effectType="disruption"
-                                />
-
-
-                                {/* ======================================= */}
-                                {/* OPPONENT DISRUPTION HITS YOU */}
-                                {/* ======================================= */}
-
-                                <EffectRevealTeam
-                                    eyebrow={`${opponentPlayer.displayName}'s Disruption`}
-                                    effectName={
-                                        revealOpponentState
-                                            ?.selectedDisruption ??
-                                        null
-                                    }
-                                    description={
-                                        revealOpponentState
-                                            ?.selectedDisruption
-
-                                            ? disruptionInfo[
-                                                revealOpponentState
-                                                    .selectedDisruption
-                                                ].description
-
-                                            : null
-                                    }
-                                    teamLabel="Your Team"
-                                    beforePicks={
-                                        revealMyState
-                                            ?.picks ??
-                                        []
-                                    }
-                                    afterPicks={
-                                        finalMyPicks
-                                    }
-                                    effectType="disruption"
-                                />
-
-                            </div>
-
                         </div>
                     )}
 
@@ -4295,38 +3844,64 @@ export default function MultiplayerDraftResultsPage() {
                 {/* SINGLE MATCHUP */}
                 {/* ============================== */}
 
-                {revealPhase === "lineup" &&
-                    revealSlots[
-                        currentMatchupIndex
-                        ] && (
+                {revealPhase ===
+                    "matchups" &&
+                    currentMatchupSlot &&
+                    currentMyInitialPick &&
+                    currentMyAscendedPick &&
+                    currentMyFinalPick &&
+                    currentOpponentInitialPick &&
+                    currentOpponentAscendedPick &&
+                    currentOpponentFinalPick && (
                         <CinematicMatchup
                             key={
-                                revealSlots[
-                                    currentMatchupIndex
-                                    ].label
+                                currentMatchupIndex
                             }
                             slot={
-                                revealSlots[
-                                    currentMatchupIndex
-                                    ]
+                                currentMatchupSlot
                             }
                             matchupNumber={
                                 currentMatchupIndex +
                                 1
                             }
                             totalMatchups={
-                                revealSlots.length
+                                finalRevealSlots.length
                             }
-                            myState={myState}
+                            myState={
+                                myState
+                            }
                             opponentState={
                                 opponentState
                             }
                             opponentName={
                                 opponentPlayer.displayName
                             }
+
+                            myInitialPower={
+                                currentMyInitialPick.power
+                            }
+                            myAscendedPower={
+                                currentMyAscendedPick.power
+                            }
+                            myFinalPower={
+                                currentMyFinalPick.power
+                            }
+
+                            opponentInitialPower={
+                                currentOpponentInitialPick.power
+                            }
+                            opponentAscendedPower={
+                                currentOpponentAscendedPick.power
+                            }
+                            opponentFinalPower={
+                                currentOpponentFinalPick.power
+                            }
+
+                            effectStage={
+                                matchupEffectStage
+                            }
                         />
                     )}
-
 
                 {/* ============================== */}
                 {/* FINAL SUMMARY */}
@@ -4990,6 +4565,208 @@ export default function MultiplayerDraftResultsPage() {
                             transform:
                                 translate(-50%, -50%)
                                 scale(1.4);
+                        }
+                    }
+                    
+                    @keyframes revealProgress {
+                        from {
+                            transform: scaleX(0);
+                        }
+                    
+                        to {
+                            transform: scaleX(1);
+                        }
+                    }
+                    
+                    @keyframes victoryWash {
+                        0% {
+                            opacity: 0;
+                        }
+                    
+                        30% {
+                            opacity: 1;
+                        }
+                    
+                        100% {
+                            opacity: 0.7;
+                        }
+                    }
+                    
+                    
+                    @keyframes victoryBurst {
+                        0% {
+                            opacity: 0;
+                            transform:
+                                translateY(-50%)
+                                scale(0.2);
+                        }
+                    
+                        35% {
+                            opacity: 1;
+                            transform:
+                                translateY(-50%)
+                                scale(1.15);
+                        }
+                    
+                        100% {
+                            opacity: 0.3;
+                            transform:
+                                translateY(-50%)
+                                scale(1.45);
+                        }
+                    }
+                    
+                    
+                    @keyframes victorySlash {
+                        0% {
+                            opacity: 0;
+                            transform:
+                                translateX(-100%)
+                                scaleX(0.2);
+                        }
+                    
+                        35% {
+                            opacity: 1;
+                        }
+                    
+                        100% {
+                            opacity: 0;
+                            transform:
+                                translateX(100%)
+                                scaleX(1);
+                        }
+                    }
+                    
+                    
+                    @keyframes victorySlashSecondary {
+                        0% {
+                            opacity: 0;
+                            transform:
+                                translateX(-70%)
+                                scaleX(0.3);
+                        }
+                    
+                        45% {
+                            opacity: 0.8;
+                        }
+                    
+                        100% {
+                            opacity: 0;
+                            transform:
+                                translateX(70%)
+                                scaleX(1);
+                        }
+                    }
+                    
+                    
+                    @keyframes victoryFrame {
+                        0% {
+                            opacity: 0;
+                            transform: scale(1.12);
+                            filter: brightness(2);
+                        }
+                    
+                        45% {
+                            opacity: 1;
+                            transform: scale(0.98);
+                        }
+                    
+                        100% {
+                            opacity: 0.7;
+                            transform: scale(1);
+                        }
+                    }
+                    
+                    
+                    @keyframes victoryWord {
+                        0% {
+                            opacity: 0;
+                            transform:
+                                translateY(-50%)
+                                translateX(-40px)
+                                scale(1.2);
+                            filter: blur(10px);
+                        }
+                    
+                        60% {
+                            opacity: 1;
+                            filter: blur(0);
+                        }
+                    
+                        100% {
+                            opacity: 1;
+                            transform:
+                                translateY(-50%)
+                                translateX(0)
+                                scale(1);
+                        }
+                    }
+                    
+                    
+                    @keyframes victoryStamp {
+                        0% {
+                            opacity: 0;
+                            transform:
+                                translateY(25px)
+                                scale(1.35);
+                            filter: blur(5px);
+                        }
+                    
+                        60% {
+                            opacity: 1;
+                            transform:
+                                translateY(-3px)
+                                scale(0.97);
+                            filter: blur(0);
+                        }
+                    
+                        100% {
+                            opacity: 1;
+                            transform:
+                                translateY(0)
+                                scale(1);
+                        }
+                    }
+                    
+                    
+                    @keyframes tieBurst {
+                        0% {
+                            opacity: 0;
+                            transform:
+                                translate(-50%, -50%)
+                                scale(0.3);
+                        }
+                    
+                        55% {
+                            opacity: 1;
+                        }
+                    
+                        100% {
+                            opacity: 0.4;
+                            transform:
+                                translate(-50%, -50%)
+                                scale(1.4);
+                        }
+                    }
+                    
+                    
+                    @keyframes tieSlash {
+                        0% {
+                            opacity: 0;
+                            transform:
+                                translate(-50%, -50%)
+                                scaleX(0);
+                        }
+                    
+                        50% {
+                            opacity: 1;
+                        }
+                    
+                        100% {
+                            opacity: 0;
+                            transform:
+                                translate(-50%, -50%)
+                                scaleX(1.2);
                         }
                     }
                 `}
