@@ -276,6 +276,7 @@ function LegendaryPickReveal({
 
                     <div
                         className="
+                            legendary-ultra-ring
                             absolute
                             left-1/2
                             top-1/2
@@ -515,7 +516,8 @@ function LegendaryPickReveal({
 
                 <p
                     className={`
-                        mb-4
+                        legendary-rarity-label
+                        mb-7
                         text-xs
                         font-black
                         uppercase
@@ -569,9 +571,10 @@ function LegendaryPickReveal({
 
                     <div
                         className={`
+                            legendary-reveal-card
                             relative
-                            h-[460px]
-                            w-[310px]
+                            aspect-[2/3]
+                            w-[min(76vw,310px)]
                             overflow-hidden
                             rounded-[2rem]
                             border-2
@@ -685,6 +688,7 @@ function LegendaryPickReveal({
                                 right-2
                                 top-1/2
                                 -translate-y-1/2
+                                legendary-background-grade
                                 text-[9rem]
                                 font-black
                                 italic
@@ -741,6 +745,7 @@ function LegendaryPickReveal({
                                     font-black
                                     text-white
                                     drop-shadow-lg
+                                    legendary-character-name
                                 "
                             >
                                 {
@@ -768,6 +773,7 @@ function LegendaryPickReveal({
                             <p
                                 className={`
                                     mt-4
+                                    legendary-main-grade
                                     text-6xl
                                     font-black
                                     italic
@@ -1264,6 +1270,211 @@ function LegendaryPickReveal({
                         opacity: 0;
                     }
                 }
+                
+                /* ========================================= */
+                /* MOBILE DRAFT HEIGHT FITTING */
+                /* ========================================= */
+                
+                @media (
+                    max-width: 767px
+                ) {
+                    .mobile-current-character-card {
+                        height: 210px;
+                    }
+                
+                    .mobile-fate-rewrite {
+                        height: 46px;
+                    }
+                
+                    .mobile-position-tile {
+                        height: 64px;
+                    }
+                }
+                
+                
+                /* SHORTER PHONES */
+                
+                @media (
+                    max-width: 767px
+                ) and (
+                    max-height: 800px
+                ) {
+                    .mobile-current-character-card {
+                        height: 175px;
+                    }
+                
+                    .mobile-fate-rewrite {
+                        height: 42px;
+                    }
+                
+                    .mobile-position-tile {
+                        height: 60px;
+                    }
+                }
+                
+                
+                /* VERY SHORT PHONES */
+                
+                @media (
+                    max-width: 767px
+                ) and (
+                    max-height: 700px
+                ) {
+                    .mobile-current-character-card {
+                        height: 145px;
+                    }
+                
+                    .mobile-fate-rewrite {
+                        height: 40px;
+                    }
+                
+                    .mobile-position-tile {
+                        height: 56px;
+                    }
+                }
+                
+                @media (
+                    max-width: 767px
+                ) and (
+                    max-height: 800px
+                ) {
+                    .mobile-position-heading {
+                        margin-top: 10px;
+                        margin-bottom: 6px;
+                    }
+                
+                    .mobile-position-grid {
+                        gap: 6px;
+                    }
+                }
+                
+                
+                @media (
+                    max-width: 767px
+                ) and (
+                    max-height: 700px
+                ) {
+                    .mobile-position-heading {
+                        margin-top: 8px;
+                        margin-bottom: 4px;
+                    }
+                
+                    .mobile-position-grid {
+                        gap: 4px;
+                    }
+                }
+                
+                @media (
+                    max-width: 767px
+                ) and (
+                    max-height: 700px
+                ) {
+                    .mobile-current-anime {
+                        display: none;
+                    }
+                }
+                
+                /* ================================= */
+                /* MOBILE LEGENDARY REVEAL */
+                /* ================================= */
+                
+                @media (max-width: 767px) {
+                    .legendary-reveal-card {
+                        width: min(76vw, 290px);
+                        border-radius: 1.5rem;
+                    }
+                
+                    .legendary-background-grade {
+                        font-size: 7rem;
+                    }
+                
+                    .legendary-main-grade {
+                        font-size: 3.25rem;
+                    }
+                
+                    .legendary-character-name {
+                        font-size: 1.5rem;
+                        line-height: 1.75rem;
+                    }
+                
+                    .legendary-rarity-label {
+                        margin-bottom: 1.5rem;
+                        font-size: 0.65rem;
+                    }
+                }
+                
+                
+                /* SHORT PHONE */
+                
+                @media (max-width: 767px) and (max-height: 750px) {
+                    .legendary-reveal-card {
+                        width: min(66vw, 245px);
+                    }
+                
+                    .legendary-background-grade {
+                        font-size: 6rem;
+                    }
+                
+                    .legendary-main-grade {
+                        font-size: 2.75rem;
+                    }
+                
+                    .legendary-character-name {
+                        font-size: 1.25rem;
+                        line-height: 1.5rem;
+                    }
+                
+                    .legendary-rarity-label {
+                        margin-bottom: 1.15rem;
+                    }
+                }
+                
+                
+                /* VERY SHORT PHONE */
+                
+                @media (max-width: 767px) and (max-height: 650px) {
+                    .legendary-reveal-card {
+                        width: min(58vw, 215px);
+                    }
+                
+                    .legendary-background-grade {
+                        font-size: 5rem;
+                    }
+                
+                    .legendary-main-grade {
+                        font-size: 2.25rem;
+                    }
+                
+                    .legendary-character-name {
+                        font-size: 1.1rem;
+                        line-height: 1.3rem;
+                    }
+                
+                    .legendary-rarity-label {
+                        margin-bottom: 0.85rem;
+                    }
+                }
+                
+                @media (max-width: 767px) {
+                    .legendary-ultra-ring {
+                        width: 340px;
+                        height: 340px;
+                    }
+                }
+                
+                @media (max-width: 767px) and (max-height: 750px) {
+                    .legendary-ultra-ring {
+                        width: 285px;
+                        height: 285px;
+                    }
+                }
+                
+                @media (max-width: 767px) and (max-height: 650px) {
+                    .legendary-ultra-ring {
+                        width: 245px;
+                        height: 245px;
+                    }
+                }
 
             `}</style>
         </div>
@@ -1511,6 +1722,54 @@ export default function DraftPage() {
         }, 800);
     }
 
+    function handleMobilePositionTap(
+        position: DraftPosition
+    ) {
+        if (
+            !currentCharacter ||
+            draftComplete ||
+            isLeavingDraft ||
+            legendaryReveal
+        ) {
+            return;
+        }
+
+        const alreadyFilled =
+            picks.some(
+                (pick) =>
+                    pick.position === position
+            );
+
+        if (alreadyFilled) {
+            return;
+        }
+
+
+        // SECOND TAP ON THE SAME POSITION
+        // = CONFIRM THE PICK
+        if (
+            pendingPick?.position ===
+            position
+        ) {
+            confirmPick();
+            return;
+        }
+
+
+        // FIRST TAP, OR TAP ON A DIFFERENT
+        // EMPTY POSITION
+        setPendingPick({
+            character:
+            currentCharacter,
+
+            position,
+        });
+
+        setHoveredPosition(
+            null
+        );
+    }
+
     function confirmPick() {
         if (!pendingPick) return;
 
@@ -1593,20 +1852,8 @@ export default function DraftPage() {
         setCurrentCharacter(getRandomCharacter(newUsedIds));
     }
 
-    function restartDraft() {
-        setUsedCharacterIds([]);
-        setCurrentCharacter(getRandomCharacter([]));
-        setHoveredPosition(null);
-        setPendingPick(null);
-        setPicks([]);
-        setRerollUsed(false);
-        setIsNewHighScore(false);
-        setIsDraggingCard(false);
-        setHoveredInfoPosition(null);
-    }
-
     return (
-        <main className="mx-auto min-h-[calc(100vh-130px)] max-w-[1700px] px-4 py-6">
+        <main className="mx-auto min-h-[calc(100vh-130px)] max-w-[1700px] px-2 py-2 sm:px-4 sm:py-4 md:py-6">
             {showDraftInfo && (
                 <div
                     className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm"
@@ -1789,54 +2036,175 @@ export default function DraftPage() {
             </div>
             <section
                 className="
-                    relative z-10
+                    relative
+                    z-10
                     rounded-3xl
-                    border border-pink-500/20
+                    border
+                    border-pink-500/20
                     bg-black/40
-                    p-6
-                    backdrop-blur-xl
+                    p-3
                     shadow-[0_0_25px_rgba(236,72,153,0.08)]
+                    backdrop-blur-xl
+                    sm:p-4
+                    md:p-6
                 "
             >
-                <h1 className="mt-3 text-5xl font-black text-white">
-                    Blind Anime Character Draft
-                </h1>
+                {/* ========================================= */}
+                {/* MOBILE HEADER */}
+                {/* ========================================= */}
 
-                <div className="mt-3 flex items-center gap-2">
-                    <p className="text-purple-100/70">
-                        Drag the character into a position. Once confirmed, that slot is locked.
-                    </p>
+                <div
+                    className="
+                        flex
+                        items-center
+                        justify-between
+                        gap-3
+                        md:hidden
+                    "
+                >
+                    <div className="min-w-0">
+                        <p
+                            className="
+                                text-[9px]
+                                font-black
+                                uppercase
+                                tracking-[0.25em]
+                                text-pink-300/50
+                            "
+                        >
+                            Solo Draft
+                        </p>
+
+                        <h1
+                            className="
+                                mt-0.5
+                                truncate
+                                text-xl
+                                font-black
+                                text-white
+                            "
+                        >
+                            Blind Anime Draft
+                        </h1>
+                    </div>
+
 
                     <button
                         type="button"
-                        onClick={() => setShowDraftInfo(true)}
+                        onClick={() =>
+                            setShowDraftInfo(
+                                true
+                            )
+                        }
                         aria-label="How to play Anime Draft"
                         className="
-                        flex h-6 w-6 shrink-0 items-center justify-center
-                        rounded-full
-                        border border-pink-400/40
-                        bg-pink-500/10
-                        text-xs font-black text-pink-200
-                        transition-all duration-200
-                        hover:scale-110
-                        hover:border-pink-300
-                        hover:bg-pink-500/20
-                        hover:text-white
-                        hover:shadow-[0_0_14px_rgba(236,72,153,0.4)]
-                        hover:cursor-pointer
-                    "
+                            flex
+                            h-9
+                            w-9
+                            shrink-0
+                            items-center
+                            justify-center
+                            rounded-full
+                            border
+                            border-pink-400/30
+                            bg-pink-500/10
+                            text-xs
+                            font-black
+                            text-pink-200
+                            active:scale-95
+                        "
                     >
                         ?
                     </button>
                 </div>
 
-                <p className="text-xs font-black uppercase tracking-[0.25em] text-pink-300/60 mt-3">
-                    Round {currentRound} / {totalRounds}
-                </p>
+
+                {/* ========================================= */}
+                {/* DESKTOP HEADER */}
+                {/* ========================================= */}
+
+                <div className="hidden md:block">
+
+                    <h1
+                        className="
+                            mt-3
+                            text-5xl
+                            font-black
+                            text-white
+                        "
+                    >
+                        Blind Anime Character Draft
+                    </h1>
+
+
+                    <div
+                        className="
+                            mt-3
+                            flex
+                            items-center
+                            gap-2
+                        "
+                    >
+                        <p className="text-purple-100/70">
+                            Drag the character into a position.
+                            Once confirmed, that slot is locked.
+                        </p>
+
+                        <button
+                            type="button"
+                            onClick={() =>
+                                setShowDraftInfo(
+                                    true
+                                )
+                            }
+                            aria-label="How to play Anime Draft"
+                            className="
+                                flex
+                                h-6
+                                w-6
+                                shrink-0
+                                items-center
+                                justify-center
+                                rounded-full
+                                border
+                                border-pink-400/40
+                                bg-pink-500/10
+                                text-xs
+                                font-black
+                                text-pink-200
+                                transition-all
+                                duration-200
+                                hover:scale-110
+                                hover:border-pink-300
+                                hover:bg-pink-500/20
+                                hover:text-white
+                                hover:shadow-[0_0_14px_rgba(236,72,153,0.4)]
+                                hover:cursor-pointer
+                            "
+                        >
+                            ?
+                        </button>
+                    </div>
+
+
+                    <p
+                        className="
+                            mt-3
+                            text-xs
+                            font-black
+                            uppercase
+                            tracking-[0.25em]
+                            text-pink-300/60
+                        "
+                    >
+                        Round {currentRound} / {totalRounds}
+                    </p>
+
+                </div>
 
                 {(!draftComplete || isLeavingDraft) && (
                     <div
-                        className={`mt-6 grid gap-6 xl:grid-cols-[300px_1fr] ${
+                        className={`mt-3 md:mt-6 grid gap-3 md:gap-6 xl:grid-cols-[300px_1fr] ${
                             isLeavingDraft
                                 ? "pointer-events-none"
                                 : ""
@@ -1844,6 +2212,8 @@ export default function DraftPage() {
                     >
                         <div
                             className="
+                                hidden
+                                md:block
                                 xl:flex
                                 xl:flex-col
                                 xl:justify-center
@@ -1934,11 +2304,512 @@ export default function DraftPage() {
                         </div>
 
                         <div>
-                            <h2 className="mb-4 text-xl font-bold text-white">
+                            <h2 className="mb-4 hidden text-xl font-bold text-white md:block">
                                 Team Positions
                             </h2>
 
-                            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                            {/* ========================================= */}
+                            {/* MOBILE CURRENT CHARACTER */}
+                            {/* ========================================= */}
+
+                            <div className="md:hidden">
+
+                                <div className="mb-2 flex items-center justify-between">
+                                    <p
+                                        className="
+                                            text-[10px]
+                                            font-black
+                                            uppercase
+                                            tracking-[0.22em]
+                                            text-pink-300/55
+                                        "
+                                    >
+                                        Current Character
+                                    </p>
+
+                                    <p
+                                        className="
+                                            text-[10px]
+                                            font-black
+                                            uppercase
+                                            tracking-[0.18em]
+                                            text-white/30
+                                        "
+                                    >
+                                        Round {currentRound} / {totalRounds}
+                                    </p>
+                                </div>
+
+
+                                {/* CHARACTER CARD */}
+
+                                <div
+                                    className={`
+                                        mobile-current-character-card
+                                        relative
+                                        h-[210px]
+                                        overflow-hidden
+                                        rounded-3xl
+                                        border
+                                        border-pink-500/30
+                                        bg-black
+                                        shadow-[0_0_25px_rgba(236,72,153,0.12)]
+                                        transition-all
+                                
+                                        ${
+                                        pendingPick
+                                            ? "opacity-55"
+                                            : ""
+                                        }
+                                    `}
+                                >
+                                    <img
+                                        src={
+                                            currentCharacter.imageUrl
+                                        }
+                                        alt={
+                                            currentCharacter.name
+                                        }
+                                        draggable={false}
+                                        className="
+                                            pointer-events-none
+                                            absolute
+                                            inset-0
+                                            h-full
+                                            w-full
+                                            object-cover
+                                            object-[50%_20%]
+                                        "
+                                    />
+
+                                    <div
+                                        className="
+                                            absolute
+                                            inset-0
+                                            bg-gradient-to-t
+                                            from-black
+                                            via-black/20
+                                            to-transparent
+                                        "
+                                    />
+
+
+                                    {/* CHARACTER INFO */}
+
+                                    <div
+                                        className="
+                                            absolute
+                                            bottom-0
+                                            left-0
+                                            right-0
+                                            p-4
+                                        "
+                                    >
+                                        <h3
+                                            className="
+                                                truncate
+                                                text-2xl
+                                                font-black
+                                                text-white
+                                                drop-shadow
+                                            "
+                                        >
+                                            {
+                                                currentCharacter.name
+                                            }
+                                        </h3>
+
+                                        <p
+                                            className="
+                                                mobile-current-anime
+                                                mt-0.5
+                                                truncate
+                                                text-xs
+                                                font-semibold
+                                                text-white/60
+                                            "
+                                        >
+                                            {currentCharacter.anime}
+                                        </p>
+                                    </div>
+
+
+                                    {/* PENDING INDICATOR */}
+
+                                    {pendingPick && (
+                                        <div
+                                            className="
+                                                absolute
+                                                right-3
+                                                top-3
+                                                rounded-full
+                                                border
+                                                border-yellow-300/30
+                                                bg-black/75
+                                                px-3
+                                                py-1.5
+                                                backdrop-blur-xl
+                                            "
+                                        >
+                                            <p
+                                                className="
+                                                    text-[8px]
+                                                    font-black
+                                                    uppercase
+                                                    tracking-[0.16em]
+                                                    text-yellow-200
+                                                "
+                                            >
+                                                Position Selected
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+
+
+                                {/* MOBILE FATE REWRITE */}
+
+                                <button
+                                    type="button"
+                                    onClick={
+                                        rerollCharacter
+                                    }
+                                    disabled={
+                                        rerollUsed ||
+                                        !!pendingPick
+                                    }
+                                    className={`
+                                        mobile-fate-rewrite
+                                        mt-2
+                                        flex
+                                        h-[46px]
+                                        w-full
+                                        items-center
+                                        justify-between
+                                        rounded-2xl
+                                        border
+                                        px-4
+                                        transition-all
+                            
+                                        ${
+                                        rerollUsed
+                                            ? `
+                                                cursor-not-allowed
+                                                border-white/10
+                                                bg-white/[0.03]
+                                                text-white/30
+                                            `
+                                            : pendingPick
+                                                ? `
+                                                    cursor-not-allowed
+                                                    border-white/10
+                                                    bg-white/[0.03]
+                                                    text-white/25
+                                                `
+                                                : `
+                                                    border-yellow-400/35
+                                                    bg-yellow-500/10
+                                                    text-yellow-200
+                                                    active:scale-[0.98]
+                                                `
+                                        }
+                                    `}
+                                >
+                                    <div className="flex items-center gap-2">
+                                        <span>
+                                            {rerollUsed
+                                                ? "✓"
+                                                : "🎲"}
+                                        </span>
+
+                                        <p
+                                            className="
+                                                text-xs
+                                                font-black
+                                                uppercase
+                                                tracking-[0.14em]
+                                            "
+                                        >
+                                            {rerollUsed
+                                                ? "Fate Rewrite Used"
+                                                : "Fate Rewrite"}
+                                        </p>
+                                    </div>
+
+                                    {!rerollUsed && (
+                                        <span
+                                            className="
+                                                text-[9px]
+                                                font-black
+                                                uppercase
+                                                tracking-widest
+                                                opacity-60
+                                            "
+                                        >
+                                            1 Left
+                                        </span>
+                                    )}
+                                </button>
+
+
+                                {/* CHOOSE POSITION LABEL */}
+
+                                <div
+                                    className="
+                                        mobile-position-heading
+                                        mb-2
+                                        mt-4
+                                        flex
+                                        items-center
+                                        justify-between
+                                    "
+                                >
+                                    <p
+                                        className="
+                                            text-[10px]
+                                            font-black
+                                            uppercase
+                                            tracking-[0.22em]
+                                            text-pink-300/55
+                                        "
+                                    >
+                                        Choose a Position
+                                    </p>
+
+                                    {pendingPick && (
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                setPendingPick(
+                                                    null
+                                                )
+                                            }
+                                            className="
+                                                text-[9px]
+                                                font-black
+                                                uppercase
+                                                tracking-widest
+                                                text-white/35
+                                                transition
+                                                active:text-white/70
+                                            "
+                                        >
+                                            Cancel
+                                        </button>
+                                    )}
+                                </div>
+
+                            </div>
+
+                            <div
+                                className="
+                                    mobile-position-grid
+                                    grid
+                                    grid-cols-2
+                                    gap-2
+                                    md:hidden
+                                "
+                            >
+                                {gridPositions.map((position) => {
+                                    const pick =
+                                        picks.find(
+                                            (pick) =>
+                                                pick.position ===
+                                                position
+                                        );
+
+                                    const pendingForThisPosition =
+                                        pendingPick?.position ===
+                                        position
+                                            ? pendingPick
+                                            : null;
+
+                                    return (
+                                        <button
+                                            key={position}
+                                            type="button"
+                                            onClick={() =>
+                                                handleMobilePositionTap(
+                                                    position
+                                                )
+                                            }
+
+                                            disabled={
+                                                !!pick ||
+                                                isLeavingDraft ||
+                                                !!legendaryReveal
+                                            }
+
+                                            aria-pressed={
+                                                !!pendingForThisPosition
+                                            }
+                                            className={`
+                                                mobile-position-tile
+                                                relative
+                                                h-[64px]
+                                                min-w-0
+                                                overflow-hidden
+                                                rounded-2xl
+                                                border
+                                                px-3
+                                                py-2
+                                                text-left
+                                                transition-all
+                                                duration-200
+
+                                                ${
+                                                pick
+                                                    ? `
+                                                        border-pink-500/25
+                                                        bg-black/55
+                                                    `
+                                                    : pendingForThisPosition
+                                                        ? `
+                                                            border-yellow-300/70
+                                                            bg-yellow-500/10
+                                                            shadow-[0_0_18px_rgba(250,204,21,0.16)]
+                                                        `
+                                                        : `
+                                                            border-pink-500/20
+                                                            bg-white/[0.025]
+                                                            active:scale-[0.97]
+                                                        `
+                                                }
+                                            `}
+                                        >
+                                            {/* POSITION */}
+
+                                            <p
+                                                className={`
+                                                    truncate
+                                                    text-[9px]
+                                                    font-black
+                                                    uppercase
+                                                    tracking-[0.15em]
+
+                                                    ${
+                                                    pendingForThisPosition
+                                                        ? "text-yellow-300"
+                                                        : "text-pink-300/55"
+                                                    }
+                                                `}
+                                            >
+                                                {getPositionIcon(
+                                                    position
+                                                )}{" "}
+                                                {position}
+                                            </p>
+
+
+                                            {/* EMPTY */}
+
+                                            {!pick &&
+                                                !pendingForThisPosition && (
+                                                    <p
+                                                        className="
+                                                            mt-2
+                                                            text-xs
+                                                            font-bold
+                                                            text-white/25
+                                                        "
+                                                    >
+                                                        Tap to place
+                                                    </p>
+                                                )}
+
+
+                                            {/* PENDING */}
+
+                                            {!pick &&
+                                                pendingForThisPosition && (
+                                                    <div className="mt-0.5">
+                                                        <p
+                                                            className="
+                                                                truncate
+                                                                text-xs
+                                                                font-black
+                                                                text-white
+                                                            "
+                                                        >
+                                                            {
+                                                                pendingForThisPosition
+                                                                    .character.name
+                                                            }
+                                                        </p>
+
+                                                        <p
+                                                            className="
+                                                                text-[7px]
+                                                                font-black
+                                                                uppercase
+                                                                tracking-[0.1em]
+                                                                text-yellow-300/70
+                                                            "
+                                                        >
+                                                            Tap again to confirm
+                                                        </p>
+                                                    </div>
+                                                )}
+
+                                            {/* CONFIRMED */}
+
+                                            {pick && (
+                                                <div
+                                                    className="
+                                                        mt-0.5
+                                                        flex
+                                                        items-end
+                                                        justify-between
+                                                        gap-2
+                                                    "
+                                                >
+                                                    <p
+                                                        className="
+                                                            min-w-0
+                                                            truncate
+                                                            text-xs
+                                                            font-black
+                                                            text-white
+                                                        "
+                                                    >
+                                                        {pick.character.name}
+                                                    </p>
+
+                                                    <p
+                                                        className={`
+                                                            shrink-0
+                                                            text-lg
+                                                            font-black
+                                                            italic
+                                                
+                                                            ${
+                                                            pick.grade === "U"
+                                                                ? `
+                                                                    bg-gradient-to-r
+                                                                    from-cyan-200
+                                                                    via-white
+                                                                    to-fuchsia-200
+                                                                    bg-clip-text
+                                                                    text-transparent
+                                                                `
+                                                                : pick.grade === "S+"
+                                                                    ? "text-yellow-300"
+                                                                    : pick.grade === "S"
+                                                                        ? "text-purple-300"
+                                                                        : "text-white/70"
+                                                            }
+                                                        `}
+                                                    >
+                                                        {pick.grade}
+                                                    </p>
+                                                </div>
+                                            )}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+
+                            <div className="hidden md:grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                                 {gridPositions.map((position) => {
                                     const pick = picks.find(
                                         (pick) => pick.position === position

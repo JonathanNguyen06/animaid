@@ -492,79 +492,29 @@ export default function DraftResultsPage() {
                     </div>
                 </section>
 
-                {/* MVP */}
-                {revealPhase === "final" &&
-                    strongestPick && (
-                        <section className="mt-6 overflow-hidden rounded-3xl border border-yellow-400/20 bg-gradient-to-r from-yellow-500/10 via-black/50 to-pink-500/10 p-5 backdrop-blur-xl">
-                            <div className="flex flex-col gap-5 md:flex-row md:items-center">
-                                <div className="relative h-28 w-full overflow-hidden rounded-2xl border border-yellow-300/20 md:w-40">
-                                    <img
-                                        src={
-                                            strongestPick
-                                                .character
-                                                .imageUrl
-                                        }
-                                        alt={
-                                            strongestPick
-                                                .character
-                                                .name
-                                        }
-                                        className="absolute inset-0 h-full w-full object-cover object-[50%_20%]"
-                                    />
-
-                                    <div className="absolute inset-0 bg-gradient-to-r from-transparent to-black/50" />
-                                </div>
-
-                                <div className="flex-1 text-left">
-                                    <p className="text-xs font-black uppercase tracking-[0.3em] text-yellow-300">
-                                        Draft MVP
-                                    </p>
-
-                                    <h2 className="mt-2 text-2xl font-black text-white">
-                                        {
-                                            strongestPick
-                                                .character
-                                                .name
-                                        }
-                                    </h2>
-
-                                    <p className="text-sm text-white/50">
-                                        {
-                                            strongestPick.position
-                                        }{" "}
-                                        •{" "}
-                                        {
-                                            strongestPick
-                                                .character
-                                                .anime
-                                        }
-                                    </p>
-                                </div>
-
-                                <div className="text-left md:text-right">
-                                    <p className="text-5xl font-black text-yellow-300">
-                                        {
-                                            strongestPick.power
-                                        }
-                                    </p>
-
-                                    <p className="text-xs font-bold uppercase tracking-widest text-white/40">
-                                        Power
-                                    </p>
-                                </div>
-                            </div>
-                        </section>
-                    )}
-
                 {/* Formation */}
                 <section className="mt-8">
                     <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
                         <div>
-                            <p className="text-xs font-black uppercase tracking-[0.35em] text-pink-300/60">
+                            <p className="text-[9px]
+                                    font-black
+                                    uppercase
+                                    tracking-[0.25em]
+                                    text-pink-300/60
+
+                                    sm:text-xs
+                                    sm:tracking-[0.35em]
+                                "
+                            >
                                 Final Formation
                             </p>
 
-                            <h2 className="mt-2 text-3xl font-black text-white">
+                            <h2 className="mt-1
+                                    text-2xl
+                                    font-black
+                                    text-white
+                                "
+                            >
                                 Your Lineup
                             </h2>
                         </div>
@@ -578,9 +528,11 @@ export default function DraftResultsPage() {
                     <div
                         className={`
                             grid
-                            gap-5
-                            sm:grid-cols-2
-                            xl:grid-cols-4
+                            grid-cols-2
+                            gap-2
+                            sm:gap-3
+                            lg:grid-cols-4
+                            lg:gap-4
 
                             ${
                             revealSkipped
@@ -630,17 +582,22 @@ export default function DraftResultsPage() {
                                             pick.position
                                         }
                                         className={`
-                                            group
+                                            solo-result-card
                                             relative
-                                            min-h-[410px]
+                                            min-h-[245px]
                                             overflow-hidden
-                                            rounded-3xl
+                                            rounded-2xl
                                             border-2
                                             bg-black
                                             text-left
                                             transition
                                             duration-300
-                                            hover:-translate-y-2
+                                    
+                                            sm:min-h-[300px]
+                                            sm:rounded-3xl
+                                    
+                                            lg:min-h-[390px]
+                                    
                                             ${style.border}
                                         `}
                                         style={{
@@ -882,7 +839,16 @@ export default function DraftResultsPage() {
                                                 </div>
 
                                                 {/* Character info */}
-                                                <div className="absolute inset-x-0 bottom-0 p-5">
+                                                <div className="
+                                                        absolute
+                                                        bottom-0
+                                                        left-0
+                                                        right-0
+                                                        p-3
+                                                        sm:p-4
+                                                        lg:p-5
+                                                    "
+                                                >
                                                     <div
                                                         className={
                                                             isJustRevealed
@@ -890,7 +856,18 @@ export default function DraftResultsPage() {
                                                                 : ""
                                                         }
                                                     >
-                                                        <h3 className="text-2xl font-black text-white drop-shadow-lg">
+                                                        <h3
+                                                            className="
+                                                                line-clamp-2
+                                                                text-sm
+                                                                font-black
+                                                                leading-tight
+                                                                text-white
+
+                                                                sm:text-lg
+                                                                lg:text-xl
+                                                            "
+                                                        >
                                                             {
                                                                 pick
                                                                     .character
@@ -898,19 +875,27 @@ export default function DraftResultsPage() {
                                                             }
                                                         </h3>
 
-                                                        <p className="mt-1 line-clamp-1 text-sm font-medium text-white/60">
-                                                            {
-                                                                pick
-                                                                    .character
-                                                                    .anime
-                                                            }
+                                                        <p
+                                                            className="
+                                                                mt-0.5
+                                                                truncate
+                                                                text-[9px]
+                                                                font-semibold
+                                                                text-white/45
+
+                                                                sm:text-xs
+                                                            "
+                                                        >
+                                                            {pick.character.anime}
                                                         </p>
                                                     </div>
 
-                                                    <div className="mt-5 flex items-end justify-between">
+                                                    <div className="mt-1 flex items-end justify-between">
                                                         <span
                                                             className={`
-                                                                text-5xl
+                                                                text-3xl
+                                                                sm:text-4xl
+                                                                lg:text-5xl
                                                                 font-black
                                                                 italic
                                                                 ${style.grade}
