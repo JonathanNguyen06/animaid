@@ -6,6 +6,7 @@ import Navbar from "@/app/components/Navbar";
 import {HeartIcon} from "@heroicons/react/24/outline";
 import React from "react";
 import DraftChallengeWatcher from "@/app/components/DraftChallengeWatcher";
+import { Analytics } from '@vercel/analytics/next';
 
 const josefinSans = Josefin_Sans({
   variable: "--font-josefin",
@@ -74,6 +75,7 @@ export default function RootLayout({
             <main className="relative">
                 {children}
             </main>
+            <Analytics />
         </body>
     </html>
   );
