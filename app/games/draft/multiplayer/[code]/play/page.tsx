@@ -78,11 +78,15 @@ function OpponentDraftOrderPreview({
 
             <div
                 className="
-                    mt-5
+                    mt-3
                     grid
                     grid-cols-3
-                    gap-3
+                    gap-2
+
+                    sm:mt-5
                     sm:grid-cols-5
+                    sm:gap-3
+
                     xl:grid-cols-9
                 "
             >
@@ -108,9 +112,12 @@ function OpponentDraftOrderPreview({
                                 className="
                                     group
                                     relative
-                                    aspect-[2/3]
+                                    h-[92px]
+                                    sm:h-auto
+                                    sm:aspect-[2/3]
                                     overflow-hidden
-                                    rounded-2xl
+                                    rounded-xl
+                                    sm:rounded-2xl
                                     border
                                     border-purple-400/20
                                     bg-black
@@ -164,17 +171,17 @@ function OpponentDraftOrderPreview({
                                 </div>
 
 
-                                <div className="absolute bottom-0 left-0 right-0 p-3 text-left">
+                                <div className="absolute bottom-0 left-0 right-0 p-2 text-left sm:p-3">
 
-                                    <p className="text-[8px] font-black uppercase tracking-widest text-purple-300/55">
+                                    <p className="hidden text-[8px] font-black uppercase tracking-widest text-purple-300/55 sm:block">
                                         Round {index + 1}
                                     </p>
 
-                                    <p className="mt-1 line-clamp-2 text-sm font-black leading-tight text-white">
+                                    <p className="line-clamp-2 text-[9px] font-black leading-tight text-white sm:mt-1 sm:text-sm">
                                         {character.name}
                                     </p>
 
-                                    <p className="mt-1 truncate text-[9px] font-semibold text-white/40">
+                                    <p className="mt-1 hidden truncate text-[9px] font-semibold text-white/40 sm:block">
                                         {character.anime}
                                     </p>
 
@@ -199,6 +206,7 @@ export default function MultiplayerDraftPlayPage() {
     const [selecting, setSelecting] = useState(false);
     const [hoveredPosition, setHoveredPosition,] = useState<AnyDraftPosition | null>(null);
     const [pendingPosition, setPendingPosition,] = useState<AnyDraftPosition | null>(null);
+
     const [isDraggingCard, setIsDraggingCard,] = useState(false);
     const [submittingPick, setSubmittingPick,] = useState(false);
     const advancingRoundRef = useRef(false);
@@ -223,6 +231,9 @@ export default function MultiplayerDraftPlayPage() {
     const latestPlayerStateRef = useRef<MultiplayerDraftPlayerState | null>(null);
     const autoLockingRollRef = useRef(false);
     const [hoveredInfoPosition, setHoveredInfoPosition,] = useState<AnyDraftPosition | null>(null);
+    const [pendingPowerPosition, setPendingPowerPosition,] = useState<PowerPosition | null>(null);
+    const [pendingAscension, setPendingAscension,] = useState<Ascension | null>(null);
+    const [pendingDisruption, setPendingDisruption,] = useState<Disruption | null>(null);
 
     const positionIcons:
         Record<DraftPosition, string> = {
@@ -1431,13 +1442,18 @@ export default function MultiplayerDraftPlayPage() {
                     }
 
 
-                    const randomChoice =
-                        choices[
-                            Math.floor(
-                                Math.random() *
-                                choices.length
-                            )
-                            ];
+                    const selectedChoice =
+                        pendingPowerPosition &&
+                        choices.includes(
+                            pendingPowerPosition
+                        )
+                            ? pendingPowerPosition
+                            : choices[
+                                Math.floor(
+                                    Math.random() *
+                                    choices.length
+                                )
+                                ];
 
 
                     setSelecting(
@@ -1448,7 +1464,7 @@ export default function MultiplayerDraftPlayPage() {
                     await selectDraftPowerPosition(
                         currentCode,
                         currentUid,
-                        randomChoice
+                        selectedChoice
                     );
 
 
@@ -1601,24 +1617,27 @@ export default function MultiplayerDraftPlayPage() {
                     }
 
 
-                    const randomChoice =
-                        choices[
-                            Math.floor(
-                                Math.random() *
-                                choices.length
-                            )
-                            ];
-
+                    const selectedChoice =
+                        pendingAscension &&
+                        choices.includes(
+                            pendingAscension
+                        )
+                            ? pendingAscension
+                            : choices[
+                                Math.floor(
+                                    Math.random() *
+                                    choices.length
+                                )
+                                ];
 
                     setSelectingAscension(
                         true
                     );
 
-
                     await selectMultiplayerAscension(
                         currentCode,
                         currentUid,
-                        randomChoice
+                        selectedChoice
                     );
                 }
 
@@ -1643,13 +1662,18 @@ export default function MultiplayerDraftPlayPage() {
                         );
                     }
 
-                    const randomChoice =
-                        choices[
-                            Math.floor(
-                                Math.random() *
-                                choices.length
-                            )
-                            ];
+                    const selectedChoice =
+                        pendingDisruption &&
+                        choices.includes(
+                            pendingDisruption
+                        )
+                            ? pendingDisruption
+                            : choices[
+                                Math.floor(
+                                    Math.random() *
+                                    choices.length
+                                )
+                                ];
 
                     setSelectingDisruption(
                         true
@@ -1658,7 +1682,7 @@ export default function MultiplayerDraftPlayPage() {
                     await selectMultiplayerDisruption(
                         currentCode,
                         currentUid,
-                        randomChoice
+                        selectedChoice
                     );
 
                     return;
@@ -1726,6 +1750,9 @@ export default function MultiplayerDraftPlayPage() {
         submittingPick,
         selectingAscension,
         selectingDisruption,
+        pendingPowerPosition,
+        pendingAscension,
+        pendingDisruption,
     ]);
 
     useEffect(() => {
@@ -2008,6 +2035,55 @@ export default function MultiplayerDraftPlayPage() {
         setIsDraggingCard(false);
     }
 
+    function handleMobilePositionTap(
+        position: AnyDraftPosition
+    ) {
+        if (
+            !currentCharacter ||
+            !bothRollsLocked ||
+            mySubmitted ||
+            submittingPick ||
+            filledPositions.includes(position)
+        ) {
+            return;
+        }
+
+        /*
+         * Second tap on the same position
+         * confirms the placement.
+         */
+        if (
+            pendingPosition ===
+            position
+        ) {
+            void confirmPendingPick();
+            return;
+        }
+
+        /*
+         * First tap, or tapping a different
+         * available position, moves the
+         * pending selection.
+         */
+        setPendingPosition(
+            position
+        );
+
+        setHoveredPosition(
+            null
+        );
+
+        setIsDraggingCard(
+            false
+        );
+    }
+
+    function isMobileSelection() {
+        return window.matchMedia(
+            "(max-width: 639px)"
+        ).matches;
+    }
+
     async function handleSelectAscension(
         ascension: Ascension
     ) {
@@ -2021,7 +2097,35 @@ export default function MultiplayerDraftPlayPage() {
             return;
         }
 
-        setSelectingAscension(true);
+        /*
+         * MOBILE:
+         * first tap previews,
+         * second tap confirms.
+         */
+        if (isMobileSelection()) {
+            if (
+                pendingAscension !==
+                ascension
+            ) {
+                setPendingAscension(
+                    ascension
+                );
+
+                setHoveredAscension(
+                    ascension
+                );
+
+                return;
+            }
+        }
+
+        /*
+         * DESKTOP:
+         * one click immediately confirms.
+         */
+        setSelectingAscension(
+            true
+        );
 
         try {
             await selectMultiplayerAscension(
@@ -2035,7 +2139,9 @@ export default function MultiplayerDraftPlayPage() {
                 error
             );
 
-            setSelectingAscension(false);
+            setSelectingAscension(
+                false
+            );
         }
     }
 
@@ -2047,9 +2153,23 @@ export default function MultiplayerDraftPlayPage() {
             !code ||
             !match ||
             !playerState ||
-            selectingDisruption
+            selectingDisruption ||
+            playerState.selectedDisruption
         ) {
             return;
+        }
+
+        if (isMobileSelection()) {
+            if (
+                pendingDisruption !==
+                disruption
+            ) {
+                setPendingDisruption(
+                    disruption
+                );
+
+                return;
+            }
         }
 
         setSelectingDisruption(
@@ -2113,6 +2233,19 @@ export default function MultiplayerDraftPlayPage() {
             playerState?.selectedPowerPosition
         ) {
             return;
+        }
+
+        if (isMobileSelection()) {
+            if (
+                pendingPowerPosition !==
+                position
+            ) {
+                setPendingPowerPosition(
+                    position
+                );
+
+                return;
+            }
         }
 
         setSelecting(true);
@@ -2305,10 +2438,14 @@ export default function MultiplayerDraftPlayPage() {
         );
     }
 
+    const previewedAscension =
+        pendingAscension ??
+        hoveredAscension;
+
     const hoveredPreview =
-        hoveredAscension
+        previewedAscension
             ? ascensionPreviews.get(
-            hoveredAscension
+            previewedAscension
         ) ?? []
             : [];
 
@@ -2323,7 +2460,7 @@ export default function MultiplayerDraftPlayPage() {
         );
 
     const isPreviewingAscension =
-        hoveredAscension !== null;
+        previewedAscension !== null;
 
     const ascensionTotalPower =
         multiplayerPicks.reduce(
@@ -2734,18 +2871,31 @@ export default function MultiplayerDraftPlayPage() {
                 {/* ===================================================== */}
 
                 {match.status === "power-selection" && (
-                    <div className="mt-8 rounded-3xl border border-yellow-400/20 bg-yellow-500/5 p-6">
+                    <div
+                        className="
+                            mt-4
+                            rounded-2xl
+                            border
+                            border-yellow-400/20
+                            bg-yellow-500/5
+                            p-3
+
+                            sm:mt-8
+                            sm:rounded-3xl
+                            sm:p-6
+                        "
+                    >
 
                         <div className="text-center">
                             <p className="text-xs font-black uppercase tracking-[0.3em] text-yellow-300/70">
                                 Power Position
                             </p>
 
-                            <h2 className="mt-2 text-2xl font-black text-white">
+                            <h2 className="mt-1 text-xl font-black text-white sm:mt-2 sm:text-2xl">
                                 Choose Your Power Position
                             </h2>
 
-                            <p className="mt-2 text-sm text-white/50">
+                            <p className="mt-1 text-xs text-white/45 sm:mt-2 sm:text-sm">
                                 Choose one special position to add to your draft.
                                 Your choice stays hidden from your opponent.
                             </p>
@@ -2754,11 +2904,15 @@ export default function MultiplayerDraftPlayPage() {
 
                         {/* NOT SELECTED YET */}
                         {!playerState.selectedPowerPosition ? (
-                            <div className="mt-6 grid gap-5 md:grid-cols-3">
+                            <div className="mt-4 grid gap-2 sm:mt-6 sm:grid-cols-3 sm:gap-5">
                                 {playerState.powerPositionChoices.map(
                                     (position) => {
                                         const info =
                                             powerPositionInfo[position];
+
+                                        const isPending =
+                                            pendingPowerPosition ===
+                                            position;
 
                                         return (
                                             <button
@@ -2770,39 +2924,61 @@ export default function MultiplayerDraftPlayPage() {
                                                         position
                                                     )
                                                 }
-                                                className="
-                                                group relative overflow-hidden
-                                                rounded-3xl
-                                                border border-yellow-400/25
-                                                bg-black/60
-                                                p-6
-                                                text-left
-                                                transition-all duration-300
-                                                hover:-translate-y-1
-                                                hover:border-yellow-300/70
-                                                hover:bg-yellow-500/10
-                                                hover:shadow-[0_0_30px_rgba(250,204,21,0.18)]
-                                                hover:cursor-pointer
-                                                disabled:pointer-events-none
-                                                disabled:opacity-50
-                                            "
+                                                className={`
+                                                    group
+                                                    relative
+                                                    overflow-hidden
+                                                    rounded-2xl
+                                                    border
+                                                    bg-black/60
+                                                    p-3
+                                                    text-left
+                                                    transition-all
+                                                    duration-300
+                                                
+                                                    sm:rounded-3xl
+                                                    sm:p-6
+                                                
+                                                    ${
+                                                    isPending
+                                                        ? `
+                                                            border-yellow-200
+                                                            bg-yellow-500/10
+                                                            ring-2
+                                                            ring-yellow-300/30
+                                                            shadow-[0_0_30px_rgba(250,204,21,0.22)]
+                                                        `
+                                                        : `
+                                                            border-yellow-400/25
+                                                            hover:-translate-y-1
+                                                            hover:border-yellow-300/70
+                                                            hover:bg-yellow-500/10
+                                                            hover:shadow-[0_0_30px_rgba(250,204,21,0.18)]
+                                                        `
+                                                    }
+
+                                                    hover:cursor-pointer
+                                                
+                                                    disabled:pointer-events-none
+                                                    disabled:opacity-50
+                                                `}
                                             >
                                                 <div className="absolute -right-10 -top-10 h-28 w-28 rounded-full bg-yellow-400/10 blur-3xl transition group-hover:bg-yellow-400/20" />
 
                                                 <div className="relative z-10">
-                                                    <p className="text-xs font-black uppercase tracking-[0.3em] text-yellow-300/60">
+                                                    <p className="text-[8px] font-black uppercase tracking-[0.18em] text-yellow-300/60 sm:text-xs sm:tracking-[0.3em]">
                                                         ⚡ Power Position
                                                     </p>
 
-                                                    <h3 className="mt-3 text-2xl font-black text-white">
+                                                    <h3 className="mt-1 text-lg font-black text-white sm:mt-3 sm:text-2xl">
                                                         {position}
                                                     </h3>
 
-                                                    <p className="mt-3 min-h-[60px] text-sm leading-6 text-white/55">
+                                                    <p className="mt-1 text-xs leading-5 text-white/50 sm:mt-3 sm:min-h-[60px] sm:text-sm sm:leading-6 sm:text-white/55">
                                                         {info.description}
                                                     </p>
 
-                                                    <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.03] p-3">
+                                                    <div className="mt-2 rounded-xl border border-white/10 bg-white/[0.03] p-2 sm:mt-5 sm:rounded-2xl sm:p-3">
                                                         <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/35">
                                                             Scoring
                                                         </p>
@@ -2812,8 +2988,24 @@ export default function MultiplayerDraftPlayPage() {
                                                         </p>
                                                     </div>
 
-                                                    <div className="mt-5 text-center text-xs font-black uppercase tracking-[0.2em] text-yellow-300 opacity-60 transition group-hover:opacity-100">
-                                                        Select Position
+                                                    <div className="mt-2 text-center text-[9px] font-black uppercase tracking-[0.14em] text-yellow-300 sm:mt-5 sm:text-xs sm:tracking-[0.2em] sm:opacity-60 sm:transition sm:group-hover:opacity-100">
+                                                        {selecting ? (
+                                                            "Locking In..."
+                                                        ) : isPending ? (
+                                                                <span className="sm:hidden">
+                                                                    Tap Again to Confirm
+                                                                </span>
+                                                        ) : (
+                                                            <>
+                                                                <span className="sm:hidden">
+                                                                    Tap Once to Preview • Tap Again to Confirm
+                                                                </span>
+
+                                                                <span className="hidden sm:inline">
+                                                                    Select Position
+                                                                </span>
+                                                            </>
+                                                        )}
                                                     </div>
                                                 </div>
                                             </button>
@@ -2835,7 +3027,8 @@ export default function MultiplayerDraftPlayPage() {
                                     rounded-3xl
                                     border border-yellow-300/30
                                     bg-black/60
-                                    p-6
+                                    p-4
+                                    sm:p-6
                                     text-center
                                     shadow-[0_0_30px_rgba(250,204,21,0.12)]
                                 "
@@ -2847,13 +3040,13 @@ export default function MultiplayerDraftPlayPage() {
                                             ⚡ Locked In
                                         </p>
 
-                                        <h3 className="mt-3 text-3xl font-black text-yellow-200 drop-shadow-[0_0_15px_rgba(250,204,21,0.35)]">
+                                        <h3 className="mt-3 text-2xl sm:text-3xl font-black text-yellow-200 drop-shadow-[0_0_15px_rgba(250,204,21,0.35)]">
                                             {
                                                 playerState.selectedPowerPosition
                                             }
                                         </h3>
 
-                                        <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-white/50">
+                                        <p className="mx-auto mt-3 max-w-md text-xs leading-5 sm:text-sm sm:leading-6 text-white/50">
                                             {
                                                 powerPositionInfo[
                                                     playerState
@@ -2915,11 +3108,11 @@ export default function MultiplayerDraftPlayPage() {
                                 </p>
                             </div>
 
-                            <div className="grid gap-4 sm:grid-cols-2">
+                            <div className="grid grid-cols-2 gap-2 sm:gap-4">
 
                                 {/* YOUR CHARACTER */}
                                 <div>
-                                    <p className="mb-2 text-xs font-black uppercase tracking-[0.2em] text-pink-300/60">
+                                    <p className="mb-1.5 text-[9px] font-black uppercase tracking-[0.15em] text-pink-300/60 sm:mb-2 sm:text-xs sm:tracking-[0.2em]">
                                         Your Roll
                                     </p>
 
@@ -2937,15 +3130,17 @@ export default function MultiplayerDraftPlayPage() {
                                                 handleDragEnd
                                             }
                                             className={`
-                                        relative
-                                        min-h-[410px]
-                                        overflow-hidden
-                                        rounded-3xl
-                                        border border-pink-500/30
-                                        bg-black
-                                        shadow-[0_0_30px_rgba(236,72,153,0.18)]
-                                        transition
-                                        ${
+                                                relative
+                                                h-[220px]
+                                                sm:h-auto
+                                                sm:min-h-[410px]
+                                                overflow-hidden
+                                                rounded-3xl
+                                                border border-pink-500/30
+                                                bg-black
+                                                shadow-[0_0_30px_rgba(236,72,153,0.18)]
+                                                transition
+                                                ${
                                                 mySubmitted
                                                     ? "cursor-not-allowed opacity-50"
                                                     : pendingPosition
@@ -2953,8 +3148,8 @@ export default function MultiplayerDraftPlayPage() {
                                                         : isDraggingCard
                                                             ? "cursor-grabbing scale-95 opacity-40"
                                                             : "cursor-grab active:cursor-grabbing"
-                                            }
-                                    `}
+                                                }
+                                            `}
                                         >
                                             <img
                                                 src={currentCharacter.imageUrl}
@@ -2987,7 +3182,8 @@ export default function MultiplayerDraftPlayPage() {
                                             {/* PRIVATE BADGE */}
                                             <div
                                                 className={`
-                                                    absolute right-4 top-4
+                                                    absolute right-2 top-2 px-2 py-1 text-[7px]
+                                                    sm:right-4 sm:top-4 sm:px-3 sm:py-1.5 sm:text-[10px]
                                                     rounded-full
                                                     border
                                                     px-3 py-1.5
@@ -3012,30 +3208,30 @@ export default function MultiplayerDraftPlayPage() {
                                             >
                                                 {bothRollsLocked
                                                     ? "⚔ Revealed"
-                                                    : "🔒 Private Roll"}
+                                                    : "🔒 Private"}
                                             </div>
 
 
-                                            <div className="absolute bottom-0 left-0 right-0 p-5">
+                                            <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-5">
 
-                                                <p className="text-xs font-bold uppercase tracking-widest text-purple-300">
+                                                <p className="text-[7px] font-bold uppercase tracking-[0.1em] text-purple-300 sm:text-xs sm:tracking-widest">
                                                     {bothRollsLocked
                                                         ? "Drag to Position"
                                                         : myRollLocked
                                                             ? "Waiting for Opponent"
                                                             : "Reroll or Lock"}
                                                 </p>
-                                                <h3 className="mt-2 text-3xl font-black text-white drop-shadow">
+                                                <h3 className="mt-1 truncate text-base font-black text-white drop-shadow sm:mt-2 sm:text-3xl">
                                                     {currentCharacter.name}
                                                 </h3>
 
-                                                <p className="text-base font-medium text-white/75">
+                                                <p className="truncate text-[9px] font-medium text-white/65 sm:text-base sm:text-white/75">
                                                     {currentCharacter.anime}
                                                 </p>
                                             </div>
                                         </div>
                                     ) : mySubmitted ? (
-                                        <div className="flex min-h-[410px] flex-col items-center justify-center rounded-3xl border border-purple-400/20 bg-black/40">
+                                        <div className="flex h-[220px] sm:h-auto sm:min-h-[410px] flex-col items-center justify-center rounded-3xl border border-purple-400/20 bg-black/40">
 
                                             <div className="flex h-14 w-14 items-center justify-center rounded-full border border-purple-400/20 bg-purple-500/10 text-2xl">
                                                 ✓
@@ -3051,7 +3247,7 @@ export default function MultiplayerDraftPlayPage() {
 
                                         </div>
                                     ) : (
-                                        <div className="flex min-h-[410px] flex-col items-center justify-center rounded-3xl border border-pink-500/20 bg-black/40">
+                                        <div className="flex h-[220px] sm:h-auto sm:min-h-[410px] flex-col items-center justify-center rounded-3xl border border-pink-500/20 bg-black/40">
 
                                             <div className="h-10 w-10 animate-spin rounded-full border-4 border-pink-500/20 border-t-pink-400" />
 
@@ -3066,7 +3262,21 @@ export default function MultiplayerDraftPlayPage() {
 
                                 {/* OPPONENT CHARACTER */}
                                 <div>
-                                    <p className="mb-2 text-xs font-black uppercase tracking-[0.2em] text-purple-300/60">
+                                    <p
+                                        className="
+                                            mb-1.5
+                                            truncate
+                                            text-[8px]
+                                            font-black
+                                            uppercase
+                                            tracking-[0.1em]
+                                            text-purple-300/60
+
+                                            sm:mb-2
+                                            sm:text-xs
+                                            sm:tracking-[0.2em]
+                                        "
+                                    >
                                         {opponentName}
                                     </p>
 
@@ -3074,7 +3284,9 @@ export default function MultiplayerDraftPlayPage() {
                                         <div
                                             className="
                                                 relative
-                                                min-h-[410px]
+                                                h-[220px]
+                                                sm:h-auto
+                                                sm:min-h-[410px]
                                                 overflow-hidden
                                                 rounded-3xl
                                                 border border-purple-500/30
@@ -3102,15 +3314,28 @@ export default function MultiplayerDraftPlayPage() {
                                             {/* ROUND BADGE */}
                                             <div
                                                 className="
-                                                    absolute left-4 top-4
+                                                    absolute
+                                                    left-2
+                                                    top-2
                                                     rounded-full
-                                                    border border-purple-400/30
+                                                    border
+                                                    border-purple-400/30
                                                     bg-black/70
-                                                    px-3 py-1.5
-                                                    text-[10px] font-black
-                                                    uppercase tracking-[0.2em]
+                                                    px-2
+                                                    py-1
+                                                    text-[7px]
+                                                    font-black
+                                                    uppercase
+                                                    tracking-[0.08em]
                                                     text-purple-200
                                                     backdrop-blur-xl
+
+                                                    sm:left-4
+                                                    sm:top-4
+                                                    sm:px-3
+                                                    sm:py-1.5
+                                                    sm:text-[10px]
+                                                    sm:tracking-[0.2em]
                                                 "
                                             >
                                                 Round {match.round}
@@ -3120,15 +3345,28 @@ export default function MultiplayerDraftPlayPage() {
                                             {/* OPPONENT BADGE */}
                                             <div
                                                 className="
-                                                    absolute right-4 top-4
+                                                    absolute
+                                                    right-2
+                                                    top-2
                                                     rounded-full
-                                                    border border-purple-400/25
+                                                    border
+                                                    border-purple-400/25
                                                     bg-purple-500/10
-                                                    px-3 py-1.5
-                                                    text-[10px] font-black
-                                                    uppercase tracking-[0.2em]
+                                                    px-2
+                                                    py-1
+                                                    text-[7px]
+                                                    font-black
+                                                    uppercase
+                                                    tracking-[0.08em]
                                                     text-purple-200
                                                     backdrop-blur-xl
+
+                                                    sm:right-4
+                                                    sm:top-4
+                                                    sm:px-3
+                                                    sm:py-1.5
+                                                    sm:text-[10px]
+                                                    sm:tracking-[0.2em]
                                                 "
                                             >
                                                 ⚔ Revealed
@@ -3136,20 +3374,65 @@ export default function MultiplayerDraftPlayPage() {
 
 
                                             {/* CHARACTER INFO */}
-                                            <div className="absolute bottom-0 left-0 right-0 p-5">
+                                            <div
+                                                className="
+                                                    absolute
+                                                    bottom-0
+                                                    left-0
+                                                    right-0
+                                                    p-2.5
 
-                                                <p className="text-xs font-bold uppercase tracking-widest text-purple-300">
-                                                    Opponent Roll
+                                                    sm:p-5
+                                                "
+                                            >
+                                                <p
+                                                    className="
+                                                        mb-0.5
+                                                        truncate
+                                                        text-[7px]
+                                                        font-black
+                                                        uppercase
+                                                        tracking-[0.1em]
+                                                        text-purple-300/55
+
+                                                        sm:mb-2
+                                                        sm:text-xs
+                                                        sm:tracking-[0.2em]
+                                                    "
+                                                >
+                                                    {opponentName}
                                                 </p>
 
-                                                <h3 className="mt-2 text-3xl font-black text-white drop-shadow">
+                                                <h3
+                                                    className="
+                                                        truncate
+                                                        text-xs
+                                                        font-black
+                                                        leading-tight
+                                                        text-white
+                                                        drop-shadow
+
+                                                        sm:mt-2
+                                                        sm:text-3xl
+                                                    "
+                                                >
                                                     {opponentCurrentCharacter.name}
                                                 </h3>
 
-                                                <p className="text-base font-medium text-white/75">
+                                                <p
+                                                    className="
+                                                        mt-0.5
+                                                        truncate
+                                                        text-[8px]
+                                                        font-medium
+                                                        text-white/55
+
+                                                        sm:text-base
+                                                        sm:text-white/75
+                                                    "
+                                                >
                                                     {opponentCurrentCharacter.anime}
                                                 </p>
-
                                             </div>
                                         </div>
                                     ) : (
@@ -3157,7 +3440,9 @@ export default function MultiplayerDraftPlayPage() {
                                             className="
                                                 relative
                                                 flex
-                                                min-h-[410px]
+                                                h-[220px]
+                                                sm:h-auto
+                                                sm:min-h-[410px]
                                                 flex-col
                                                 items-center
                                                 justify-center
@@ -3170,15 +3455,28 @@ export default function MultiplayerDraftPlayPage() {
                                             {/* ROUND BADGE */}
                                             <div
                                                 className="
-                                                    absolute left-4 top-4
+                                                    absolute
+                                                    left-2
+                                                    top-2
                                                     rounded-full
-                                                    border border-purple-400/20
+                                                    border
+                                                    border-pink-400/30
                                                     bg-black/70
-                                                    px-3 py-1.5
-                                                    text-[10px] font-black
-                                                    uppercase tracking-[0.2em]
-                                                    text-purple-200/60
+                                                    px-2
+                                                    py-1
+                                                    text-[7px]
+                                                    font-black
+                                                    uppercase
+                                                    tracking-[0.08em]
+                                                    text-pink-200
                                                     backdrop-blur-xl
+
+                                                    sm:left-4
+                                                    sm:top-4
+                                                    sm:px-3
+                                                    sm:py-1.5
+                                                    sm:text-[10px]
+                                                    sm:tracking-[0.2em]
                                                 "
                                             >
                                                 Round {match.round}
@@ -3199,11 +3497,11 @@ export default function MultiplayerDraftPlayPage() {
                                                 ?
                                             </div>
 
-                                            <p className="mt-4 text-sm font-black uppercase tracking-widest text-purple-200">
+                                            <p className="mt-2 text-[9px] font-black uppercase tracking-[0.08em] text-purple-200 sm:mt-4 sm:text-sm sm:tracking-widest">
                                                 Opponent Roll Hidden
                                             </p>
 
-                                            <p className="mt-2 text-center text-xs font-semibold text-white/35">
+                                            <p className="mt-1 px-2 text-center text-[8px] font-semibold leading-4 text-white/35 sm:mt-2 sm:text-xs">
                                                 {!myRollLocked
                                                     ? "Lock your character to reveal both rolls."
                                                     : !opponentRollLocked
@@ -3219,7 +3517,7 @@ export default function MultiplayerDraftPlayPage() {
                             {/* ROLL ACTIONS */}
                             {/* ============================================= */}
 
-                            <div className="mt-5 grid gap-4 sm:grid-cols-2">
+                            <div className="mt-3 grid grid-cols-2 gap-2 sm:mt-5 sm:gap-4">
 
                                 {/* REROLL */}
                                 <button
@@ -3236,9 +3534,14 @@ export default function MultiplayerDraftPlayPage() {
                                     className={`
                                         group relative
                                         overflow-hidden
-                                        rounded-3xl
                                         border
-                                        px-5 py-5
+                                        px-2
+                                        py-3
+                                        rounded-xl
+                                        
+                                        sm:px-5
+                                        sm:py-5
+                                        sm:rounded-3xl
                                         transition-all duration-300
 
                                         ${
@@ -3309,7 +3612,7 @@ export default function MultiplayerDraftPlayPage() {
                                             </p>
 
                                             <p
-                                                className={`text-xs ${
+                                                className={`text-xs hidden sm:block ${
                                                     playerState.rerollUsed
                                                         ? "text-zinc-500"
                                                         : myRollLocked
@@ -3343,9 +3646,14 @@ export default function MultiplayerDraftPlayPage() {
                                     className={`
                                         relative
                                         overflow-hidden
-                                        rounded-3xl
                                         border
-                                        px-5 py-5
+                                        px-2
+                                        py-3
+                                        rounded-xl
+                                        
+                                        sm:px-5
+                                        sm:py-5
+                                        sm:rounded-3xl
                                         font-black
                                         transition-all duration-300
 
@@ -3401,7 +3709,7 @@ export default function MultiplayerDraftPlayPage() {
                                                         : "Lock Roll"}
                                             </p>
 
-                                            <p className="text-xs font-medium opacity-60">
+                                            <p className="text-xs font-medium opacity-60 hidden sm:block">
                                                 {lockingRoll &&
                                                 playerState.rerollUsed
                                                     ? "Fate Rewrite used — locking automatically"
@@ -3448,7 +3756,254 @@ export default function MultiplayerDraftPlayPage() {
                                 </div>
                             </div>
 
-                            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+                            {/* ============================================= */}
+                            {/* MOBILE TEAM POSITIONS */}
+                            {/* ============================================= */}
+
+                            <div
+                                className="
+                                    grid
+                                    grid-cols-3
+                                    gap-2
+                                    md:hidden
+                                "
+                            >
+                                {gridPositions.map(
+                                    (position) => {
+                                        const isPowerPosition =
+                                            position ===
+                                            playerState
+                                                .selectedPowerPosition;
+
+                                        const pick =
+                                            multiplayerPicks.find(
+                                                (pick) =>
+                                                    pick.position ===
+                                                    position
+                                            );
+
+                                        const pendingHere =
+                                            pendingPosition ===
+                                            position;
+
+                                        return (
+                                            <button
+                                                key={position}
+                                                type="button"
+
+                                                onClick={() =>
+                                                    handleMobilePositionTap(
+                                                        position
+                                                    )
+                                                }
+
+                                                disabled={
+                                                    !!pick ||
+                                                    mySubmitted ||
+                                                    !bothRollsLocked ||
+                                                    submittingPick
+                                                }
+
+                                                aria-pressed={
+                                                    pendingHere
+                                                }
+
+                                                className={`
+                                                    relative
+                                                    h-[68px]
+                                                    min-w-0
+                                                    overflow-hidden
+                                                    rounded-xl
+                                                    border
+                                                    px-2.5
+                                                    py-2
+                                                    text-left
+                                                    transition-all
+                                                    duration-200
+                            
+                                                    ${
+                                                    pick
+                                                        ? isPowerPosition
+                                                            ? `
+                                                                border-yellow-400/35
+                                                                bg-yellow-500/[0.07]
+                                                            `
+                                                            : `
+                                                                border-pink-400/25
+                                                                bg-black/50
+                                                            `
+                                                        : pendingHere
+                                                            ? `
+                                                                border-yellow-300/80
+                                                                bg-yellow-500/10
+                                                                shadow-[0_0_18px_rgba(250,204,21,0.18)]
+                                                                active:scale-[0.98]
+                                                            `
+                                                            : isPowerPosition
+                                                                ? `
+                                                                    border-yellow-400/30
+                                                                    bg-yellow-500/[0.04]
+                                                                    active:scale-[0.97]
+                                                                `
+                                                                : `
+                                                                    border-pink-500/20
+                                                                    bg-white/[0.025]
+                                                                    active:scale-[0.97]
+                                                                `
+                                                    }
+    
+                                                    disabled:cursor-default
+                                                    `}
+                                            >
+                                                {/* POSITION */}
+                                                <p
+                                                    className={`
+                                                        truncate
+                                                        text-[7px]
+                                                        font-black
+                                                        uppercase
+                                                        tracking-[0.08em]
+                            
+                                                        ${
+                                                        isPowerPosition
+                                                            ? "text-yellow-300/70"
+                                                            : pendingHere
+                                                                ? "text-yellow-200"
+                                                                : "text-pink-300/55"
+                                                        }
+                                                    `}
+                                                >
+                                                    {getPositionIcon(
+                                                        position
+                                                    )}{" "}
+                                                    {position}
+                                                </p>
+
+
+                                                {/* EMPTY */}
+                                                {!pick &&
+                                                    !pendingHere && (
+                                                        <p
+                                                            className="
+                                                                mt-2
+                                                                truncate
+                                                                text-[9px]
+                                                                font-bold
+                                                                text-white/25
+                                                            "
+                                                        >
+                                                            {bothRollsLocked
+                                                                ? "Tap to place"
+                                                                : "Waiting..."}
+                                                        </p>
+                                                    )}
+
+
+                                                {/* PENDING */}
+                                                {!pick &&
+                                                    pendingHere &&
+                                                    currentCharacter && (
+                                                        <div className="mt-1">
+                                                            <p
+                                                                className="
+                                                                    truncate
+                                                                    text-[10px]
+                                                                    font-black
+                                                                    text-white
+                                                                "
+                                                            >
+                                                                {
+                                                                    currentCharacter.name
+                                                                }
+                                                            </p>
+
+                                                            <p
+                                                                className="
+                                                                    mt-0.5
+                                                                    truncate
+                                                                    text-[6px]
+                                                                    font-black
+                                                                    uppercase
+                                                                    tracking-[0.06em]
+                                                                    text-yellow-300/75
+                                                                "
+                                                            >
+                                                                Tap again to lock
+                                                            </p>
+                                                        </div>
+                                                    )}
+
+
+                                                {/* LOCKED */}
+                                                {pick && (
+                                                    <div
+                                                        className="
+                                                            mt-1
+                                                            flex
+                                                            items-end
+                                                            justify-between
+                                                            gap-1
+                                                        "
+                                                    >
+                                                        <p
+                                                            className="
+                                                                min-w-0
+                                                                truncate
+                                                                text-[10px]
+                                                                font-black
+                                                                text-white
+                                                            "
+                                                        >
+                                                            {
+                                                                draftCharacters.find(
+                                                                    (character) =>
+                                                                        character.id ===
+                                                                        pick.characterId
+                                                                )?.name ??
+                                                                "Unknown"
+                                                            }
+                                                        </p>
+
+                                                        <p
+                                                            className={`
+                                                                shrink-0
+                                                                text-base
+                                                                font-black
+                                                                italic
+                                                                leading-none
+                            
+                                                                ${
+                                                                getGradeStyle(
+                                                                    pick.grade
+                                                                ).grade
+                                                                }
+                                                            `}
+                                                        >
+                                                            {pick.grade}
+                                                        </p>
+                                                    </div>
+                                                )}
+
+                                                {pick?.hasSynergy && (
+                                                    <div
+                                                        className="
+                                                            absolute
+                                                            bottom-0
+                                                            left-0
+                                                            right-0
+                                                            h-[2px]
+                                                            bg-pink-400
+                                                            shadow-[0_0_8px_rgba(244,114,182,0.8)]
+                                                        "
+                                                    />
+                                                )}
+                                            </button>
+                                        );
+                                    }
+                                )}
+                            </div>
+
+                            <div className="hidden gap-4 md:grid md:grid-cols-2 xl:grid-cols-5">
                                 {gridPositions.map(
                                     (position) => {
                                         const isPowerPosition =
@@ -3817,77 +4372,188 @@ export default function MultiplayerDraftPlayPage() {
                             {/* TEAM SUMMARY */}
                             {/* ================================================= */}
 
+                            <div>
+                                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-pink-300/50">
+                                    Your Completed Team
+                                </p>
+
+                                <h3 className="mt-1 text-2xl font-black text-white">
+                                    Ascension Analysis
+                                </h3>
+
+                                <p className="mt-1 text-sm text-white/35">
+                                    Review your lineup before locking in your final bonus.
+                                </p>
+                            </div>
+
+                            {/* MOBILE ASCENSION LINEUP */}
                             <div
                                 className="
-                                    flex
-                                    flex-col
-                                    gap-4
-                                    lg:flex-row
-                                    lg:items-end
-                                    lg:justify-between
+                                    mt-4
+                                    grid
+                                    grid-cols-3
+                                    gap-2
+                                    sm:hidden
                                 "
                             >
+                                {multiplayerPicks.map(
+                                    (pick) => {
+                                        const character =
+                                            draftCharacters.find(
+                                                (character) =>
+                                                    character.id ===
+                                                    pick.characterId
+                                            );
 
-                                <div>
+                                        if (!character) {
+                                            return null;
+                                        }
 
-                                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-pink-300/50">
-                                        Your Completed Team
-                                    </p>
+                                        const gradeStyle =
+                                            getGradeStyle(
+                                                pick.grade
+                                            );
 
-                                    <h3 className="mt-1 text-2xl font-black text-white">
-                                        Ascension Analysis
-                                    </h3>
+                                        const preview =
+                                            hoveredPreviewByPosition.get(
+                                                pick.position
+                                            );
 
-                                    <p className="mt-1 text-sm text-white/35">
-                                        Review your lineup before locking in your final bonus.
-                                    </p>
+                                        const isAffected =
+                                            preview?.affected ??
+                                            false;
 
-                                </div>
+                                        return (
+                                            <div
+                                                key={
+                                                    pick.position
+                                                }
+                                                className={`
+                                                    relative
+                                                    h-[72px]
+                                                    min-w-0
+                                                    overflow-hidden
+                                                    rounded-xl
+                                                    border
+                                                    px-2
+                                                    py-2
+                                                
+                                                    transition-all
+                                                    duration-300
+                                                
+                                                    ${
+                                                    !isPreviewingAscension
+                                                        ? pick.hasSynergy
+                                                            ? `
+                                                                border-pink-300/50
+                                                                bg-black/50
+                                                                shadow-[0_0_12px_rgba(244,114,182,0.18)]
+                                                            `
+                                                            : `
+                                                                border-white/10
+                                                                bg-black/50
+                                                            `
+                                                        : isAffected
+                                                            ? `
+                                                                z-10
+                                                                scale-[1.03]
+                                                                border-yellow-300
+                                                                bg-yellow-500/10
+                                                                opacity-100
+                                                                ring-2
+                                                                ring-yellow-300/35
+                                                                shadow-[0_0_22px_rgba(250,204,21,0.38)]
+                                                            `
+                                                            : `
+                                                                scale-[0.97]
+                                                                border-white/5
+                                                                bg-black/40
+                                                                opacity-25
+                                                            `
+                                                    }   
+                                                `}
+                                            >
+                                                <p
+                                                    className="
+                                                        truncate
+                                                        text-[6px]
+                                                        font-black
+                                                        uppercase
+                                                        tracking-[0.08em]
+                                                        text-pink-300/55
+                                                    "
+                                                >
+                                                    {getPositionIcon(
+                                                        pick.position
+                                                    )}{" "}
+                                                    {pick.position}
+                                                </p>
 
+                                                <p
+                                                    className="
+                                                        mt-1
+                                                        truncate
+                                                        text-[10px]
+                                                        font-black
+                                                        text-white
+                                                    "
+                                                >
+                                                    {
+                                                        character.name
+                                                    }
+                                                </p>
 
-                                <div className="flex flex-wrap gap-2">
+                                                <div
+                                                    className="
+                                                        mt-1
+                                                        flex
+                                                        items-end
+                                                        justify-between
+                                                        gap-1
+                                                    "
+                                                >
+                                                    <p
+                                                        className={`
+                                                            text-base
+                                                            font-black
+                                                            italic
+                                                            leading-none
+                            
+                                                            ${
+                                                            gradeStyle.grade
+                                                            }
+                                                        `}
+                                                    >
+                                                        {pick.grade}
+                                                    </p>
 
-                                    {/* TEAM POWER */}
+                                                    <p
+                                                        className="
+                                                            text-[10px]
+                                                            font-black
+                                                            text-white/60
+                                                        "
+                                                    >
+                                                        {pick.power}
+                                                    </p>
+                                                </div>
 
-                                    <div
-                                        className="
-                                            rounded-xl
-                                            border border-white/10
-                                            bg-white/[0.03]
-                                            px-4 py-2
-                                        "
-                                    >
-                                        <p className="text-[8px] font-black uppercase tracking-widest text-white/30">
-                                            Team Power
-                                        </p>
-
-                                        <p className="mt-0.5 text-lg font-black text-white">
-                                            {ascensionTotalPower}
-                                        </p>
-                                    </div>
-
-
-                                    {/* AVERAGE */}
-
-                                    <div
-                                        className="
-                                            rounded-xl
-                                            border border-purple-400/15
-                                            bg-purple-500/[0.05]
-                                            px-4 py-2
-                                        "
-                                    >
-                                        <p className="text-[8px] font-black uppercase tracking-widest text-purple-300/40">
-                                            Average
-                                        </p>
-
-                                        <p className="mt-0.5 text-lg font-black text-purple-200">
-                                            {ascensionAveragePower}
-                                        </p>
-                                    </div>
-
-                                </div>
-
+                                                {pick.hasSynergy && (
+                                                    <div
+                                                        className="
+                                                            absolute
+                                                            bottom-0
+                                                            left-0
+                                                            right-0
+                                                            h-[2px]
+                                                            bg-pink-400
+                                                        "
+                                                    />
+                                                )}
+                                            </div>
+                                        );
+                                    }
+                                )}
                             </div>
 
 
@@ -3898,9 +4564,9 @@ export default function MultiplayerDraftPlayPage() {
                             <div
                                 className="
                                     mt-5
-                                    grid
-                                    grid-cols-2
+                                    hidden
                                     gap-3
+                                    sm:grid
                                     sm:grid-cols-3
                                     lg:grid-cols-5
                                     2xl:grid-cols-9
@@ -4101,7 +4767,7 @@ export default function MultiplayerDraftPlayPage() {
                             /* ASCENSION CHOICES */
                             /* ============================================= */
 
-                            <div className="mt-6 grid gap-4 md:grid-cols-3">
+                            <div className="mt-4 grid gap-2 sm:mt-6 md:grid-cols-3 sm:gap-4">
 
                                 {playerState.ascensionChoices.map(
                                     (ascension) => {
@@ -4109,6 +4775,10 @@ export default function MultiplayerDraftPlayPage() {
                                             ascensionInfo[
                                                 ascension
                                                 ];
+
+                                        const isPending =
+                                            pendingAscension ===
+                                            ascension;
 
                                         return (
                                             <button
@@ -4149,30 +4819,46 @@ export default function MultiplayerDraftPlayPage() {
                                                     )
                                                 }
 
-                                                className="
-                                                    group relative
+                                                className={`
+                                                    group
+                                                    relative
                                                     overflow-hidden
-                                                    rounded-3xl
-                                                    border border-yellow-400/25
+                                                    rounded-2xl
+                                                    border
                                                     bg-black/60
-                                                    p-5
+                                                    p-3
                                                     text-left
-                                                    transition-all duration-300
+                                                    transition-all
+                                                    duration-300
+                                                
+                                                    sm:rounded-3xl
+                                                    sm:p-5
+                                                
+                                                    ${
+                                                    isPending
+                                                        ? `
+                                                            border-yellow-200
+                                                            bg-yellow-500/10
+                                                            ring-2
+                                                            ring-yellow-300/30
+                                                            shadow-[0_0_30px_rgba(250,204,21,0.22)]
+                                                        `
+                                                        : `
+                                                            border-yellow-400/25
+                                                            hover:-translate-y-1
+                                                            hover:border-yellow-300/70
+                                                            hover:bg-yellow-500/10
+                                                            hover:shadow-[0_0_30px_rgba(250,204,21,0.18)]
+                                                        `
+                                                    }
 
-                                                    hover:-translate-y-1
-                                                    hover:border-yellow-300/70
-                                                    hover:bg-yellow-500/10
-                                                    hover:shadow-[0_0_30px_rgba(250,204,21,0.18)]
                                                     hover:cursor-pointer
-
-                                                    focus:border-yellow-300/70
-                                                    focus:bg-yellow-500/10
+                                                
                                                     focus:outline-none
-                                                    focus:shadow-[0_0_30px_rgba(250,204,21,0.18)]
-
+                                                
                                                     disabled:pointer-events-none
                                                     disabled:opacity-50
-                                                "
+                                                `}
                                             >
 
                                                 <div className="absolute -right-10 -top-10 h-28 w-28 rounded-full bg-yellow-400/10 blur-3xl transition group-hover:bg-yellow-400/20" />
@@ -4183,17 +4869,17 @@ export default function MultiplayerDraftPlayPage() {
                                                         Ascension
                                                     </p>
 
-                                                    <h3 className="mt-3 text-xl font-black text-white">
+                                                    <h3 className="mt-1 text-base font-black text-white sm:mt-3 sm:text-xl">
                                                         {ascension}
                                                     </h3>
 
-                                                    <p className="mt-3 min-h-[72px] text-sm leading-6 text-white/55">
+                                                    <p className="mt-1 text-xs leading-5 text-white/50 sm:mt-3 sm:min-h-[72px] sm:text-sm sm:leading-6">
                                                         {
                                                             info.description
                                                         }
                                                     </p>
 
-                                                    <div className="mt-5 border-t border-white/[0.06] pt-4">
+                                                    <div className="mt-2 border-t border-white/[0.06] pt-2 sm:mt-5 sm:pt-4">
 
                                                         {(() => {
                                                             const preview =
@@ -4221,7 +4907,9 @@ export default function MultiplayerDraftPlayPage() {
                                                                     </p>
 
                                                                     <p className="text-[10px] font-black uppercase tracking-widest text-yellow-300/50">
-                                                                        Preview
+                                                                        {isPending
+                                                                            ? "Selected"
+                                                                            : "Preview"}
                                                                     </p>
 
                                                                 </div>
@@ -4229,9 +4917,23 @@ export default function MultiplayerDraftPlayPage() {
                                                         })()}
 
                                                         <div className="mt-3 text-center text-xs font-black uppercase tracking-[0.2em] text-yellow-300 opacity-50 transition group-hover:opacity-100">
-                                                            {selectingAscension
-                                                                ? "Locking In..."
-                                                                : "Hover to Preview"}
+                                                            {selectingAscension ? (
+                                                                "Locking In..."
+                                                            ) : isPending ? (
+                                                                <span className="sm:hidden">
+                                                                    Tap Again to Confirm
+                                                                </span>
+                                                            ) : (
+                                                                <>
+                                                                    <span className="sm:hidden">
+                                                                        Tap Once to Preview • Tap Again to Confirm
+                                                                    </span>
+
+                                                                    <span className="hidden sm:inline">
+                                                                        Hover to Preview • Click to Confirm
+                                                                    </span>
+                                                                </>
+                                                            )}
                                                         </div>
 
                                                     </div>
@@ -4255,7 +4957,8 @@ export default function MultiplayerDraftPlayPage() {
                                         rounded-3xl
                                         border border-yellow-300/30
                                         bg-black/60
-                                        p-7
+                                        p-4
+                                        sm:p-7
                                         text-center
                                         shadow-[0_0_35px_rgba(250,204,21,0.15)]
                                     "
@@ -4269,13 +4972,13 @@ export default function MultiplayerDraftPlayPage() {
                                             Ascension Locked
                                         </p>
 
-                                        <h3 className="mt-3 text-3xl font-black text-yellow-200 drop-shadow-[0_0_18px_rgba(250,204,21,0.4)]">
+                                        <h3 className="mt-3 text-2xl sm:text-3xl font-black text-yellow-200 drop-shadow-[0_0_18px_rgba(250,204,21,0.4)]">
                                             {
                                                 playerState.selectedAscension
                                             }
                                         </h3>
 
-                                        <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-white/50">
+                                        <p className="mx-auto mt-3 max-w-md text-xs leading-5 sm:text-sm sm:leading-6 text-white/50">
                                             {
                                                 ascensionInfo[
                                                     playerState
@@ -4317,11 +5020,14 @@ export default function MultiplayerDraftPlayPage() {
                     "disruption" && (
                         <div
                             className="
-                                mt-8
-                                rounded-3xl
+                                mt-4
+                                rounded-2xl
                                 border border-red-400/20
                                 bg-red-500/[0.04]
-                                p-6
+                                p-3
+                                sm:mt-7
+                                sm:rounded-3xl
+                                sm:p-5
                                 shadow-[0_0_30px_rgba(248,113,113,0.08)]
                             "
                         >
@@ -4353,7 +5059,7 @@ export default function MultiplayerDraftPlayPage() {
 
 
                             {!playerState.selectedDisruption ? (
-                                <div className="mt-7 grid gap-4 md:grid-cols-3">
+                                <div className="mt-4 grid gap-2 sm:mt-7 md:grid-cols-3 sm:gap-4">
 
                                     {playerState
                                         .disruptionChoices
@@ -4363,6 +5069,10 @@ export default function MultiplayerDraftPlayPage() {
                                                     disruptionInfo[
                                                         disruption
                                                         ];
+
+                                                const isPending =
+                                                    pendingDisruption ===
+                                                    disruption;
 
                                                 return (
                                                     <button
@@ -4381,28 +5091,44 @@ export default function MultiplayerDraftPlayPage() {
                                                             )
                                                         }
 
-                                                        className="
+                                                        className={`
                                                             group
                                                             relative
                                                             overflow-hidden
-                                                            rounded-3xl
+                                                            rounded-2xl
                                                             border
-                                                            border-red-400/25
                                                             bg-black/60
-                                                            p-5
+                                                            p-3
                                                             text-left
                                                             transition-all
                                                             duration-300
+                                                        
+                                                            sm:rounded-3xl
+                                                            sm:p-5
+                                                        
+                                                            ${
+                                                            isPending
+                                                                ? `
+                                                                    border-red-200
+                                                                    bg-red-500/10
+                                                                    ring-2
+                                                                    ring-red-300/30
+                                                                    shadow-[0_0_30px_rgba(248,113,113,0.24)]
+                                                                `
+                                                                : `
+                                                                    border-red-400/25
+                                                                    hover:-translate-y-1
+                                                                    hover:border-red-300/70
+                                                                    hover:bg-red-500/10
+                                                                    hover:shadow-[0_0_30px_rgba(248,113,113,0.18)]
+                                                                `
+                                                            }
 
-                                                            hover:-translate-y-1
-                                                            hover:border-red-300/70
-                                                            hover:bg-red-500/10
-                                                            hover:shadow-[0_0_30px_rgba(248,113,113,0.18)]
                                                             hover:cursor-pointer
-
+                                                        
                                                             disabled:pointer-events-none
                                                             disabled:opacity-50
-                                                        "
+                                                        `}
                                                     >
 
                                                         <div className="absolute -right-10 -top-10 h-28 w-28 rounded-full bg-red-400/10 blur-3xl transition group-hover:bg-red-400/20" />
@@ -4413,24 +5139,34 @@ export default function MultiplayerDraftPlayPage() {
                                                                 Disruption
                                                             </p>
 
-                                                            <h3 className="mt-3 text-xl font-black text-white">
-                                                                {
-                                                                    disruption
-                                                                }
+                                                            <h3 className="mt-1 text-base font-black text-white sm:mt-3 sm:text-xl">
+                                                                {disruption}
                                                             </h3>
 
-                                                            <p className="mt-3 min-h-[72px] text-sm leading-6 text-white/55">
-                                                                {
-                                                                    info.description
-                                                                }
+                                                            <p className="mt-1 text-xs leading-5 text-white/50 sm:mt-3 sm:min-h-[72px] sm:text-sm sm:leading-6 sm:text-white/55">
+                                                                {info.description}
                                                             </p>
 
-                                                            <div className="mt-5 border-t border-white/[0.06] pt-4">
+                                                            <div className="mt-2 border-t border-white/[0.06] pt-2 sm:mt-5 sm:pt-4">
 
-                                                                <p className="text-center text-[10px] font-black uppercase tracking-[0.2em] text-red-300/50 transition group-hover:text-red-200">
-                                                                    {selectingDisruption
-                                                                        ? "Locking In..."
-                                                                        : "Deploy Disruption"}
+                                                                <p className="text-center text-[9px] font-black uppercase tracking-[0.14em] text-red-300/60 sm:text-[10px] sm:tracking-[0.2em]">
+                                                                    {selectingDisruption ? (
+                                                                        "Deploying..."
+                                                                    ) : isPending ? (
+                                                                        <span className="sm:hidden">
+                                                                            Tap Again to Deploy
+                                                                        </span>
+                                                                    ) : (
+                                                                        <>
+                                                                            <span className="sm:hidden">
+                                                                                Tap Once to Select • Tap Again to Deploy
+                                                                            </span>
+
+                                                                            <span className="hidden sm:inline">
+                                                                                Deploy Disruption
+                                                                            </span>
+                                                                        </>
+                                                                    )}
                                                                 </p>
 
                                                             </div>
@@ -4454,7 +5190,8 @@ export default function MultiplayerDraftPlayPage() {
                                             border
                                             border-red-300/30
                                             bg-black/60
-                                            p-7
+                                            p-4
+                                            sm:p-7
                                             text-center
                                             shadow-[0_0_35px_rgba(248,113,113,0.15)]
                                         "
@@ -4468,14 +5205,14 @@ export default function MultiplayerDraftPlayPage() {
                                                 Disruption Locked
                                             </p>
 
-                                            <h3 className="mt-3 text-3xl font-black text-red-200 drop-shadow-[0_0_18px_rgba(248,113,113,0.4)]">
+                                            <h3 className="mt-3 text-2xl sm:text-3xl font-black text-red-200 drop-shadow-[0_0_18px_rgba(248,113,113,0.4)]">
                                                 {
                                                     playerState
                                                         .selectedDisruption
                                                 }
                                             </h3>
 
-                                            <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-white/50">
+                                            <p className="mx-auto mt-3 max-w-md text-xs leading-5 sm:text-sm sm:leading-6 text-white/50">
                                                 {
                                                     disruptionInfo[
                                                         playerState

@@ -1057,28 +1057,37 @@ function CinematicMatchup({
             className="
                 relative
                 flex
-                min-h-[680px]
+                min-h-[500px]
                 flex-col
                 items-center
                 justify-center
                 overflow-hidden
-                py-8
+                py-4
+
+                sm:min-h-[620px]
+                sm:py-8
+
+                lg:min-h-[680px]
             "
         >
             {/* PROGRESS */}
 
             <div className="absolute left-0 right-0 top-4 text-center">
-                <p className="text-[10px] font-black uppercase tracking-[0.35em] text-white/25">
+                <p className="text-[8px] font-black uppercase tracking-[0.2em] text-white/25 sm:text-[10px] sm:tracking-[0.35em]">
                     Matchup {matchupNumber} / {totalMatchups}
                 </p>
 
                 <p
                     className={`
-                        mt-2
-                        text-sm
                         font-black
                         uppercase
-                        tracking-[0.3em]
+                        mt-1
+                        text-[10px]
+                        tracking-[0.16em]
+                        
+                        sm:mt-2
+                        sm:text-sm
+                        sm:tracking-[0.3em]
 
                         ${
                         slot.isPowerPosition
@@ -1119,9 +1128,15 @@ function CinematicMatchup({
                     grid
                     w-full
                     max-w-5xl
-                    grid-cols-[1fr_auto_1fr]
+                    grid-cols-[minmax(0,1fr)_36px_minmax(0,1fr)]
                     items-center
-                    gap-2 sm:gap-4 lg:gap-6
+                    gap-1
+
+                    sm:grid-cols-[minmax(0,1fr)_64px_minmax(0,1fr)]
+                    sm:gap-3
+
+                    lg:grid-cols-[1fr_auto_1fr]
+                    lg:gap-6
                 "
             >
 
@@ -1129,8 +1144,17 @@ function CinematicMatchup({
                 {/* YOUR SIDE */}
                 {/* ============================== */}
 
-                <div className="flex justify-end">
-                    <div className="animate-[battleCardLeft_850ms_cubic-bezier(.16,1,.3,1)_both]">
+                <div className="flex min-w-0 justify-end">
+                    <div
+                        className="
+                            w-full
+                            max-w-[155px]
+                            animate-[battleCardLeft_850ms_cubic-bezier(.16,1,.3,1)_both]
+
+                            sm:max-w-[240px]
+                            lg:max-w-[320px]
+                        "
+                    >
 
                         <div
                             className={
@@ -1146,14 +1170,14 @@ function CinematicMatchup({
                                 className={`
                                     relative
                                     aspect-[2/3]
-                                    w-[250px]
+                                    w-full
                                     overflow-hidden
-                                    rounded-[2rem]
+                                    rounded-2xl
                                     border-2
                                     bg-black
-                                    sm:w-[290px]
-                                    lg:w-[320px]
-
+                            
+                                    sm:rounded-[2rem]
+                            
                                     ${myGradeStyle.border}
                                 `}
                             >
@@ -1179,29 +1203,49 @@ function CinematicMatchup({
 
                                 {/* GRADE */}
 
-                                <div className="absolute left-4 top-4 rounded-xl border border-white/10 bg-black/75 px-3 py-2 backdrop-blur-xl">
+                                <div className="absolute left-2 top-2 rounded-lg border border-white/10 bg-black/75 px-2 py-1 backdrop-blur-xl sm:left-4 sm:top-4 sm:rounded-xl sm:px-3 sm:py-2">
                                     <p
                                         className={`
-                                            text-3xl
+                                            text-lg
                                             font-black
                                             italic
-
+                                    
+                                            sm:text-3xl
+                                    
                                             ${myGradeStyle.grade}
                                         `}
                                     >
-                                        {
-                                            myGrade
-                                        }
+                                        {myGrade}
                                     </p>
                                 </div>
 
 
                                 {/* POWER */}
 
-                                <div className="absolute right-4 top-4 rounded-xl border border-white/10 bg-black/75 px-3 py-2 text-center backdrop-blur-xl">
+                                <div
+                                    className="
+                                        absolute
+                                        right-2
+                                        top-2
+                                        rounded-lg
+                                        border
+                                        border-white/10
+                                        bg-black/75
+                                        px-2
+                                        py-1
+                                        text-center
+                                        backdrop-blur-xl
+
+                                        sm:right-4
+                                        sm:top-4
+                                        sm:rounded-xl
+                                        sm:px-3
+                                        sm:py-2
+                                    "
+                                >
                                     <p
                                         className={`
-                                            text-2xl
+                                            text-sm sm:text-2xl
                                             font-black
                                             transition-colors
                                             duration-300
@@ -1214,7 +1258,7 @@ function CinematicMatchup({
                                         />
                                     </p>
 
-                                    <p className="text-[8px] font-black uppercase tracking-widest text-white/35">
+                                    <p className="text-[6px] sm:text-[8px] font-black uppercase tracking-widest text-white/35">
                                         OVR
                                     </p>
                                 </div>
@@ -1222,29 +1266,22 @@ function CinematicMatchup({
 
                                 {/* INFO */}
 
-                                <div className="absolute bottom-0 left-0 right-0 p-5 text-left">
+                                <div className="absolute bottom-0 left-0 right-0 p-2.5 text-left sm:p-5">
                                     <p className="text-[10px] font-black uppercase tracking-[0.25em] text-pink-300">
                                         You
                                     </p>
 
-                                    <h3 className="mt-1 text-2xl font-black text-white">
-                                        {
-                                            myCharacter.name
-                                        }
+                                    <h3 className="mt-0.5 line-clamp-2 text-sm font-black leading-tight text-white sm:mt-1 sm:text-2xl">
+                                        {myCharacter.name}
                                     </h3>
 
-                                    <p className="mt-1 text-xs font-semibold text-white/45">
-                                        {
-                                            myCharacter.anime
-                                        }
+                                    <p className="mt-0.5 truncate text-[8px] font-semibold text-white/45 sm:mt-1 sm:text-xs">
+                                        {myCharacter.anime}
                                     </p>
 
                                     {slot.isPowerPosition && (
-                                        <p className="mt-2 text-xs font-black text-yellow-300">
-                                            {
-                                                myState
-                                                    .selectedPowerPosition
-                                            }
+                                        <p className="mt-1 truncate text-[8px] font-black text-yellow-300 sm:mt-2 sm:text-xs">
+                                            {myState.selectedPowerPosition}
                                         </p>
                                     )}
                                 </div>
@@ -1258,7 +1295,7 @@ function CinematicMatchup({
                 {/* IMPACT */}
                 {/* ============================== */}
 
-                <div className="relative flex w-12 items-center justify-center sm:w-20 lg:w-24">
+                <div className="relative flex w-9 items-center justify-center sm:w-16 lg:w-24">
 
                     <div
                         className="
@@ -1278,8 +1315,8 @@ function CinematicMatchup({
                             relative
                             z-10
                             flex
-                            h-20
-                            w-20
+                            h-9
+                            w-9
                             animate-[battleVs_700ms_500ms_cubic-bezier(.16,1,.3,1)_both]
                             items-center
                             justify-center
@@ -1287,12 +1324,20 @@ function CinematicMatchup({
                             border
                             border-pink-300/30
                             bg-black/80
-                            text-2xl
+                            text-[9px]
                             font-black
                             italic
                             text-white
-                            shadow-[0_0_35px_rgba(236,72,153,0.35)]
+                            shadow-[0_0_20px_rgba(236,72,153,0.3)]
                             backdrop-blur-xl
+
+                            sm:h-16
+                            sm:w-16
+                            sm:text-lg
+
+                            lg:h-20
+                            lg:w-20
+                            lg:text-2xl
                         "
                     >
                         VS
@@ -1304,8 +1349,17 @@ function CinematicMatchup({
                 {/* OPPONENT */}
                 {/* ============================== */}
 
-                <div className="flex justify-start">
-                    <div className="animate-[battleCardRight_850ms_cubic-bezier(.16,1,.3,1)_both]">
+                <div className="flex min-w-0 justify-start">
+                    <div
+                        className="
+                            w-full
+                            max-w-[155px]
+                            animate-[battleCardRight_850ms_cubic-bezier(.16,1,.3,1)_both]
+
+                            sm:max-w-[240px]
+                            lg:max-w-[320px]
+                        "
+                    >
 
                         <div
                             className={
@@ -1321,14 +1375,14 @@ function CinematicMatchup({
                                 className={`
                                     relative
                                     aspect-[2/3]
-                                    w-[150px]
-                                    sm:w-[240px]
-                                    lg:w-[320px]
+                                    w-full
                                     overflow-hidden
-                                    rounded-[2rem]
+                                    rounded-2xl
                                     border-2
                                     bg-black
-
+                            
+                                    sm:rounded-[2rem]
+                            
                                     ${opponentGradeStyle.border}
                                 `}
                             >
@@ -1351,26 +1405,65 @@ function CinematicMatchup({
 
                                 <div className="absolute inset-0 bg-gradient-to-t from-black via-black/10 to-transparent" />
 
-                                <div className="absolute left-4 top-4 rounded-xl border border-white/10 bg-black/75 px-3 py-2 backdrop-blur-xl">
+                                <div
+                                    className="
+                                        absolute
+                                        left-2
+                                        top-2
+                                        rounded-lg
+                                        border
+                                        border-white/10
+                                        bg-black/75
+                                        px-2
+                                        py-1
+                                        backdrop-blur-xl
+
+                                        sm:left-4
+                                        sm:top-4
+                                        sm:rounded-xl
+                                        sm:px-3
+                                        sm:py-2
+                                    "
+                                >
                                     <p
                                         className={`
-                                            text-3xl
+                                            text-lg
                                             font-black
                                             italic
-
+                                
+                                            sm:text-3xl
+                                
                                             ${opponentGradeStyle.grade}
                                         `}
                                     >
-                                        {
-                                            opponentGrade
-                                        }
+                                        {opponentGrade}
                                     </p>
                                 </div>
 
-                                <div className="absolute right-4 top-4 rounded-xl border border-white/10 bg-black/75 px-3 py-2 text-center backdrop-blur-xl">
+                                <div
+                                    className="
+                                        absolute
+                                        right-2
+                                        top-2
+                                        rounded-lg
+                                        border
+                                        border-white/10
+                                        bg-black/75
+                                        px-2
+                                        py-1
+                                        text-center
+                                        backdrop-blur-xl
+
+                                        sm:right-4
+                                        sm:top-4
+                                        sm:rounded-xl
+                                        sm:px-3
+                                        sm:py-2
+                                    "
+                                >
                                     <p
                                         className={`
-                                            text-2xl
+                                            text-sm sm:text-2xl
                                             font-black
                                             transition-colors
                                             duration-300
@@ -1383,34 +1476,27 @@ function CinematicMatchup({
                                         />
                                     </p>
 
-                                    <p className="text-[8px] font-black uppercase tracking-widest text-white/35">
+                                    <p className="text-[6px] sm:text-[8px] font-black uppercase tracking-widest text-white/35">
                                         OVR
                                     </p>
                                 </div>
 
-                                <div className="absolute bottom-0 left-0 right-0 p-5 text-left">
-                                    <p className="text-[10px] font-black uppercase tracking-[0.25em] text-purple-300">
+                                <div className="absolute bottom-0 left-0 right-0 p-2.5 text-left sm:p-5">
+                                    <p className="text-[7px] font-black uppercase tracking-[0.12em] text-pink-300 sm:text-[10px] sm:tracking-[0.25em]">
                                         {opponentName}
                                     </p>
 
-                                    <h3 className="mt-1 text-2xl font-black text-white">
-                                        {
-                                            opponentCharacter.name
-                                        }
+                                    <h3 className="mt-0.5 line-clamp-2 text-sm font-black leading-tight text-white sm:mt-1 sm:text-2xl">
+                                        {opponentCharacter.name}
                                     </h3>
 
-                                    <p className="mt-1 text-xs font-semibold text-white/45">
-                                        {
-                                            opponentCharacter.anime
-                                        }
+                                    <p className="mt-0.5 truncate text-[8px] font-semibold text-white/45 sm:mt-1 sm:text-xs">
+                                        {opponentCharacter.anime}
                                     </p>
 
                                     {slot.isPowerPosition && (
-                                        <p className="mt-2 text-xs font-black text-yellow-300">
-                                            {
-                                                opponentState
-                                                    .selectedPowerPosition
-                                            }
+                                        <p className="mt-1 truncate text-[8px] font-black text-yellow-300 sm:mt-2 sm:text-xs">
+                                            {opponentState.selectedPowerPosition}
                                         </p>
                                     )}
                                 </div>
@@ -1443,55 +1529,37 @@ function CinematicMatchup({
                         `}
                     >
 
-                        {/* LARGE SIDE GLOW */}
 
-                        <div
-                            className={`
-                                absolute
-                                inset-0
-                                animate-[victoryWash_850ms_cubic-bezier(.16,1,.3,1)_both]
-            
-                                ${
-                                myWon
-                                    ? `
-                                        bg-gradient-to-r
-                                        from-pink-500/20
-                                        via-fuchsia-400/10
-                                        to-transparent
-                                    `
-                                    : `
-                                        bg-gradient-to-l
-                                        from-purple-500/20
-                                        via-violet-400/10
-                                        to-transparent
-                                    `
-                                }
-                            `}
-                        />
-
-
-                        {/* FLASH BURST */}
+                        {/* SOFT VICTORY AURA */}
 
                         <div
                             className={`
                                 absolute
                                 top-1/2
-                                h-[420px]
-                                w-[420px]
+                                h-[260px]
+                                w-[220px]
                                 -translate-y-1/2
                                 animate-[victoryBurst_800ms_ease-out_both]
-                                rounded-full
-                                blur-[90px]
-            
+                                rounded-[50%]
+                                blur-[70px]
+                        
+                                sm:h-[420px]
+                                sm:w-[380px]
+                                sm:blur-[100px]
+                        
                                 ${
                                 myWon
                                     ? `
-                                        left-[18%]
-                                        bg-pink-400/25
+                                        left-[4%]
+                                        bg-pink-400/20
+                    
+                                        sm:left-[12%]
                                     `
                                     : `
-                                        right-[18%]
-                                        bg-purple-400/25
+                                        right-[4%]
+                                        bg-purple-400/20
+                    
+                                        sm:right-[12%]
                                     `
                                 }
                             `}
@@ -1563,113 +1631,67 @@ function CinematicMatchup({
                         />
 
 
-                        {/* SIDE FRAME */}
-
-                        <div
-                            className={`
-                                absolute
-                                inset-x-[8%]
-                                bottom-[9%]
-                                top-[9%]
-                                animate-[victoryFrame_750ms_cubic-bezier(.16,1,.3,1)_both]
-                                rounded-[2.5rem]
-                                border
-            
-                                ${
-                                myWon
-                                    ? `
-                                        border-pink-300/35
-                                        shadow-[inset_0_0_35px_rgba(236,72,153,0.08),0_0_35px_rgba(236,72,153,0.12)]
-                                    `
-                                    : `
-                                        border-purple-300/35
-                                        shadow-[inset_0_0_35px_rgba(168,85,247,0.08),0_0_35px_rgba(168,85,247,0.12)]
-                                    `
-                                }
-                            `}
-                        />
-
-
-                        {/* GIANT BACKGROUND TEXT */}
-
-                        <p
-                            className={`
-                                absolute
-                                top-1/2
-                                -translate-y-1/2
-                                animate-[victoryWord_850ms_cubic-bezier(.16,1,.3,1)_both]
-                                whitespace-nowrap
-                                text-[7rem]
-                                font-black
-                                italic
-                                tracking-[-0.08em]
-                                text-white/[0.045]
-                                sm:text-[9rem]
-            
-                                ${
-                                myWon
-                                    ? "-left-5"
-                                    : "-right-5"
-                                }
-                            `}
-                        >
-                            VICTOR
-                        </p>
-
-
                         {/* RESULT STAMP */}
-
                         <div
                             className={`
                                 absolute
-                                bottom-[15%]
+                                bottom-[13%]
                                 animate-[victoryStamp_700ms_120ms_cubic-bezier(.16,1,.3,1)_both]
-            
+                        
                                 ${
                                 myWon
                                     ? `
-                                        left-[14%]
+                                        left-[10%]
                                         text-left
+                    
+                                        sm:left-[14%]
                                     `
                                     : `
-                                        right-[14%]
+                                        right-[10%]
                                         text-right
+                    
+                                        sm:right-[14%]
                                     `
                                 }
                             `}
                         >
                             <p
                                 className={`
-                                    text-[10px]
-                                    font-black
-                                    uppercase
-                                    tracking-[0.4em]
-            
-                                    ${
-                                    myWon
-                                        ? "text-pink-200/70"
-                                        : "text-purple-200/70"
-                                    }
-                                `}
-                            >
-                                ✦ Position Secured ✦
-                            </p>
-
-                            <p
-                                className="
-                                    mt-1
-                                    text-4xl
+                                    text-xl
                                     font-black
                                     italic
                                     tracking-tight
                                     text-white
                                     drop-shadow-[0_0_18px_rgba(255,255,255,0.35)]
-                                "
+                        
+                                    sm:text-4xl
+                        
+                                    ${
+                                    myWon
+                                        ? "text-pink-100"
+                                        : "text-purple-100"
+                                    }
+                                `}
                             >
                                 {myWon
-                                    ? myCharacter.name
-                                    : opponentCharacter.name}
+                                    ? "MATCHUP WON"
+                                    : "MATCHUP LOST"}
                             </p>
+
+                            <div
+                                className={`
+                                    mt-1
+                                    h-[2px]
+                                    w-full
+                                    rounded-full
+                        
+                                    ${
+                                    myWon
+                                        ? "bg-pink-300/70 shadow-[0_0_10px_rgba(244,114,182,0.7)]"
+                                        : "bg-purple-300/70 shadow-[0_0_10px_rgba(216,180,254,0.7)]"
+                                    }
+                                `}
+                            />
                         </div>
 
                     </div>
@@ -1793,18 +1815,32 @@ function RevealEffectChoice({
                 ${
                 compact
                     ? `
-                            w-[260px]
-                            rounded-2xl
-                            px-4
-                            py-3
-                        `
-                    : `
-                            w-[420px]
-                            rounded-3xl
-                            px-6
-                            py-6
-                        `
-            }
+                        w-[calc(50vw-1.25rem)]
+                        max-w-[170px]
+                        rounded-xl
+                        px-2.5
+                        py-2
+            
+                        sm:w-[260px]
+                        sm:max-w-none
+                        sm:rounded-2xl
+                        sm:px-4
+                        sm:py-3
+                    `
+                        : `
+                        w-[calc(50vw-1.25rem)]
+                        max-w-[170px]
+                        rounded-2xl
+                        px-3
+                        py-4
+            
+                        sm:w-[420px]
+                        sm:max-w-none
+                        sm:rounded-3xl
+                        sm:px-6
+                        sm:py-6
+                    `
+                }
 
                 ${
                 type ===
@@ -1817,7 +1853,7 @@ function RevealEffectChoice({
                             border-red-400/30
                             bg-red-500/[0.08]
                         `
-            }
+                }
 
                 ${
                 glowing &&
@@ -1828,7 +1864,7 @@ function RevealEffectChoice({
                             shadow-[0_0_40px_rgba(250,204,21,0.55)]
                           `
                     : ""
-            }
+                }
 
                 ${
                 glowing &&
@@ -1839,7 +1875,7 @@ function RevealEffectChoice({
                             shadow-[0_0_40px_rgba(248,113,113,0.50)]
                           `
                     : ""
-            }
+                }
             `}
         >
 
@@ -1869,8 +1905,8 @@ function RevealEffectChoice({
 
                     ${
                     compact
-                        ? "text-base"
-                        : "text-2xl"
+                        ? "text-xs sm:text-base"
+                        : "text-base sm:text-2xl"
                 }
 
                     ${
@@ -3408,7 +3444,18 @@ export default function MultiplayerDraftResultsPage() {
         opponentDisruptionAffectsCurrent;
 
     return (
-        <main className="mx-auto min-h-[calc(100vh-130px)] max-w-[1700px] px-4 py-6">
+        <main
+            className="
+                mx-auto
+                min-h-[calc(100vh-130px)]
+                max-w-[1700px]
+                px-2
+                py-2
+
+                sm:px-4
+                sm:py-6
+            "
+        >
 
             {/* BACKGROUND */}
             <div className="pointer-events-none fixed inset-0 overflow-hidden">
@@ -3564,25 +3611,34 @@ export default function MultiplayerDraftResultsPage() {
                     {/* ====================================== */}
 
                             <div
-                                className="
-                                        absolute
-                                        left-0
-                                        right-0
-                                        top-1/2
-                                        flex
-                                        justify-center
-                                        gap-10
-                                        transition-transform
-                                        duration-700
-                                        ease-[cubic-bezier(.16,1,.3,1)]
-                                    "
-                                style={{
-                                    transform:
-                                        revealPhase ===
-                                        "ascension"
-                                            ? "translateY(-50%)"
-                                            : "translateY(calc(50vh - 6.5rem))",
-                                }}
+                                className={`
+                                    absolute
+                                    left-4
+                                    right-4
+                                    top-1/2
+                                    flex
+                                    justify-center
+                                    gap-2
+                                    transition-transform
+                                    duration-700
+                                    ease-[cubic-bezier(.16,1,.3,1)]
+                            
+                                    sm:left-0
+                                    sm:right-0
+                                    sm:gap-10
+                            
+                                    ${
+                                    revealPhase === "ascension"
+                                        ? `
+                                            -translate-y-1/2
+                                        `
+                                        : `
+                                            translate-y-[215px]
+                        
+                                            sm:translate-y-[calc(50vh-6.5rem)]
+                                        `
+                                    }
+                                `}
                             >
 
                         <RevealEffectChoice
@@ -3652,25 +3708,34 @@ export default function MultiplayerDraftResultsPage() {
                     {revealPhase !==
                         "ascension" && (
                             <div
-                                className="
+                                className={`
                                     absolute
-                                    left-0
-                                    right-0
+                                    left-4
+                                    right-4
                                     top-1/2
                                     flex
                                     justify-center
-                                    gap-10
+                                    gap-2
                                     transition-transform
                                     duration-700
                                     ease-[cubic-bezier(.16,1,.3,1)]
-                                "
-                                style={{
-                                    transform:
-                                        revealPhase ===
-                                        "disruption"
-                                            ? "translateY(-50%)"
-                                            : "translateY(calc(50vh - 12rem))",
-                                }}
+                            
+                                    sm:left-0
+                                    sm:right-0
+                                    sm:gap-10
+                            
+                                    ${
+                                    revealPhase === "disruption"
+                                        ? `
+                                            -translate-y-1/2
+                                        `
+                                        : `
+                                            translate-y-[275px]
+                        
+                                            sm:translate-y-[calc(50vh-12rem)]
+                                        `
+                                    }
+                                `}
                             >
 
                                 <RevealEffectChoice
@@ -3920,7 +3985,7 @@ export default function MultiplayerDraftResultsPage() {
                         <div className="mx-auto mt-6 flex max-w-3xl items-center justify-center gap-8">
 
                             <div>
-                                <p className="text-[10px] font-black uppercase tracking-widest text-pink-300/50">
+                                <p className="text-[7px] font-black uppercase tracking-[0.12em] text-pink-300 sm:text-[10px] sm:tracking-[0.25em]">
                                     You
                                 </p>
 
