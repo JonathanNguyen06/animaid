@@ -1140,9 +1140,9 @@ export const draftCharacters: DraftCharacter[] = [
         anime: "Dragon Ball",
         imageUrl: "/draft/dragonball/broly.jpg",
         stats: {
-            leadership: 50,
+            leadership: 60,
             power: 99,
-            utility: 20,
+            utility: 60,
             speed: 92,
             iq: 35,
             defense: 99,
@@ -1156,7 +1156,7 @@ export const draftCharacters: DraftCharacter[] = [
         stats: {
             leadership: 65,
             power: 99,
-            utility: 35,
+            utility: 50,
             speed: 97,
             iq: 72,
             defense: 99,
@@ -2487,7 +2487,7 @@ export const draftCharacters: DraftCharacter[] = [
             power: 88,
             utility: 72,
             speed: 98,
-            iq: 88,
+            iq: 85,
             defense: 78
         },
         rarity: {
@@ -2655,11 +2655,11 @@ export const draftCharacters: DraftCharacter[] = [
         anime: "Hunter x Hunter",
         imageUrl: "/draft/hxh/silva.webp",
         stats: {
-            leadership: 82,
-            power: 92,
+            leadership: 90,
+            power: 95,
             utility: 72,
-            speed: 88,
-            iq: 82,
+            speed: 94,
+            iq: 88,
             defense: 90
         }
     },
