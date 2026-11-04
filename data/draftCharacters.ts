@@ -79,9 +79,9 @@ export const draftCharacters: DraftCharacter[] = [
         anime: "Naruto",
         imageUrl: "/draft/naruto/naruto.png",
         stats: {
-            leadership: 88,
+            leadership: 92,
             power: 97,
-            utility: 35,
+            utility: 80,
             speed: 90,
             iq: 70,
             defense: 85,
@@ -122,7 +122,7 @@ export const draftCharacters: DraftCharacter[] = [
         imageUrl: "/draft/naruto/itachi.png",
         stats: {
             leadership: 75,
-            power: 91,
+            power: 93,
             utility: 90,
             speed: 87,
             iq: 98,
@@ -153,12 +153,12 @@ export const draftCharacters: DraftCharacter[] = [
         anime: "Naruto",
         imageUrl: "/draft/naruto/jiraiya.png",
         stats: {
-            leadership: 82,
-            power: 88,
-            utility: 86,
-            speed: 68,
-            iq: 77,
-            defense: 78,
+            leadership: 89,
+            power: 93,
+            utility: 95,
+            speed: 81,
+            iq: 90,
+            defense: 85,
         },
     },
     {
@@ -256,10 +256,10 @@ export const draftCharacters: DraftCharacter[] = [
         imageUrl: "/draft/naruto/obito.png",
         stats: {
             leadership: 74,
-            power: 88,
-            utility: 88,
-            speed: 82,
-            iq: 84,
+            power: 93,
+            utility: 93,
+            speed: 85,
+            iq: 95,
             defense: 86,
         },
     },
@@ -283,11 +283,11 @@ export const draftCharacters: DraftCharacter[] = [
         anime: "Naruto",
         imageUrl: "/draft/naruto/pain.png",
         stats: {
-            leadership: 86,
+            leadership: 94,
             power: 92,
             utility: 88,
-            speed: 72,
-            iq: 84,
+            speed: 85,
+            iq: 87,
             defense: 81,
         },
     },
@@ -600,11 +600,11 @@ export const draftCharacters: DraftCharacter[] = [
         anime: "One Piece",
         imageUrl: "/draft/onepiece/kaido.avif",
         stats: {
-            leadership: 82,
+            leadership: 86,
             power: 99,
-            utility: 60,
-            speed: 78,
-            iq: 60,
+            utility: 85,
+            speed: 81,
+            iq: 70,
             defense: 99,
         },
         rarity: {
@@ -663,9 +663,9 @@ export const draftCharacters: DraftCharacter[] = [
         stats: {
             leadership: 82,
             power: 97,
-            utility: 70,
-            speed: 89,
-            iq: 68,
+            utility: 80,
+            speed: 91,
+            iq: 73,
             defense: 90,
         },
     },
@@ -1140,11 +1140,11 @@ export const draftCharacters: DraftCharacter[] = [
         anime: "Dragon Ball",
         imageUrl: "/draft/dragonball/broly.jpg",
         stats: {
-            leadership: 60,
+            leadership: 75,
             power: 99,
-            utility: 60,
-            speed: 92,
-            iq: 35,
+            utility: 70,
+            speed: 95,
+            iq: 60,
             defense: 99,
         },
     },
@@ -1154,9 +1154,9 @@ export const draftCharacters: DraftCharacter[] = [
         anime: "Dragon Ball",
         imageUrl: "/draft/dragonball/jiren.webp",
         stats: {
-            leadership: 65,
+            leadership: 75,
             power: 99,
-            utility: 50,
+            utility: 75,
             speed: 97,
             iq: 72,
             defense: 99,
@@ -3322,7 +3322,7 @@ export const draftCharacters: DraftCharacter[] = [
         stats: {
             leadership: 88,
             power: 99,
-            utility: 35,
+            utility: 75,
             speed: 60,
             iq: 75,
             defense: 99
@@ -3778,6 +3778,20 @@ export const draftCharacters: DraftCharacter[] = [
             defense: 78
         }
     },
+    {
+        id: "magna",
+        name: "Magna",
+        anime: "Black Clover",
+        imageUrl: "/draft/blackclover/magna.jpg",
+        stats: {
+            leadership: 65,
+            power: 83,
+            utility: 85,
+            speed: 84,
+            iq: 79,
+            defense: 78
+        }
+    },
     // Fairy Tail
     {
         id: "natsu-dragneel",
@@ -3785,11 +3799,11 @@ export const draftCharacters: DraftCharacter[] = [
         anime: "Fairy Tail",
         imageUrl: "/draft/fairytail/natsu.webp",
         stats: {
-            leadership: 88,
+            leadership: 93,
             power: 96,
-            utility: 60,
+            utility: 75,
             speed: 88,
-            iq: 55,
+            iq: 75,
             defense: 92
         }
     },
@@ -4305,9 +4319,9 @@ export const draftCharacters: DraftCharacter[] = [
         anime: "Fire Force",
         imageUrl: "/draft/fireforce/dragon.webp",
         stats: {
-            leadership: 45,
+            leadership: 80,
             power: 99,
-            utility: 25,
+            utility: 85,
             speed: 88,
             iq: 55,
             defense: 99
@@ -4335,11 +4349,11 @@ export const draftCharacters: DraftCharacter[] = [
         imageUrl: "/draft/gintama/gintoki.jpeg",
         stats: {
             leadership: 92,
-            power: 88,
+            power: 85,
             utility: 75,
             speed: 82,
-            iq: 88,
-            defense: 85
+            iq: 86,
+            defense: 79
         }
     },
     {

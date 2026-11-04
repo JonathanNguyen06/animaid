@@ -223,14 +223,6 @@ export default function DraftResultsPage() {
         )[0];
     }, [result]);
 
-    const synergyCount = useMemo(() => {
-        if (!result) return 0;
-
-        return result.picks.filter(
-            (pick) => pick.hasSynergy
-        ).length;
-    }, [result]);
-
     function startNewDraft() {
         sessionStorage.removeItem(
             "anime-draft-result"
@@ -401,57 +393,210 @@ export default function DraftResultsPage() {
             </div>
 
             <div className="relative z-10 mx-auto max-w-[1500px]">
-                {/* Main result header */}
-                <section className="relative overflow-hidden rounded-[2.25rem] border border-pink-500/20 bg-black/50 px-6 py-10 text-center shadow-[0_0_50px_rgba(236,72,153,0.12)] backdrop-blur-2xl md:px-10">
-                    <div className="absolute left-1/2 top-0 h-px w-3/4 -translate-x-1/2 bg-gradient-to-r from-transparent via-yellow-300/80 to-transparent" />
 
-                    <div className="absolute left-1/2 top-16 h-56 w-56 -translate-x-1/2 rounded-full bg-yellow-300/10 blur-[80px]" />
+                {/* ================================================= */}
+                {/* MAIN RESULT HEADER */}
+                {/* ================================================= */}
+
+                <section
+                    className="
+                        relative
+                        overflow-hidden
+                        rounded-[2.25rem]
+                        border
+                        border-pink-500/20
+                        bg-black/50
+                        px-5
+                        py-8
+                        text-center
+                        shadow-[0_0_50px_rgba(236,72,153,0.12)]
+                        backdrop-blur-2xl
+
+                        sm:px-8
+                        sm:py-10
+
+                        md:px-10
+                    "
+                >
+                    {/* TOP ACCENT */}
+                    <div
+                        className="
+                            absolute
+                            left-1/2
+                            top-0
+                            h-px
+                            w-3/4
+                            -translate-x-1/2
+                            bg-gradient-to-r
+                            from-transparent
+                            via-yellow-300/80
+                            to-transparent
+                        "
+                    />
+
+                    {/* GRADE GLOW */}
+                    <div
+                        className="
+                            pointer-events-none
+                            absolute
+                            left-1/2
+                            top-12
+                            h-56
+                            w-56
+                            -translate-x-1/2
+                            rounded-full
+                            bg-yellow-300/10
+                            blur-[80px]
+                        "
+                    />
+
 
                     <div className="relative z-10">
-                        <p className="text-xs font-black uppercase tracking-[0.5em] text-pink-300/70">
+
+                        {/* EYEBROW */}
+                        <p
+                            className="
+                                text-[9px]
+                                font-black
+                                uppercase
+                                tracking-[0.35em]
+                                text-pink-300/60
+
+                                sm:text-xs
+                                sm:tracking-[0.5em]
+                            "
+                        >
                             Final Draft Report
                         </p>
 
+
+                        {/* RECORD */}
                         {revealPhase === "final" &&
                             result.isNewHighScore && (
-                                <div className="mx-auto mt-5 w-fit rounded-full border border-yellow-300/40 bg-yellow-300/10 px-5 py-2 text-xs font-black uppercase tracking-[0.25em] text-yellow-300 shadow-[0_0_20px_rgba(250,204,21,0.2)]">
+                                <div
+                                    className="
+                                        mx-auto
+                                        mt-4
+                                        w-fit
+                                        rounded-full
+                                        border
+                                        border-yellow-300/40
+                                        bg-yellow-300/10
+                                        px-4
+                                        py-1.5
+                                        text-[9px]
+                                        font-black
+                                        uppercase
+                                        tracking-[0.18em]
+                                        text-yellow-300
+                                        shadow-[0_0_20px_rgba(250,204,21,0.2)]
+
+                                        sm:mt-5
+                                        sm:px-5
+                                        sm:py-2
+                                        sm:text-xs
+                                        sm:tracking-[0.25em]
+                                    "
+                                >
                                     ✨ New Personal Record
                                 </div>
                             )}
 
-                        <h1
-                            className={`
-                                mt-6
-                                text-8xl
-                                font-black
-                                transition-all
-                                duration-500
-                                ${
-                                revealPhase !== "final"
-                                    ? "text-white/20"
-                                    : result.grade ===
-                                    "Legendary"
-                                        ? "text-yellow-300 drop-shadow-[0_0_35px_rgba(250,204,21,.8)]"
+
+                        {/* MAIN GRADE */}
+                        <div className="mt-5 sm:mt-6">
+
+                            <h1
+                                className={`
+                                    text-7xl
+                                    font-black
+                                    leading-none
+                                    transition-all
+                                    duration-500
+                
+                                    sm:text-8xl
+                
+                                    ${
+                                    revealPhase !== "final"
+                                        ? "text-white/20"
                                         : result.grade ===
-                                        "S"
-                                            ? "text-fuchsia-300 drop-shadow-[0_0_30px_rgba(217,70,239,.8)]"
-                                            : "text-white"
-                            }
-                            `}
+                                        "Legendary"
+                                            ? `
+                                                text-yellow-300
+                                                drop-shadow-[0_0_35px_rgba(250,204,21,.8)]
+                                            `
+                                            : result.grade ===
+                                            "S"
+                                                ? `
+                                                    text-fuchsia-300
+                                                    drop-shadow-[0_0_30px_rgba(217,70,239,.8)]
+                                                `
+                                                : "text-white"
+                                    }
+                                `}
+                            >
+                                {revealPhase === "final"
+                                    ? result.grade
+                                    : "?"}
+                            </h1>
+
+                            <p
+                                className="
+                                    mt-2
+                                    text-sm
+                                    font-black
+                                    uppercase
+                                    tracking-[0.35em]
+                                    text-white/55
+
+                                    sm:mt-3
+                                    sm:text-xl
+                                    sm:tracking-[0.4em]
+                                "
+                            >
+                                Draft
+                            </p>
+
+                        </div>
+
+
+                        {/* DIVIDER */}
+                        <div
+                            className="
+                                mx-auto
+                                mt-6
+                                h-px
+                                w-24
+                                bg-gradient-to-r
+                                from-transparent
+                                via-white/20
+                                to-transparent
+
+                                sm:mt-8
+                                sm:w-36
+                            "
+                        />
+
+
+                        {/* CORE STATS */}
+                        <div
+                            className="
+                                mx-auto
+                                mt-6
+                                grid
+                                max-w-xl
+                                grid-cols-2
+                                gap-3
+
+                                sm:mt-7
+                                sm:gap-4
+                            "
                         >
-                            {revealPhase === "final"
-                                ? result.grade
-                                : "?"}
-                        </h1>
-
-                        <p className="mt-3 text-2xl font-bold uppercase tracking-[0.4em] text-white/75">
-                            Draft
-                        </p>
-
-                        <div className="mx-auto mt-9 grid max-w-4xl gap-4 sm:grid-cols-2 lg:grid-cols-4">
                             <div
                                 key={displayedTeamPower}
-                                className="animate-[teamPowerImpact_450ms_cubic-bezier(.16,1,.3,1)]"
+                                className="
+                                    animate-[teamPowerImpact_450ms_cubic-bezier(.16,1,.3,1)]
+                                "
                             >
                                 <ResultStat
                                     label="Team Power"
@@ -467,24 +612,6 @@ export default function DraftResultsPage() {
                                 value={
                                     revealPhase === "final"
                                         ? result.averagePower
-                                        : "?"
-                                }
-                            />
-
-                            <ResultStat
-                                label="Draft Grade"
-                                value={
-                                    revealPhase === "final"
-                                        ? result.grade
-                                        : "?"
-                                }
-                            />
-
-                            <ResultStat
-                                label="Series Links"
-                                value={
-                                    revealPhase === "final"
-                                        ? synergyCount
                                         : "?"
                                 }
                             />
@@ -518,11 +645,6 @@ export default function DraftResultsPage() {
                                 Your Lineup
                             </h2>
                         </div>
-
-                        <p className="text-sm text-white/40">
-                            {sortedPicks.length} / 8 roles
-                            filled
-                        </p>
                     </div>
 
                     <div
@@ -1534,17 +1656,54 @@ function ResultStat({
     highlight?: boolean;
 }) {
     return (
-        <div className="rounded-3xl border border-white/10 bg-white/[0.06] p-5 backdrop-blur-xl">
-            <p className="text-[10px] font-black uppercase tracking-[0.25em] text-white/40">
+        <div
+            className="
+                rounded-2xl
+                border
+                border-white/10
+                bg-white/[0.045]
+                px-3
+                py-3.5
+                backdrop-blur-xl
+
+                sm:rounded-3xl
+                sm:px-5
+                sm:py-5
+            "
+        >
+            <p
+                className="
+                    text-[7px]
+                    font-black
+                    uppercase
+                    tracking-[0.18em]
+                    text-white/35
+
+                    sm:text-[10px]
+                    sm:tracking-[0.25em]
+                "
+            >
                 {label}
             </p>
 
             <p
-                className={`mt-3 text-4xl font-black ${
+                className={`
+                    mt-1.5
+                    text-2xl
+                    font-black
+
+                    sm:mt-3
+                    sm:text-4xl
+
+                    ${
                     highlight
-                        ? "text-yellow-300 drop-shadow-[0_0_16px_rgba(250,204,21,0.55)]"
+                        ? `
+                                text-yellow-300
+                                drop-shadow-[0_0_16px_rgba(250,204,21,0.55)]
+                            `
                         : "text-white"
-                }`}
+                }
+                `}
             >
                 {value}
             </p>

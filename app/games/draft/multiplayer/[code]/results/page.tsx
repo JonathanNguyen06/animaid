@@ -2324,7 +2324,7 @@ export default function MultiplayerDraftResultsPage() {
                         "disruption"
                     );
                 },
-                4500
+                2800
             );
 
         return () =>
@@ -2358,7 +2358,7 @@ export default function MultiplayerDraftResultsPage() {
                         "matchups"
                     );
                 },
-                4500
+                2800
             );
 
         return () =>

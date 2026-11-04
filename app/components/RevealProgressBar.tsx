@@ -12,7 +12,7 @@ export function RevealProgressBar({
                 className={`
                     h-full
                     origin-left
-                    animate-[revealProgress_4500ms_linear_forwards]
+                    animate-[revealProgress_2800ms_linear_forwards]
                     rounded-full
 
                     ${
