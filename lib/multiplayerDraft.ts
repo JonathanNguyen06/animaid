@@ -14,7 +14,7 @@ import {
     draftPositions, getDraftPickGrade,
     getLetterGrade, getPowerPositionMatchupPoints,
     getRandomAscensions, getRandomDisruptions,
-    getRandomPowerPositions
+    getRandomPowerPositions, getRandomWildcardStats
 } from "@/data/draftLogic";
 import {PowerPosition, draftCharacters, AnyDraftPosition} from "@/data/draftCharacters";
 import {DraftPick} from "@/types/draft";
@@ -81,6 +81,9 @@ function multiplayerPicksToDraftPicks(
                 disruptionPenalty:
                     pick.disruptionPenalty ??
                     0,
+
+                wildcardStats:
+                    pick.wildcardStats,
             };
         }
     );
@@ -118,6 +121,13 @@ function draftPicksToMultiplayerPicks(
             disruptionPenalty:
                 pick.disruptionPenalty ??
                 0,
+
+            ...(pick.wildcardStats
+                ? {
+                    wildcardStats:
+                    pick.wildcardStats,
+                }
+                : {}),
         })
     );
 }
@@ -1755,6 +1765,11 @@ export async function submitMultiplayerDraftPick(
         uid
     );
 
+    const wildcardStats =
+        position === "Wildcard"
+            ? getRandomWildcardStats()
+            : undefined;
+
     await runTransaction(
         db,
         async (transaction) => {
@@ -1891,7 +1906,8 @@ export async function submitMultiplayerDraftPick(
             const basePower =
                 calculateDraftPower(
                     character,
-                    position
+                    position,
+                    wildcardStats
                 );
 
             const newPick:
@@ -1907,14 +1923,18 @@ export async function submitMultiplayerDraftPick(
                 basePower,
 
                 grade:
-                    getDraftPickGrade(
-                        character,
-                        position,
+                    getLetterGrade(
                         basePower
                     ),
 
                 hasSynergy:
                     false,
+
+                ...(wildcardStats
+                    ? {
+                        wildcardStats,
+                    }
+                    : {}),
             };
 
             const updatedPicks =
@@ -2905,19 +2925,16 @@ export async function completeDraftMatch(
             }
 
 
-            const finalHostPicks =
-                getFinalMultiplayerPicks(
+            const {
+                playerPicks:
+                    finalHostPicks,
+
+                opponentPicks:
+                    finalGuestPicks,
+            } =
+                getFinalMultiplayerMatchPicks(
                     hostState,
                     guestState
-                        .selectedDisruption
-                );
-
-
-            const finalGuestPicks =
-                getFinalMultiplayerPicks(
-                    guestState,
-                    hostState
-                        .selectedDisruption
                 );
 
 
@@ -3120,6 +3137,222 @@ export function getFinalMultiplayerPicks(
     return draftPicksToMultiplayerPicks(
         disruptedPicks
     );
+}
+
+export function getFinalMultiplayerMatchPicks(
+    playerState:
+    MultiplayerDraftPlayerState,
+
+    opponentState:
+    MultiplayerDraftPlayerState
+) {
+    /*
+     * First resolve the normal pipeline:
+     *
+     * Base
+     * → Series Link
+     * → Ascension
+     * → Disruption
+     */
+    const playerPicks =
+        getFinalMultiplayerPicks(
+            playerState,
+            opponentState
+                .selectedDisruption
+        );
+
+    const opponentPicks =
+        getFinalMultiplayerPicks(
+            opponentState,
+            playerState
+                .selectedDisruption
+        );
+
+    const playerPowerPosition =
+        playerState
+            .selectedPowerPosition;
+
+    const opponentPowerPosition =
+        opponentState
+            .selectedPowerPosition;
+
+    if (
+        !playerPowerPosition ||
+        !opponentPowerPosition
+    ) {
+        return {
+            playerPicks,
+            opponentPicks,
+
+            playerDecoySiphon: 0,
+            opponentDecoySiphon: 0,
+        };
+    }
+
+    const playerPowerPick =
+        playerPicks.find(
+            (pick) =>
+                pick.position ===
+                playerPowerPosition
+        );
+
+    const opponentPowerPick =
+        opponentPicks.find(
+            (pick) =>
+                pick.position ===
+                opponentPowerPosition
+        );
+
+    if (
+        !playerPowerPick ||
+        !opponentPowerPick
+    ) {
+        return {
+            playerPicks,
+            opponentPicks,
+
+            playerDecoySiphon: 0,
+            opponentDecoySiphon: 0,
+        };
+    }
+
+    /*
+     * IMPORTANT:
+     *
+     * Calculate BOTH siphons before
+     * modifying either character.
+     *
+     * This makes Decoy vs Decoy
+     * deterministic and prevents
+     * circular calculations.
+     */
+    const playerDecoySiphon =
+        playerPowerPosition ===
+        "Decoy"
+            ? getDecoySiphonAmount(
+                opponentPowerPick.power
+            )
+            : 0;
+
+    const opponentDecoySiphon =
+        opponentPowerPosition ===
+        "Decoy"
+            ? getDecoySiphonAmount(
+                playerPowerPick.power
+            )
+            : 0;
+
+    /*
+     * A Decoy gains what it siphons,
+     * while losing anything siphoned
+     * by the opposing Decoy.
+     */
+    const playerPower =
+        Math.max(
+            0,
+            Math.min(
+                99,
+                playerPowerPick.power +
+                playerDecoySiphon -
+                opponentDecoySiphon
+            )
+        );
+
+    const opponentPower =
+        Math.max(
+            0,
+            Math.min(
+                99,
+                opponentPowerPick.power +
+                opponentDecoySiphon -
+                playerDecoySiphon
+            )
+        );
+
+    const updatedPlayerPicks =
+        playerPicks.map(
+            (pick) => {
+                if (
+                    pick.position !==
+                    playerPowerPosition
+                ) {
+                    return pick;
+                }
+
+                const character =
+                    draftCharacters.find(
+                        (character) =>
+                            character.id ===
+                            pick.characterId
+                    );
+
+                return {
+                    ...pick,
+
+                    power:
+                    playerPower,
+
+                    grade:
+                        character
+                            ? getDraftPickGrade(
+                                character,
+                                pick.position,
+                                playerPower
+                            )
+                            : getLetterGrade(
+                                playerPower
+                            ),
+                };
+            }
+        );
+
+    const updatedOpponentPicks =
+        opponentPicks.map(
+            (pick) => {
+                if (
+                    pick.position !==
+                    opponentPowerPosition
+                ) {
+                    return pick;
+                }
+
+                const character =
+                    draftCharacters.find(
+                        (character) =>
+                            character.id ===
+                            pick.characterId
+                    );
+
+                return {
+                    ...pick,
+
+                    power:
+                    opponentPower,
+
+                    grade:
+                        character
+                            ? getDraftPickGrade(
+                                character,
+                                pick.position,
+                                opponentPower
+                            )
+                            : getLetterGrade(
+                                opponentPower
+                            ),
+                };
+            }
+        );
+
+    return {
+        playerPicks:
+        updatedPlayerPicks,
+
+        opponentPicks:
+        updatedOpponentPicks,
+
+        playerDecoySiphon,
+        opponentDecoySiphon,
+    };
 }
 
 export async function requestDraftRematch(
@@ -3681,9 +3914,7 @@ export async function lockDraftRoundCharacter(
                     : match.guestSubmitted;
 
             if (alreadySubmitted) {
-                throw new Error(
-                    "ALREADY_SUBMITTED"
-                );
+                return;
             }
 
             if (
@@ -4501,4 +4732,22 @@ export async function cleanupExpiredDraftLobby(
             error
         );
     }
+}
+
+function getDecoySiphonAmount(
+    opponentPower: number
+) {
+    if (opponentPower >= 95) {
+        return 3;
+    }
+
+    if (opponentPower >= 90) {
+        return 2;
+    }
+
+    if (opponentPower >= 85) {
+        return 1;
+    }
+
+    return 0;
 }

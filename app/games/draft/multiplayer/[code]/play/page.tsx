@@ -2198,7 +2198,8 @@ export default function MultiplayerDraftPlayPage() {
         if (
             !user ||
             !pendingPosition ||
-            submittingPick
+            submittingPick ||
+            mySubmitted
         ) {
             return;
         }

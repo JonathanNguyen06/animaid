@@ -41,6 +41,7 @@ export const powerPositions: PowerPosition[] = [
     "Prodigy",
     "Apex",
     "One Man Army",
+    "Decoy",
 ];
 
 export type WeightedPowerPosition =
@@ -53,7 +54,8 @@ export type FormulaPowerPosition =
     | "Specialist"
     | "Prodigy"
     | "Apex"
-    | "One Man Army";
+    | "One Man Army"
+    | "Decoy";
 
 export type PowerPosition =
     | WeightedPowerPosition
@@ -62,14 +64,6 @@ export type PowerPosition =
 export type AnyDraftPosition =
     | DraftPosition
     | PowerPosition;
-
-export const formulaPowerPositions: FormulaPowerPosition[] = [
-    "Wildcard",
-    "Specialist",
-    "Prodigy",
-    "Apex",
-    "One Man Army",
-];
 
 export const draftCharacters: DraftCharacter[] = [
     // Naruto
@@ -1154,7 +1148,7 @@ export const draftCharacters: DraftCharacter[] = [
         anime: "Dragon Ball",
         imageUrl: "/draft/dragonball/jiren.webp",
         stats: {
-            leadership: 75,
+            leadership: 80,
             power: 99,
             utility: 75,
             speed: 97,
@@ -1974,10 +1968,10 @@ export const draftCharacters: DraftCharacter[] = [
         stats: {
             leadership: 60,
             power: 92,
-            utility: 68,
-            speed: 72,
+            utility: 80,
+            speed: 82,
             iq: 80,
-            defense: 55,
+            defense: 62,
         },
     },
     {
@@ -2160,10 +2154,10 @@ export const draftCharacters: DraftCharacter[] = [
         imageUrl: "/draft/opm/watchdogman.jpg",
         stats: {
             leadership: 15,
-            power: 90,
-            utility: 15,
-            speed: 88,
-            iq: 35,
+            power: 91,
+            utility: 70,
+            speed: 95,
+            iq: 70,
             defense: 92,
         },
     },
@@ -4664,7 +4658,7 @@ export const draftCharacters: DraftCharacter[] = [
         anime: "JoJo's Bizarre Adventure",
         imageUrl: "/draft/jojo/kira.avif",
         stats: {
-            leadership: 45,
+            leadership: 70,
             power: 92,
             utility: 98,
             speed: 82,

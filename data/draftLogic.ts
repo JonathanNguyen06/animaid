@@ -40,23 +40,22 @@ export const positionWeights = {
     },
 
     "Vice Captain": {
-        leadership: 0.40,
-        power: 0.25,
-        iq: 0.20,
-        defense: 0.15,
+        leadership: 0.60,
+        power: 0.20,
+        iq: 0.15,
+        defense: 0.05,
     },
 
     Support: {
-        utility: 0.65,
+        utility: 0.70,
         iq: 0.20,
-        speed: 0.05,
         defense: 0.10,
     },
 
     Scout: {
-        speed: 0.55,
-        iq: 0.25,
-        utility: 0.20,
+        speed: 0.60,
+        iq: 0.30,
+        utility: 0.10,
     },
 
     Strategist: {
@@ -66,23 +65,22 @@ export const positionWeights = {
     },
 
     Assassin: {
-        speed: 0.55,
+        speed: 0.60,
         power: 0.35,
-        utility: 0.10,
+        utility: 0.05,
     },
 
     Ace: {
-        power: 0.55,
+        power: 0.65,
         speed: 0.20,
-        defense: 0.15,
-        iq: 0.10,
+        defense: 0.10,
+        iq: 0.05,
     },
 
     Vanguard: {
-        defense: 0.65,
-        leadership: 0.10,
-        power: 0.15,
-        utility: 0.10,
+        defense: 0.70,
+        leadership: 0.05,
+        power: 0.25,
     },
 } satisfies Record<
     DraftPosition,
@@ -92,22 +90,20 @@ export const positionWeights = {
 export const powerPositionWeights = {
     Juggernaut: {
         power: 0.50,
-        defense: 0.40,
-        speed: 0.10,
+        defense: 0.50,
     },
 
     Guardian: {
-        defense: 0.40,
+        defense: 0.50,
         utility: 0.30,
         leadership: 0.20,
-        power: 0.10,
     },
 
     "Battle Genius": {
-        iq: 0.40,
-        power: 0.25,
-        speed: 0.25,
-        utility: 0.10,
+        iq: 0.45,
+        power: 0.30,
+        speed: 0.20,
+        utility: 0.05,
     },
 } satisfies Record<
     WeightedPowerPosition,
@@ -120,6 +116,7 @@ export const formulaPowerPositions: FormulaPowerPosition[] = [
     "Prodigy",
     "Apex",
     "One Man Army",
+    "Decoy",
 ];
 
 export const formulaPowerPositionBreakdowns: Record<
@@ -136,36 +133,44 @@ export const formulaPowerPositionBreakdowns: Record<
 > = {
     Wildcard: {
         description:
-            "Automatically uses the character's 3 strongest attributes.",
+            "A gamble that draws from three random parts of a character's skill set.",
         rows: [
             {
-                label: "Highest Attribute",
-                percentage: 45,
+                label: "Random Attribute #1",
+                value: "33.3%",
             },
             {
-                label: "2nd Highest",
-                percentage: 35,
+                label: "Random Attribute #2",
+                value: "33.3%",
             },
             {
-                label: "3rd Highest",
-                percentage: 20,
+                label: "Random Attribute #3",
+                value: "33.3%",
             },
         ],
+        note:
+            "The three attributes are rolled once when the character is committed to Wildcard.",
     },
 
     Specialist: {
         description:
-            "Rewards characters who dominate in one or two attributes.",
+            "Rewards characters with two standout attributes that clearly exceed the rest of their abilities.",
         rows: [
             {
                 label: "Highest Attribute",
-                percentage: 70,
+                percentage: 55,
             },
             {
                 label: "2nd Highest",
-                percentage: 30,
+                percentage: 45,
+            },
+            {
+                label: "Specialization Gap",
+                value: "+1 Power per 5-point gap",
             },
         ],
+        note:
+            "The gap is measured between the 2nd and 3rd highest attributes. Bonus is capped at +3 Power.",
     },
 
     Prodigy: {
@@ -221,6 +226,31 @@ export const formulaPowerPositionBreakdowns: Record<
         ],
         note:
             "90+ attributes receive +2 instead of the +1 bonus.",
+    },
+
+    Decoy: {
+        description:
+            "Uses the character's stronger attribute between Speed and Utility, then siphons Power from a strong opposing Power Position.",
+        rows: [
+            {
+                label: "Base Score",
+                value: "Higher of Speed or Utility",
+            },
+            {
+                label: "Opponent 85–89",
+                value: "Siphon 1 Power",
+            },
+            {
+                label: "Opponent 90–94",
+                value: "Siphon 2 Power",
+            },
+            {
+                label: "Opponent 95–99",
+                value: "Siphon 3 Power",
+            },
+        ],
+        note:
+            "Siphoned Power is transferred from the opponent's Power Position to Decoy.",
     },
 };
 
@@ -1077,7 +1107,10 @@ export function applyAscension(
 
 export function calculateDraftPower(
     character: DraftCharacter,
-    position: DraftPosition | PowerPosition
+    position:
+        DraftPosition |
+        PowerPosition,
+    wildcardStats?: CharacterStat[]
 ) {
     if (
         isUltraPick(
@@ -1104,9 +1137,36 @@ export function calculateDraftPower(
         );
     } else {
         switch (position as FormulaPowerPosition) {
-            case "Wildcard":
-                score = calculateWildcardScore(character);
+            case "Wildcard": {
+                if (
+                    wildcardStats &&
+                    wildcardStats.length === 3
+                ) {
+                    score =
+                        calculateWildcardScore(
+                            character,
+                            wildcardStats
+                        );
+                } else {
+                    /*
+                     * Neutral fallback for UI previews.
+                     * The actual multiplayer pick should
+                     * always provide rolled Wildcard stats.
+                     */
+                    const stats =
+                        getStats(character);
+
+                    score =
+                        stats.reduce(
+                            (total, stat) =>
+                                total + stat,
+                            0
+                        ) /
+                        stats.length;
+                }
+
                 break;
+            }
 
             case "Specialist":
                 score = calculateSpecialistScore(character);
@@ -1122,6 +1182,13 @@ export function calculateDraftPower(
 
             case "One Man Army":
                 score = calculateOneManArmyScore(character);
+                break;
+
+            case "Decoy":
+                score =
+                    calculateDecoyScore(
+                        character
+                    );
                 break;
 
             default:
@@ -1170,22 +1237,60 @@ function getStats(character: DraftCharacter) {
     return Object.values(character.stats);
 }
 
-function calculateWildcardScore(character: DraftCharacter) {
-    const stats = getStats(character).sort((a, b) => b - a);
+function calculateWildcardScore(
+    character: DraftCharacter,
+    wildcardStats: CharacterStat[]
+) {
+    const selectedValues =
+        wildcardStats.map(
+            (stat) =>
+                character.stats[stat]
+        );
 
     return (
-        stats[0] * 0.45 +
-        stats[1] * 0.35 +
-        stats[2] * 0.20
+        selectedValues.reduce(
+            (total, value) =>
+                total + value,
+            0
+        ) /
+        selectedValues.length
     );
 }
 
-function calculateSpecialistScore(character: DraftCharacter) {
-    const stats = getStats(character).sort((a, b) => b - a);
+function calculateSpecialistScore(
+    character: DraftCharacter
+) {
+    const stats =
+        getStats(character).sort(
+            (a, b) => b - a
+        );
+
+    const baseScore =
+        stats[0] * 0.55 +
+        stats[1] * 0.45;
+
+    /*
+     * Rewards a character whose top two
+     * attributes noticeably stand above
+     * their third-best attribute.
+     *
+     * Every 5 points of separation = +1 Power,
+     * capped at +3.
+     */
+    const specializationGap =
+        stats[1] - stats[2];
+
+    const specializationBonus =
+        Math.min(
+            3,
+            Math.floor(
+                specializationGap / 5
+            )
+        );
 
     return (
-        stats[0] * 0.70 +
-        stats[1] * 0.30
+        baseScore +
+        specializationBonus
     );
 }
 
@@ -1233,6 +1338,15 @@ function calculateOneManArmyScore(character: DraftCharacter) {
     return average + bonus;
 }
 
+function calculateDecoyScore(
+    character: DraftCharacter
+) {
+    return Math.max(
+        character.stats.speed,
+        character.stats.utility
+    );
+}
+
 export function getRandomPowerPositions(
     count = 3
 ): PowerPosition[] {
@@ -1261,7 +1375,8 @@ export function getPowerPositionMatchupPoints(
 ) {
     if (
         position === "Apex" ||
-        position === "One Man Army"
+        position === "One Man Army" ||
+        position === "Prodigy"
     ) {
         return 2;
     }
@@ -1292,18 +1407,18 @@ export const powerPositionInfo: Record<
     },
 
     Wildcard: {
-        description: "Adapts to whatever a character does best.",
-        scoring: "Uses the character's 3 highest attributes",
+        description: "A high-risk position that tests a random mix of the character's abilities.",
+        scoring: "3 random attributes are selected and averaged equally",
     },
 
     Specialist: {
         description: "Rewards characters who are exceptional in a small number of areas.",
-        scoring: "70% highest attribute • 30% second highest",
+        scoring: "55% highest • 45% second highest • Bonus when both stand above the rest",
     },
 
     Prodigy: {
         description: "Rewards exceptionally well-rounded characters.",
-        scoring: "Overall average with a bonus for a strong weakest attribute",
+        scoring: "Overall average with a bonus for a strong weakest attribute • Win = 2 matchup points",
     },
 
     Apex: {
@@ -1318,6 +1433,13 @@ export const powerPositionInfo: Record<
             "Designed for characters capable of doing everything themselves.",
         scoring:
             "Uses all 6 attributes with bonuses for elite stats • Win = 2 matchup points",
+    },
+
+    Decoy: {
+        description:
+            "Draws attention away from the battlefield and turns an opponent's strength against them.",
+        scoring:
+            "Uses higher of Speed or Utility • Siphons up to 3 Power from the opposing Power Position",
     },
 };
 
@@ -1448,6 +1570,43 @@ export function getPositionWeights(
     }
 
     return null;
+}
+
+const wildcardStatPool: CharacterStat[] = [
+    "leadership",
+    "power",
+    "utility",
+    "speed",
+    "iq",
+    "defense",
+];
+
+export function getRandomWildcardStats(): CharacterStat[] {
+    const shuffled = [
+        ...wildcardStatPool,
+    ];
+
+    for (
+        let i = shuffled.length - 1;
+        i > 0;
+        i--
+    ) {
+        const j =
+            Math.floor(
+                Math.random() *
+                (i + 1)
+            );
+
+        [
+            shuffled[i],
+            shuffled[j],
+        ] = [
+            shuffled[j],
+            shuffled[i],
+        ];
+    }
+
+    return shuffled.slice(0, 3);
 }
 
 

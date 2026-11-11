@@ -1,5 +1,5 @@
 import type {
-    AnyDraftPosition,
+    AnyDraftPosition, CharacterStat,
     PowerPosition,
 } from "@/data/draftCharacters";
 
@@ -136,6 +136,7 @@ export type MultiplayerDraftPick = {
 
     ascensionBonus?: number;
     disruptionPenalty?: number;
+    wildcardStats?: CharacterStat[];
 };
 
 export type DraftMatchHistoryResult =

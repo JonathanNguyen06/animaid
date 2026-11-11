@@ -5,7 +5,7 @@ import {onAuthStateChanged, type User,} from "firebase/auth";
 import {auth,} from "@/lib/firebase";
 import {
     beginDraftRematchIfReady,
-    completeDraftMatch, getDraftPlayerState, getFinalMultiplayerPicks,
+    completeDraftMatch, getDraftPlayerState, getFinalMultiplayerMatchPicks, getFinalMultiplayerPicks,
     listenToDraftMatch,
     prepareDraftRematch,
     requestDraftRematch, saveDraftMatchHistory, startDraftRematchIfReady,
@@ -32,6 +32,7 @@ type MatchupEffectStage =
     | "initial"
     | "ascension"
     | "disruption"
+    | "power-position"
     | "resolved";
 
 type MatchupOutcome =
@@ -133,6 +134,14 @@ function getGradeStyle(grade: string) {
                     "text-gray-300",
             };
     }
+}
+
+function hasPowerPositionRevealEffect(
+    position: string | null
+) {
+    return (
+        position === "Decoy"
+    );
 }
 
 function HiddenPortraitCard({
@@ -864,13 +873,20 @@ function CinematicMatchup({
                               myState,
                               opponentState,
                               opponentName,
+
                               myInitialPower,
                               myAscendedPower,
+                              myDisruptedPower,
                               myFinalPower,
+
                               opponentInitialPower,
                               opponentAscendedPower,
+                              opponentDisruptedPower,
                               opponentFinalPower,
                               effectStage,
+
+                              myDecoySiphon,
+                              opponentDecoySiphon
                           }: {
     slot: {
         label: string;
@@ -896,13 +912,19 @@ function CinematicMatchup({
 
     myInitialPower: number;
     myAscendedPower: number;
+    myDisruptedPower: number;
     myFinalPower: number;
 
     opponentInitialPower: number;
     opponentAscendedPower: number;
+    opponentDisruptedPower: number;
     opponentFinalPower: number;
 
-    effectStage: MatchupEffectStage;
+    myDecoySiphon: number;
+    opponentDecoySiphon: number;
+
+    effectStage:
+        MatchupEffectStage;
 }) {
     const myCharacter =
         slot.myPick
@@ -946,6 +968,8 @@ function CinematicMatchup({
         effectStage ===
         "disruption" ||
         effectStage ===
+        "power-position" ||
+        effectStage ===
         "resolved";
 
 
@@ -953,46 +977,103 @@ function CinematicMatchup({
         effectStage ===
         "disruption" ||
         effectStage ===
+        "power-position" ||
+        effectStage ===
+        "resolved";
+
+
+    const powerPositionApplied =
+        effectStage ===
+        "power-position" ||
+        effectStage ===
         "resolved";
 
 
     const myPower =
-        disruptionApplied
+        powerPositionApplied
             ? myFinalPower
-            : ascensionApplied
-                ? myAscendedPower
-                : myInitialPower;
+            : disruptionApplied
+                ? myDisruptedPower
+                : ascensionApplied
+                    ? myAscendedPower
+                    : myInitialPower;
 
 
     const opponentPower =
-        disruptionApplied
+        powerPositionApplied
             ? opponentFinalPower
-            : ascensionApplied
-                ? opponentAscendedPower
-                : opponentInitialPower;
+            : disruptionApplied
+                ? opponentDisruptedPower
+                : ascensionApplied
+                    ? opponentAscendedPower
+                    : opponentInitialPower;
 
     const myPowerColor =
-        disruptionApplied &&
+        powerPositionApplied &&
         myFinalPower !==
-        myAscendedPower
-            ? "text-red-200"
-            : ascensionApplied &&
-            myAscendedPower !==
-            myInitialPower
-                ? "text-yellow-200"
-                : "text-white";
+        myDisruptedPower
+            ? `
+            text-cyan-200
+            drop-shadow-[0_0_14px_rgba(103,232,249,0.9)]
+        `
+
+            : disruptionApplied &&
+            myDisruptedPower !==
+            myAscendedPower
+                ? "text-red-200"
+
+                : ascensionApplied &&
+                myAscendedPower !==
+                myInitialPower
+                    ? "text-yellow-200"
+
+                    : "text-white";
 
 
     const opponentPowerColor =
-        disruptionApplied &&
+        powerPositionApplied &&
         opponentFinalPower !==
-        opponentAscendedPower
-            ? "text-red-200"
-            : ascensionApplied &&
-            opponentAscendedPower !==
-            opponentInitialPower
-                ? "text-yellow-200"
-                : "text-white";
+        opponentDisruptedPower
+            ? `
+            text-cyan-200
+            drop-shadow-[0_0_14px_rgba(103,232,249,0.9)]
+        `
+
+            : disruptionApplied &&
+            opponentDisruptedPower !==
+            opponentAscendedPower
+                ? "text-red-200"
+
+                : ascensionApplied &&
+                opponentAscendedPower !==
+                opponentInitialPower
+                    ? "text-yellow-200"
+
+                    : "text-white";
+
+    const myPowerPositionEffectActive =
+        slot.isPowerPosition &&
+        effectStage ===
+        "power-position" &&
+        myState
+            .selectedPowerPosition ===
+        "Decoy" &&
+        myDecoySiphon > 0;
+
+
+    const opponentPowerPositionEffectActive =
+        slot.isPowerPosition &&
+        effectStage ===
+        "power-position" &&
+        opponentState
+            .selectedPowerPosition ===
+        "Decoy" &&
+        opponentDecoySiphon > 0;
+
+
+    const showPowerPositionEffect =
+        myPowerPositionEffectActive ||
+        opponentPowerPositionEffectActive;
 
     const myGrade =
         getDraftPickGrade(
@@ -1119,6 +1200,124 @@ function CinematicMatchup({
                     blur-[80px]
                 "
             />
+
+            {showPowerPositionEffect && (
+                <div
+                    className="
+            pointer-events-none
+            absolute
+            inset-0
+            z-40
+            flex
+            items-center
+            justify-center
+        "
+                >
+                    <div
+                        className="
+                relative
+                flex
+                flex-col
+                items-center
+            "
+                    >
+                        <div
+                            className="
+                    absolute
+                    h-44
+                    w-44
+                    animate-[powerPositionPulse_900ms_ease-out_both]
+                    rounded-full
+                    bg-cyan-400/20
+                    blur-[60px]
+                "
+                        />
+
+                        <div
+                            className="
+                    relative
+                    rounded-2xl
+                    border
+                    border-cyan-300/30
+                    bg-black/85
+                    px-6
+                    py-4
+                    text-center
+                    shadow-[0_0_40px_rgba(34,211,238,0.25)]
+                    backdrop-blur-xl
+                "
+                        >
+                            <p
+                                className="
+                        text-[8px]
+                        font-black
+                        uppercase
+                        tracking-[0.35em]
+                        text-cyan-300/55
+                    "
+                            >
+                                Power Position
+                            </p>
+
+                            <p
+                                className="
+                        mt-1
+                        text-xl
+                        font-black
+                        italic
+                        text-cyan-100
+                    "
+                            >
+                                DECOY ACTIVATED
+                            </p>
+
+                            <p
+                                className="
+                        mt-1
+                        text-[9px]
+                        font-black
+                        uppercase
+                        tracking-[0.2em]
+                        text-white/35
+                    "
+                            >
+                                Power Siphon
+                            </p>
+
+                            {myPowerPositionEffectActive && (
+                                <div
+                                    className="
+                            mt-3
+                            animate-[powerPositionPullLeft_700ms_cubic-bezier(.16,1,.3,1)_both]
+                            text-sm
+                            font-black
+                            text-cyan-200
+                        "
+                                >
+                                    ← SIPHON{" "}
+                                    {myDecoySiphon}
+                                </div>
+                            )}
+
+                            {opponentPowerPositionEffectActive && (
+                                <div
+                                    className="
+                            mt-3
+                            animate-[powerPositionPullRight_700ms_cubic-bezier(.16,1,.3,1)_both]
+                            text-sm
+                            font-black
+                            text-cyan-200
+                        "
+                                >
+                                    SIPHON{" "}
+                                    {opponentDecoySiphon}
+                                    {" "}→
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
 
 
             <div
@@ -2155,7 +2354,7 @@ export default function MultiplayerDraftResultsPage() {
         );
 
 
-    const finalMyPicks =
+    const disruptedMyPicks =
         useMemo(
             () => {
                 if (
@@ -2167,7 +2366,6 @@ export default function MultiplayerDraftResultsPage() {
 
                 return getFinalMultiplayerPicks(
                     revealMyState,
-
                     revealOpponentState
                         .selectedDisruption
                 );
@@ -2179,7 +2377,7 @@ export default function MultiplayerDraftResultsPage() {
         );
 
 
-    const finalOpponentPicks =
+    const disruptedOpponentPicks =
         useMemo(
             () => {
                 if (
@@ -2191,7 +2389,6 @@ export default function MultiplayerDraftResultsPage() {
 
                 return getFinalMultiplayerPicks(
                     revealOpponentState,
-
                     revealMyState
                         .selectedDisruption
                 );
@@ -2201,6 +2398,50 @@ export default function MultiplayerDraftResultsPage() {
                 revealOpponentState,
             ]
         );
+
+
+    const finalMatchPicks =
+        useMemo(
+            () => {
+                if (
+                    !revealMyState ||
+                    !revealOpponentState
+                ) {
+                    return null;
+                }
+
+                return getFinalMultiplayerMatchPicks(
+                    revealMyState,
+                    revealOpponentState
+                );
+            },
+            [
+                revealMyState,
+                revealOpponentState,
+            ]
+        );
+
+
+    const finalMyPicks =
+        finalMatchPicks?.playerPicks ??
+        [];
+
+
+    const finalOpponentPicks =
+        finalMatchPicks?.opponentPicks ??
+        [];
+
+
+    const myDecoySiphon =
+        finalMatchPicks
+            ?.playerDecoySiphon ??
+        0;
+
+
+    const opponentDecoySiphon =
+        finalMatchPicks
+            ?.opponentDecoySiphon ??
+        0;
 
     const finalRevealSlots =
         useMemo(() => {
@@ -2381,6 +2622,27 @@ export default function MultiplayerDraftResultsPage() {
             "initial"
         );
 
+        const activeSlot =
+            finalRevealSlots[
+                currentMatchupIndex
+                ] ?? null;
+
+        const hasPowerPositionEffect =
+            activeSlot
+                ?.isPowerPosition &&
+            (
+                hasPowerPositionRevealEffect(
+                    revealMyState
+                        ?.selectedPowerPosition ??
+                    null
+                ) ||
+                hasPowerPositionRevealEffect(
+                    revealOpponentState
+                        ?.selectedPowerPosition ??
+                    null
+                )
+            );
+
         const ascensionTimer =
             window.setTimeout(
                 () => {
@@ -2401,6 +2663,22 @@ export default function MultiplayerDraftResultsPage() {
                 1600
             );
 
+        let powerPositionTimer:
+            number |
+            undefined;
+
+        if (hasPowerPositionEffect) {
+            powerPositionTimer =
+                window.setTimeout(
+                    () => {
+                        setMatchupEffectStage(
+                            "power-position"
+                        );
+                    },
+                    2450
+                );
+        }
+
         const resolvedTimer =
             window.setTimeout(
                 () => {
@@ -2408,7 +2686,9 @@ export default function MultiplayerDraftResultsPage() {
                         "resolved"
                     );
                 },
-                2450
+                hasPowerPositionEffect
+                    ? 3250
+                    : 2450
             );
 
         const nextTimer =
@@ -2432,7 +2712,9 @@ export default function MultiplayerDraftResultsPage() {
                             current + 1
                     );
                 },
-                3300
+                hasPowerPositionEffect
+                    ? 4150
+                    : 3300
             );
 
         return () => {
@@ -2443,6 +2725,15 @@ export default function MultiplayerDraftResultsPage() {
             window.clearTimeout(
                 disruptionTimer
             );
+
+            if (
+                powerPositionTimer !==
+                undefined
+            ) {
+                window.clearTimeout(
+                    powerPositionTimer
+                );
+            }
 
             window.clearTimeout(
                 resolvedTimer
@@ -2455,7 +2746,11 @@ export default function MultiplayerDraftResultsPage() {
     }, [
         revealPhase,
         currentMatchupIndex,
-        finalRevealSlots.length,
+        finalRevealSlots,
+        revealMyState
+            ?.selectedPowerPosition,
+        revealOpponentState
+            ?.selectedPowerPosition,
     ]);
 
     useEffect(() => {
@@ -3346,6 +3641,17 @@ export default function MultiplayerDraftResultsPage() {
         ) ?? null
             : null;
 
+    const currentMyDisruptedPick =
+        currentMatchupSlot
+            ? disruptedMyPicks.find(
+            (pick) =>
+                pick.position ===
+                currentMatchupSlot
+                    .myPick
+                    ?.position
+        ) ?? null
+            : null;
+
     const currentOpponentInitialPick =
         currentMatchupSlot
             ? opponentPreAscensionPicks.find(
@@ -3382,6 +3688,17 @@ export default function MultiplayerDraftResultsPage() {
         ) ?? null
             : null;
 
+    const currentOpponentDisruptedPick =
+        currentMatchupSlot
+            ? disruptedOpponentPicks.find(
+            (pick) =>
+                pick.position ===
+                currentMatchupSlot
+                    .opponentPick
+                    ?.position
+        ) ?? null
+            : null;
+
     const myAscensionAffectsCurrent =
         !!currentMyInitialPick &&
         !!currentMyAscendedPick &&
@@ -3398,15 +3715,15 @@ export default function MultiplayerDraftResultsPage() {
 
     const opponentDisruptionAffectsCurrent =
         !!currentMyAscendedPick &&
-        !!currentMyFinalPick &&
-        currentMyFinalPick.power <
+        !!currentMyDisruptedPick &&
+        currentMyDisruptedPick.power <
         currentMyAscendedPick.power;
 
 
     const myDisruptionAffectsCurrent =
         !!currentOpponentAscendedPick &&
-        !!currentOpponentFinalPick &&
-        currentOpponentFinalPick.power <
+        !!currentOpponentDisruptedPick &&
+        currentOpponentDisruptedPick.power <
         currentOpponentAscendedPick.power;
 
     const ascensionStageActive =
@@ -3415,12 +3732,23 @@ export default function MultiplayerDraftResultsPage() {
         matchupEffectStage ===
         "disruption" ||
         matchupEffectStage ===
+        "power-position" ||
+        matchupEffectStage ===
         "resolved";
 
 
     const disruptionStageActive =
         matchupEffectStage ===
         "disruption" ||
+        matchupEffectStage ===
+        "power-position" ||
+        matchupEffectStage ===
+        "resolved";
+
+
+    const powerPositionStageActive =
+        matchupEffectStage ===
+        "power-position" ||
         matchupEffectStage ===
         "resolved";
 
@@ -3917,7 +4245,9 @@ export default function MultiplayerDraftResultsPage() {
                     currentMyFinalPick &&
                     currentOpponentInitialPick &&
                     currentOpponentAscendedPick &&
-                    currentOpponentFinalPick && (
+                    currentOpponentFinalPick &&
+                    currentMyDisruptedPick &&
+                    currentOpponentDisruptedPick && (
                         <CinematicMatchup
                             key={
                                 currentMatchupIndex
@@ -3964,6 +4294,22 @@ export default function MultiplayerDraftResultsPage() {
 
                             effectStage={
                                 matchupEffectStage
+                            }
+
+                            myDisruptedPower={
+                                currentMyDisruptedPick.power
+                            }
+
+                            opponentDisruptedPower={
+                                currentOpponentDisruptedPick.power
+                            }
+
+                            myDecoySiphon={
+                                myDecoySiphon
+                            }
+
+                            opponentDecoySiphon={
+                                opponentDecoySiphon
                             }
                         />
                     )}
@@ -4832,6 +5178,71 @@ export default function MultiplayerDraftResultsPage() {
                             transform:
                                 translate(-50%, -50%)
                                 scaleX(1.2);
+                        }
+                    }
+                    
+                    @keyframes powerPositionPulse {
+                        0% {
+                            opacity: 0;
+                            transform: scale(0.3);
+                        }
+                    
+                        45% {
+                            opacity: 1;
+                            transform: scale(1.15);
+                        }
+                    
+                        100% {
+                            opacity: 0.45;
+                            transform: scale(1.5);
+                        }
+                    }
+                    
+                    
+                    @keyframes powerPositionPullLeft {
+                        0% {
+                            opacity: 0;
+                            transform:
+                                translateX(45px)
+                                scale(0.7);
+                            filter: blur(6px);
+                        }
+                    
+                        50% {
+                            opacity: 1;
+                            filter: blur(0);
+                        }
+                    
+                        100% {
+                            opacity: 1;
+                            transform:
+                                translateX(-12px)
+                                scale(1);
+                            filter: blur(0);
+                        }
+                    }
+                    
+                    
+                    @keyframes powerPositionPullRight {
+                        0% {
+                            opacity: 0;
+                            transform:
+                                translateX(-45px)
+                                scale(0.7);
+                            filter: blur(6px);
+                        }
+                    
+                        50% {
+                            opacity: 1;
+                            filter: blur(0);
+                        }
+                    
+                        100% {
+                            opacity: 1;
+                            transform:
+                                translateX(12px)
+                                scale(1);
+                            filter: blur(0);
                         }
                     }
                 `}

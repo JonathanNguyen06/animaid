@@ -1,7 +1,7 @@
 // types/draft.ts
 
 import type {
-    AnyDraftPosition,
+    AnyDraftPosition, CharacterStat,
     DraftCharacter,
     DraftPosition,
 } from "@/data/draftCharacters";
@@ -19,6 +19,7 @@ export type DraftPick = {
 
     ascensionBonus?: number;
     disruptionPenalty?: number;
+    wildcardStats?: CharacterStat[];
 };
 
 export type DraftResult = {
