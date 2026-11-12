@@ -280,14 +280,6 @@ function HeadToHeadReveal({
             )
             : null;
 
-    const matchupWinner:
-        "you" | "opponent" | "tie" =
-        outcome === "win"
-            ? "you"
-            : outcome === "loss"
-                ? "opponent"
-                : "tie";
-
     const myGradeStyle =
         getGradeStyle(
             myGrade ?? ""
@@ -648,51 +640,6 @@ function HeadToHeadReveal({
                     )}
                 </div>
             </div>
-
-            {revealed && ascensionApplied && (
-                <div className="mt-3 text-center">
-                    {matchupWinner === "you" ? (
-                        <div
-                            className="
-                                rounded-xl
-                                border border-green-400/25
-                                bg-green-500/10
-                                px-3 py-2
-                            "
-                        >
-                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-green-300">
-                                ✓ Position Won
-                            </p>
-                        </div>
-                    ) : matchupWinner === "opponent" ? (
-                        <div
-                            className="
-                                rounded-xl
-                                border border-red-400/25
-                                bg-red-500/10
-                                px-3 py-2
-                            "
-                        >
-                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-red-300">
-                                ✕ Position Lost
-                            </p>
-                        </div>
-                    ) : (
-                        <div
-                            className="
-                                rounded-xl
-                                border border-white/10
-                                bg-white/5
-                                px-3 py-2
-                            "
-                        >
-                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">
-                                Position Tied
-                            </p>
-                        </div>
-                    )}
-                </div>
-            )}
         </div>
     );
 }
@@ -1136,6 +1083,7 @@ function CinematicMatchup({
         <div
             key={slot.label}
             className="
+                cinematic-matchup
                 relative
                 flex
                 min-h-[500px]
@@ -1204,82 +1152,82 @@ function CinematicMatchup({
             {showPowerPositionEffect && (
                 <div
                     className="
-            pointer-events-none
-            absolute
-            inset-0
-            z-40
-            flex
-            items-center
-            justify-center
-        "
+                        pointer-events-none
+                        absolute
+                        inset-0
+                        z-40
+                        flex
+                        items-center
+                        justify-center
+                    "
                 >
                     <div
                         className="
-                relative
-                flex
-                flex-col
-                items-center
-            "
+                            relative
+                            flex
+                            flex-col
+                            items-center
+                        "
                     >
                         <div
                             className="
-                    absolute
-                    h-44
-                    w-44
-                    animate-[powerPositionPulse_900ms_ease-out_both]
-                    rounded-full
-                    bg-cyan-400/20
-                    blur-[60px]
-                "
+                                absolute
+                                h-44
+                                w-44
+                                animate-[powerPositionPulse_900ms_ease-out_both]
+                                rounded-full
+                                bg-cyan-400/20
+                                blur-[60px]
+                            "
                         />
 
                         <div
                             className="
-                    relative
-                    rounded-2xl
-                    border
-                    border-cyan-300/30
-                    bg-black/85
-                    px-6
-                    py-4
-                    text-center
-                    shadow-[0_0_40px_rgba(34,211,238,0.25)]
-                    backdrop-blur-xl
-                "
+                                relative
+                                rounded-2xl
+                                border
+                                border-cyan-300/30
+                                bg-black/85
+                                px-6
+                                py-4
+                                text-center
+                                shadow-[0_0_40px_rgba(34,211,238,0.25)]
+                                backdrop-blur-xl
+                            "
                         >
                             <p
                                 className="
-                        text-[8px]
-                        font-black
-                        uppercase
-                        tracking-[0.35em]
-                        text-cyan-300/55
-                    "
+                                    text-[8px]
+                                    font-black
+                                    uppercase
+                                    tracking-[0.35em]
+                                    text-cyan-300/55
+                                "
                             >
                                 Power Position
                             </p>
 
                             <p
                                 className="
-                        mt-1
-                        text-xl
-                        font-black
-                        italic
-                        text-cyan-100
-                    "
+                                    mt-1
+                                    text-xl
+                                    font-black
+                                    italic
+                                    text-cyan-100
+                                "
                             >
                                 DECOY ACTIVATED
                             </p>
 
                             <p
                                 className="
-                        mt-1
-                        text-[9px]
-                        font-black
-                        uppercase
-                        tracking-[0.2em]
-                        text-white/35
-                    "
+                                    mt-1
+                                    text-[9px]
+                                    font-black
+                                    uppercase
+                                    tracking-[0.2em]
+                                    text-white/35
+                                "
                             >
                                 Power Siphon
                             </p>
@@ -1287,12 +1235,12 @@ function CinematicMatchup({
                             {myPowerPositionEffectActive && (
                                 <div
                                     className="
-                            mt-3
-                            animate-[powerPositionPullLeft_700ms_cubic-bezier(.16,1,.3,1)_both]
-                            text-sm
-                            font-black
-                            text-cyan-200
-                        "
+                                        mt-3
+                                        animate-[powerPositionPullLeft_700ms_cubic-bezier(.16,1,.3,1)_both]
+                                        text-sm
+                                        font-black
+                                        text-cyan-200
+                                    "
                                 >
                                     ← SIPHON{" "}
                                     {myDecoySiphon}
@@ -1302,12 +1250,12 @@ function CinematicMatchup({
                             {opponentPowerPositionEffectActive && (
                                 <div
                                     className="
-                            mt-3
-                            animate-[powerPositionPullRight_700ms_cubic-bezier(.16,1,.3,1)_both]
-                            text-sm
-                            font-black
-                            text-cyan-200
-                        "
+                                        mt-3
+                                        animate-[powerPositionPullRight_700ms_cubic-bezier(.16,1,.3,1)_both]
+                                        text-sm
+                                        font-black
+                                        text-cyan-200
+                                    "
                                 >
                                     SIPHON{" "}
                                     {opponentDecoySiphon}
@@ -1322,6 +1270,7 @@ function CinematicMatchup({
 
             <div
                 className="
+                    cinematic-matchup-grid
                     relative
                     z-10
                     grid
@@ -1346,6 +1295,7 @@ function CinematicMatchup({
                 <div className="flex min-w-0 justify-end">
                     <div
                         className="
+                            cinematic-card-shell
                             w-full
                             max-w-[155px]
                             animate-[battleCardLeft_850ms_cubic-bezier(.16,1,.3,1)_both]
@@ -1551,6 +1501,7 @@ function CinematicMatchup({
                 <div className="flex min-w-0 justify-start">
                     <div
                         className="
+                            cinematic-card-shell
                             w-full
                             max-w-[155px]
                             animate-[battleCardRight_850ms_cubic-bezier(.16,1,.3,1)_both]
@@ -1704,6 +1655,73 @@ function CinematicMatchup({
                     </div>
                 </div>
             </div>
+
+            {showResult && matchupTied && (
+                <div
+                    className="
+                        pointer-events-none
+                        absolute
+                        left-1/2
+                        top-1/2
+                        z-30
+                        h-40
+                        w-40
+                        -translate-x-1/2
+                        -translate-y-1/2
+                    "
+                >
+                    {/* CLASH GLOW */}
+                    <div
+                        className="
+                            absolute
+                            left-1/2
+                            top-1/2
+                            h-32
+                            w-32
+                            -translate-x-1/2
+                            -translate-y-1/2
+                            animate-[tieBurst_800ms_ease-out_both]
+                            rounded-full
+                            bg-white/15
+                            blur-[40px]
+                        "
+                    />
+
+                    {/* LEFT ATTACK */}
+                    <div
+                        className="
+                            absolute
+                            right-1/2
+                            top-1/2
+                            h-[2px]
+                            w-24
+                            -translate-y-1/2
+                            animate-[tieClashLeft_650ms_cubic-bezier(.16,1,.3,1)_both]
+                            bg-gradient-to-l
+                            from-white
+                            to-transparent
+                            shadow-[0_0_14px_rgba(255,255,255,0.8)]
+                        "
+                    />
+
+                    {/* RIGHT ATTACK */}
+                    <div
+                        className="
+                            absolute
+                            left-1/2
+                            top-1/2
+                            h-[2px]
+                            w-24
+                            -translate-y-1/2
+                            animate-[tieClashRight_650ms_cubic-bezier(.16,1,.3,1)_both]
+                            bg-gradient-to-r
+                            from-white
+                            to-transparent
+                            shadow-[0_0_14px_rgba(255,255,255,0.8)]
+                        "
+                    />
+                </div>
+            )}
 
             {/* ======================================= */}
             {/* MATCHUP RESOLUTION CINEMATIC */}
@@ -1895,82 +1913,6 @@ function CinematicMatchup({
 
                     </div>
                 )}
-
-            {matchupTied && (
-                <div
-                    className="
-                        pointer-events-none
-                        absolute
-                        inset-0
-                        z-30
-                        flex
-                        items-center
-                        justify-center
-                        overflow-hidden
-                    "
-                >
-
-                    <div
-                        className="
-                            absolute
-                            left-1/2
-                            top-1/2
-                            h-[320px]
-                            w-[600px]
-                            -translate-x-1/2
-                            -translate-y-1/2
-                            animate-[tieBurst_800ms_ease-out_both]
-                            rounded-full
-                            bg-white/[0.07]
-                            blur-[100px]
-                        "
-                    />
-
-                    <div
-                        className="
-                            absolute
-                            left-1/2
-                            top-1/2
-                            h-[2px]
-                            w-[70%]
-                            -translate-x-1/2
-                            -translate-y-1/2
-                            animate-[tieSlash_650ms_cubic-bezier(.16,1,.3,1)_both]
-                            bg-gradient-to-r
-                            from-transparent
-                            via-white/80
-                            to-transparent
-                            shadow-[0_0_18px_rgba(255,255,255,0.5)]
-                        "
-                    />
-
-                    <div
-                        className="
-                            relative
-                            animate-[victoryStamp_700ms_cubic-bezier(.16,1,.3,1)_both]
-                            text-center
-                        "
-                    >
-                        <p className="text-[10px] font-black uppercase tracking-[0.5em] text-white/40">
-                            No Advantage
-                        </p>
-
-                        <p
-                            className="
-                                mt-1
-                                text-5xl
-                                font-black
-                                italic
-                                tracking-tight
-                                text-white
-                                drop-shadow-[0_0_25px_rgba(255,255,255,0.25)]
-                            "
-                        >
-                            DEADLOCK
-                        </p>
-                    </div>
-                </div>
-            )}
         </div>
     );
 }
@@ -2002,6 +1944,9 @@ function RevealEffectChoice({
     return (
         <div
             className={`
+                reveal-effect-choice
+                ${!compact ? "reveal-effect-choice-full" : ""}
+            
                 relative
                 overflow-hidden
                 border
@@ -2014,17 +1959,14 @@ function RevealEffectChoice({
                 ${
                 compact
                     ? `
-                        w-[calc(50vw-1.25rem)]
-                        max-w-[170px]
+                        w-[calc(50vw-1rem)]
+                        max-w-[220px]
                         rounded-xl
-                        px-2.5
+                        px-3
                         py-2
-            
-                        sm:w-[260px]
+                
+                        sm:w-[220px]
                         sm:max-w-none
-                        sm:rounded-2xl
-                        sm:px-4
-                        sm:py-3
                     `
                         : `
                         w-[calc(50vw-1.25rem)]
@@ -2058,7 +2000,6 @@ function RevealEffectChoice({
                 glowing &&
                 type === "ascension"
                     ? `
-                            scale-[1.06]
                             border-yellow-200
                             shadow-[0_0_40px_rgba(250,204,21,0.55)]
                           `
@@ -2069,7 +2010,6 @@ function RevealEffectChoice({
                 glowing &&
                 type === "disruption"
                     ? `
-                            scale-[1.06]
                             border-red-300
                             shadow-[0_0_40px_rgba(248,113,113,0.50)]
                           `
@@ -2080,17 +2020,20 @@ function RevealEffectChoice({
 
             <p
                 className={`
-                    text-[8px]
                     font-black
                     uppercase
                     tracking-[0.3em]
 
                     ${
-                    type ===
-                    "ascension"
-                        ? "text-yellow-300/55"
-                        : "text-red-300/55"
-                }
+                        type === "ascension"
+                            ? "text-yellow-300/55"
+                            : "text-red-300/55"
+                    }
+                    ${
+                        compact
+                            ? "text-[7px] sm:text-[8px]"
+                            : "text-[8px]"
+                    }
                 `}
             >
                 {owner}
@@ -2104,7 +2047,7 @@ function RevealEffectChoice({
 
                     ${
                     compact
-                        ? "text-xs sm:text-base"
+                        ? "text-[11px] sm:text-sm"
                         : "text-base sm:text-2xl"
                 }
 
@@ -3940,11 +3883,13 @@ export default function MultiplayerDraftResultsPage() {
 
                             <div
                                 className={`
+                                    matchup-ascension-row
                                     absolute
                                     left-4
                                     right-4
                                     top-1/2
                                     flex
+                                    items-start
                                     justify-center
                                     gap-2
                                     transition-transform
@@ -3956,15 +3901,9 @@ export default function MultiplayerDraftResultsPage() {
                                     sm:gap-10
                             
                                     ${
-                                    revealPhase === "ascension"
-                                        ? `
-                                            -translate-y-1/2
-                                        `
-                                        : `
-                                            translate-y-[215px]
-                        
-                                            sm:translate-y-[calc(50vh-6.5rem)]
-                                        `
+                                        revealPhase === "ascension"
+                                            ? "effect-row-center"
+                                            : "ascension-row-bottom"
                                     }
                                 `}
                             >
@@ -4037,11 +3976,13 @@ export default function MultiplayerDraftResultsPage() {
                         "ascension" && (
                             <div
                                 className={`
+                                    matchup-disruption-row
                                     absolute
                                     left-4
                                     right-4
                                     top-1/2
                                     flex
+                                    items-start
                                     justify-center
                                     gap-2
                                     transition-transform
@@ -4053,15 +3994,9 @@ export default function MultiplayerDraftResultsPage() {
                                     sm:gap-10
                             
                                     ${
-                                    revealPhase === "disruption"
-                                        ? `
-                                            -translate-y-1/2
-                                        `
-                                        : `
-                                            translate-y-[275px]
-                        
-                                            sm:translate-y-[calc(50vh-12rem)]
-                                        `
+                                        revealPhase === "disruption"
+                                            ? "effect-row-center"
+                                            : "disruption-row-bottom"
                                     }
                                 `}
                             >
@@ -4170,6 +4105,7 @@ export default function MultiplayerDraftResultsPage() {
                     "ascension" && (
                         <div
                             className="
+                                reveal-phase-panel
                                 relative
                                 flex
                                 min-h-[680px]
@@ -4205,6 +4141,7 @@ export default function MultiplayerDraftResultsPage() {
                     "disruption" && (
                         <div
                             className="
+                                reveal-phase-panel
                                 relative
                                 flex
                                 min-h-[680px]
@@ -4744,7 +4681,141 @@ export default function MultiplayerDraftResultsPage() {
                 )}
             </div>
 
-            <style>{`
+            <style>{`   
+                    @media (max-height: 760px) {
+                        .ascension-row-bottom {
+                            transform:
+                                translateY(
+                                    calc(50vh - 125px - 50%)
+                                );
+                        }
+                    
+                        .disruption-row-bottom {
+                            transform:
+                                translateY(
+                                    calc(50vh - 60px - 50%)
+                                );
+                        }
+                    }
+                    
+                    @media (min-height: 761px) and (max-height: 900px) {
+                        .ascension-row-bottom {
+                            transform:
+                                translateY(
+                                    calc(50vh - 135px - 50%)
+                                );
+                        }
+                    
+                        .disruption-row-bottom {
+                            transform:
+                                translateY(
+                                    calc(50vh - 68px - 50%)
+                                );
+                        }
+                    }
+                
+                    .effect-row-center {
+                        transform: translateY(-50%);
+                    }
+                    
+                    .ascension-row-bottom {
+                        transform:
+                            translateY(
+                                calc(50vh - 125px - 50%)
+                            );
+                    }
+                    
+                    .disruption-row-bottom {
+                        transform:
+                            translateY(
+                                calc(50vh - 60px - 50%)
+                            );
+                    }    
+                    
+                    @media (max-height: 760px) {
+                        .reveal-phase-panel {
+                            min-height: 540px !important;
+                            padding-top: 2rem !important;
+                        }
+                    }
+                    
+                    @media (max-height: 680px) {
+                        .reveal-phase-panel {
+                            min-height: 480px !important;
+                            padding-top: 1.25rem !important;
+                        }
+                    }
+                    
+                    @media (max-height: 760px) and (min-width: 640px) {
+                        .reveal-effect-choice-full {
+                            width: 360px !important;
+                            padding: 1rem 1.25rem !important;
+                            border-radius: 1.25rem !important;
+                        }
+                    
+                        .reveal-effect-choice-full p:nth-of-type(1) {
+                            font-size: 7px !important;
+                        }
+                    
+                        .reveal-effect-choice-full p:nth-of-type(2) {
+                            font-size: 1.15rem !important;
+                            margin-top: 0.25rem !important;
+                        }
+                    
+                        .reveal-effect-choice-full p:nth-of-type(3) {
+                            font-size: 0.7rem !important;
+                            line-height: 1.05rem !important;
+                            margin-top: 0.5rem !important;
+                        }
+                    }
+                    
+                    @media (max-height: 680px) and (min-width: 640px) {
+                        .reveal-effect-choice-full {
+                            width: 320px !important;
+                            padding: 0.8rem 1rem !important;
+                        }
+                    
+                        .reveal-effect-choice-full p:nth-of-type(2) {
+                            font-size: 1rem !important;
+                        }
+                    
+                        .reveal-effect-choice-full p:nth-of-type(3) {
+                            font-size: 0.65rem !important;
+                            line-height: 0.95rem !important;
+                        }
+                    }
+            
+                    @media (max-height: 760px) {
+                        .cinematic-matchup-grid {
+                            transform: translateY(32px);
+                        }
+                    }
+            
+                    @media (max-height: 850px) and (min-width: 640px) {
+                        .cinematic-matchup {
+                            min-height: 520px !important;
+                            padding-top: 1rem !important;
+                            padding-bottom: 7rem !important;
+                        }
+                    
+                        .cinematic-card-shell {
+                            max-width: 220px !important;
+                        }
+                    }
+                    
+                    @media (max-height: 720px) and (min-width: 640px) {
+                        .cinematic-matchup {
+                            min-height: 440px !important;
+                            padding-top: 0.5rem !important;
+                            padding-bottom: 6rem !important;
+                        }
+                    }
+                    
+                    @media (max-height: 760px) and (min-width: 640px) {
+                        .cinematic-card-shell {
+                            max-width: 220px !important;
+                        }
+                    }
                 
                     @keyframes powerBoost {
                         0% {
@@ -5245,6 +5316,47 @@ export default function MultiplayerDraftResultsPage() {
                             filter: blur(0);
                         }
                     }
+                    
+                    @keyframes tieClashLeft {
+                        0% {
+                            opacity: 0;
+                            transform:
+                                translateX(-60px)
+                                scaleX(0.3);
+                        }
+                    
+                        55% {
+                            opacity: 1;
+                        }
+                    
+                        100% {
+                            opacity: 0.8;
+                            transform:
+                                translateX(0)
+                                scaleX(1);
+                        }
+                    }
+                    
+                    @keyframes tieClashRight {
+                        0% {
+                            opacity: 0;
+                            transform:
+                                translateX(60px)
+                                scaleX(0.3);
+                        }
+                    
+                        55% {
+                            opacity: 1;
+                        }
+                    
+                        100% {
+                            opacity: 0.8;
+                            transform:
+                                translateX(0)
+                                scaleX(1);
+                        }
+                    }
+                   
                 `}
             </style>
         </main>
